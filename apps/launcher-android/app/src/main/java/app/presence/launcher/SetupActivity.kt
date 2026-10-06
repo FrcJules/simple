@@ -36,7 +36,7 @@ class SetupActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 var url by remember { mutableStateOf(store.load()?.baseUrl ?: "http://") }
-                var token by remember { mutableStateOf(store.load()?.token.orEmpty()) }
+                var token by remember { mutableStateOf("") } // never re-display the stored token
                 var saved by remember { mutableStateOf<Boolean?>(null) }
                 var access by remember { mutableStateOf(hasNotificationAccess()) }
                 Column(Modifier.padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {

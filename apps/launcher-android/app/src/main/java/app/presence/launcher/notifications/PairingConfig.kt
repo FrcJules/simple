@@ -21,10 +21,10 @@ data class PairingConfig(val baseUrl: String, val token: String) {
 
         fun isLocalNetworkHost(host: String): Boolean {
             val h = host.lowercase()
-            if (h == "localhost" || h.endsWith(".local")) return true
+            if (h.endsWith(".local")) return true
             val p = h.split('.').map { it.toIntOrNull() ?: return false }
             if (p.size != 4 || p.any { it !in 0..255 }) return false
-            return p[0] == 10 || p[0] == 127 || (p[0] == 192 && p[1] == 168) || (p[0] == 172 && p[1] in 16..31)
+            return p[0] == 10 || (p[0] == 192 && p[1] == 168) || (p[0] == 172 && p[1] in 16..31)
         }
     }
 }

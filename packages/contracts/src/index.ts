@@ -9,11 +9,13 @@ const base = {
   occurredAt: z.string().datetime({ offset: true }),
 };
 
+const httpUrl = z.string().url().refine((u) => /^https?:\/\//i.test(u), "http(s) only");
+
 const person = z.object({
   /** Display name shown to the senior (e.g. "Marie"). */
   name: z.string().min(1).max(60),
   /** Optional local URL of the contact's photo. */
-  photoUrl: z.string().url().optional(),
+  photoUrl: httpUrl.optional(),
 });
 
 export const missedCallEvent = z.object({
@@ -26,7 +28,7 @@ export const newPhotoEvent = z.object({
   ...base,
   type: z.literal("new_photo"),
   from: person,
-  photoUrl: z.string().url(),
+  photoUrl: httpUrl,
 });
 
 export const messageChannel = z.enum(["sms", "whatsapp"]);

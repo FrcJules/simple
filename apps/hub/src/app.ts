@@ -6,12 +6,17 @@ import { timingSafeEqual } from "node:crypto";
 export interface HubOptions {
   /** Pairing token the phone must present as `Authorization: Bearer <token>`. */
   pairingToken: string;
+  /** Token the display must present to read events (header or `?token=` for EventSource). Distinct from the pairing token. */
+  displayToken: string;
+  /** The only browser origin allowed to read events. */
+  displayOrigin?: string;
   /** Max events kept in memory. */
   maxEvents?: number;
+  /** Max simultaneous SSE clients. */
+  maxStreams?: number;
 }
 
-function tokenMatches(expected: string, header: string | undefined): boolean {
-  const given = header?.startsWith("Bearer ") ? header.slice(7) : "";
+function tokenMatches(expected: string, given: string): boolean {
   const a = Buffer.from(given);
   const b = Buffer.from(expected);
   return a.length === b.length && timingSafeEqual(a, b);
@@ -19,17 +24,26 @@ function tokenMatches(expected: string, header: string | undefined): boolean {
 
 export function buildApp(opts: HubOptions): FastifyInstance {
   if (opts.pairingToken.length < 16) throw new Error("pairingToken must be at least 16 characters");
+  if (opts.displayToken.length < 16) throw new Error("displayToken must be at least 16 characters");
+  if (opts.displayToken === opts.pairingToken) throw new Error("displayToken must differ from pairingToken");
   const maxEvents = opts.maxEvents ?? 200;
+  const maxStreams = opts.maxStreams ?? 5;
+  const origin = opts.displayOrigin ?? "http://localhost:5173";
+  const bearer = (header: string | undefined) => (header?.startsWith("Bearer ") ? header.slice(7) : "");
+  const canRead = (req: { headers: { authorization?: string }; query: unknown }) => {
+    const q = (req.query as { token?: unknown }).token;
+    return tokenMatches(opts.displayToken, bearer(req.headers.authorization) || (typeof q === "string" ? q : ""));
+  };
   const events: PresenceEvent[] = [];
   const listeners = new Set<(e: PresenceEvent) => void>();
   const app = Fastify({ logger: false });
 
-  void app.register(cors, { origin: true });
+  void app.register(cors, { origin });
 
   app.get("/health", async () => ({ ok: true }));
 
   app.post("/events", async (req, reply) => {
-    if (!tokenMatches(opts.pairingToken, req.headers.authorization)) {
+    if (!tokenMatches(opts.pairingToken, bearer(req.headers.authorization))) {
       return reply.code(401).send({ error: "unauthorized" });
     }
     const parsed = presenceEvent.safeParse(req.body);
@@ -40,15 +54,20 @@ export function buildApp(opts: HubOptions): FastifyInstance {
     return reply.code(202).send({ accepted: true });
   });
 
-  // The display runs on the same LAN/device; reading is unauthenticated, writing is not.
-  app.get("/events", async () => ({ events }));
+  // Message bodies are sensitive: reading requires the display token, writing requires the pairing token.
+  app.get("/events", async (req, reply) => {
+    if (!canRead(req)) return reply.code(401).send({ error: "unauthorized" });
+    return { events };
+  });
 
   app.get("/events/stream", (req, reply) => {
+    if (!canRead(req)) return reply.code(401).send({ error: "unauthorized" });
+    if (listeners.size >= maxStreams) return reply.code(503).send({ error: "too_many_streams" });
     reply.raw.writeHead(200, {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
       Connection: "keep-alive",
-      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Origin": origin,
     });
     reply.raw.write(": connected\n\n");
     const listener = (e: PresenceEvent) => reply.raw.write(`data: ${JSON.stringify(e)}\n\n`);
