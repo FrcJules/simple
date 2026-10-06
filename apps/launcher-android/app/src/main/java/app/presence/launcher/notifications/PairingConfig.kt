@@ -2,21 +2,22 @@ package app.presence.launcher.notifications
 
 import java.net.URI
 
-/** Where and how to reach the family hub. Only home-network addresses are accepted. */
-data class PairingConfig(val baseUrl: String, val token: String) {
+/** Where and how to reach the family hub. Only https home-network addresses with a pinned certificate are accepted. */
+data class PairingConfig(val baseUrl: String, val token: String, val certSha256: String) {
     /** Keeps the token out of logs. */
     override fun toString() = "PairingConfig(baseUrl=$baseUrl)"
 
     companion object {
         const val MIN_TOKEN_LENGTH = 16
 
-        /** Returns null when the URL is not an http(s) home-network address or the token is too short. */
-        fun parse(url: String, token: String): PairingConfig? {
+        /** Returns null unless: https URL on a home-network address, token long enough, valid SHA-256 certificate fingerprint. */
+        fun parse(url: String, token: String, fingerprint: String): PairingConfig? {
             val uri = try { URI(url.trim()) } catch (e: java.net.URISyntaxException) { return null }
             val host = uri.host ?: return null
-            if (uri.scheme != "http" && uri.scheme != "https") return null
+            if (uri.scheme != "https") return null
+            val pin = CertificatePin.normalize(fingerprint) ?: return null
             if (!isLocalNetworkHost(host) || token.trim().length < MIN_TOKEN_LENGTH) return null
-            return PairingConfig(url.trim().trimEnd('/'), token.trim())
+            return PairingConfig(url.trim().trimEnd('/'), token.trim(), pin)
         }
 
         fun isLocalNetworkHost(host: String): Boolean {

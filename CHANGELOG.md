@@ -7,5 +7,6 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnage [Se
 ### Ajouté
 - Launcher : contacts favoris en photos, appel direct avec confirmation, tuiles appareil photo / galerie / messages.
 - Lecture des notifications (appels manqués, SMS, WhatsApp) → hub → écran maison ; événement `new_message`.
+- Transport hub ↔ téléphone en HTTPS avec certificat épinglé (ADR 0003).
 - Écran « Réglages famille » (adresse du hub, jeton, accès aux notifications).
 - Squelette du monorepo : launcher Android, hub, écran, contrats, CI/CD.

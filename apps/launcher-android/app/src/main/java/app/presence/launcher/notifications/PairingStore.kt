@@ -9,10 +9,11 @@ class PairingStore(context: Context) {
     fun load(): PairingConfig? {
         val url = prefs.getString("url", null) ?: return null
         val token = prefs.getString("token", null) ?: return null
-        return PairingConfig.parse(url, token)
+        val pin = prefs.getString("pin", null) ?: return null
+        return PairingConfig.parse(url, token, pin)
     }
 
     fun save(config: PairingConfig) {
-        prefs.edit().putString("url", config.baseUrl).putString("token", config.token).apply()
+        prefs.edit().putString("url", config.baseUrl).putString("token", config.token).putString("pin", config.certSha256).apply()
     }
 }

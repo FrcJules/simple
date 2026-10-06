@@ -1,10 +1,10 @@
 package app.presence.launcher.notifications
 
-import java.net.HttpURLConnection
 import java.net.InetAddress
 import java.net.URL
+import javax.net.ssl.HttpsURLConnection
 
-/** Pushes one event to the hub over the home network. Failures are dropped: a missed notification must never crash the phone. */
+/** Pushes one event to the hub over the home network, over TLS pinned to the paired certificate. Failures are dropped: a missed notification must never crash the phone. */
 class HubClient(private val config: PairingConfig) {
     fun send(json: String): Boolean =
         try {
@@ -20,9 +20,11 @@ class HubClient(private val config: PairingConfig) {
         }
 
     private fun post(url: URL, json: String): Boolean {
-        val conn = url.openConnection() as HttpURLConnection
+        val conn = url.openConnection() as HttpsURLConnection
         return try {
             conn.apply {
+                sslSocketFactory = CertificatePin.sslContext(config.certSha256).socketFactory
+                setHostnameVerifier { _, _ -> true } // the pinned certificate replaces hostname verification
                 instanceFollowRedirects = false // never forward the token or message to another host
                 requestMethod = "POST"
                 connectTimeout = 5_000

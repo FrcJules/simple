@@ -26,3 +26,5 @@ captures/
 !.env.example
 # Claude local
 .claude/settings.local.json
+# Hub runtime data (TLS key!)
+data/
