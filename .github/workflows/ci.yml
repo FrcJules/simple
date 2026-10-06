@@ -11,6 +11,9 @@ concurrency:
 jobs:
   changes:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       web: ${{ steps.f.outputs.web }}
       android: ${{ steps.f.outputs.android }}
@@ -66,7 +69,7 @@ jobs:
   # Single required status check for branch protection.
   ci-ok:
     if: always()
-    needs: [web, android]
+    needs: [changes, web, android]
     runs-on: ubuntu-latest
     steps:
       - run: |
