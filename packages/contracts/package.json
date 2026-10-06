@@ -9,5 +9,5 @@
     "typecheck": "tsc -p .",
     "test": "vitest run"
   },
-  "dependencies": { "zod": "^3.23.0" }
+  "dependencies": { "zod": "^4.6.5" }
 }
