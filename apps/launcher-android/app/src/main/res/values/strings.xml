@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Présence</string>
+    <string name="greeting">Bonjour %1$s</string>
+    <string name="tile_call">Appeler</string>
+    <string name="tile_messages">Messages</string>
+    <string name="tile_camera">Prendre une photo</string>
+    <string name="tile_photos">Photos</string>
+</resources>

@@ -1,0 +1,28 @@
+# Node
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.vite/
+# Android / Gradle
+.gradle/
+build/
+local.properties
+*.apk
+*.aab
+*.jks
+*.keystore
+captures/
+.cxx/
+# IDE / OS
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+# Secrets
+.env
+.env.*
+!.env.example
+# Claude local
+.claude/settings.local.json
