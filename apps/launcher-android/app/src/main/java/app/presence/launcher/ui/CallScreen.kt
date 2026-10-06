@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -81,13 +83,15 @@ fun CallScreen(contacts: List<Contact>, onBack: () -> Unit, onCall: (Contact) ->
                         modifier = Modifier.heightIn(min = 72.dp),
                     ) {
                         Icon(Icons.Filled.Call, contentDescription = null)
-                        Text("  " + stringResource(R.string.call_yes), fontSize = 24.sp)
+                        Spacer(Modifier.width(12.dp))
+        Text(stringResource(R.string.call_yes), fontSize = 24.sp)
                     }
                 },
                 dismissButton = {
                     OutlinedButton(onClick = { selected = null }, modifier = Modifier.heightIn(min = 72.dp)) {
                         Icon(Icons.Filled.Close, contentDescription = null)
-                        Text("  " + stringResource(R.string.call_no), fontSize = 24.sp)
+                        Spacer(Modifier.width(12.dp))
+        Text(stringResource(R.string.call_no), fontSize = 24.sp)
                     }
                 },
             )
@@ -112,7 +116,8 @@ fun CallingScreen(contact: Contact, onCancel: () -> Unit, onLaunch: () -> Unit) 
             Text(stringResource(R.string.calling, contact.name), fontSize = 36.sp, textAlign = TextAlign.Center)
             OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
                 Icon(Icons.Filled.Close, contentDescription = null)
-                Text("  " + stringResource(R.string.call_no), fontSize = 28.sp)
+                Spacer(Modifier.width(12.dp))
+        Text(stringResource(R.string.call_no), fontSize = 28.sp)
             }
         }
     }
@@ -122,7 +127,8 @@ fun CallingScreen(contact: Contact, onCancel: () -> Unit, onLaunch: () -> Unit) 
 fun BackButton(onBack: () -> Unit) {
     OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-        Text("  " + stringResource(R.string.back), fontSize = 28.sp)
+        Spacer(Modifier.width(12.dp))
+        Text(stringResource(R.string.back), fontSize = 28.sp)
     }
 }
 
@@ -131,7 +137,7 @@ private fun ContactCard(contact: Contact, onClick: () -> Unit) {
     Card(Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onClick).semantics(mergeDescendants = true) {}) {
         Column(Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Avatar(contact, Modifier.fillMaxWidth().aspectRatio(1f))
-            Text(contact.name, fontSize = 28.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp))
+            Text(contact.name, fontSize = 28.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp))
         }
     }
 }

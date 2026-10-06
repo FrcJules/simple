@@ -20,7 +20,7 @@ object LauncherActions {
     /** [direct] = true places the call immediately (needs CALL_PHONE); otherwise opens the dialer. */
     fun call(c: Context, number: String, direct: Boolean) {
         if (!isDialable(number)) {
-            Toast.makeText(c, R.string.app_missing, Toast.LENGTH_LONG).show()
+            Toast.makeText(c, R.string.number_invalid, Toast.LENGTH_LONG).show()
             return
         }
         val uri = Uri.parse(telUri(number))
