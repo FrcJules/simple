@@ -14,9 +14,14 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -28,11 +33,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,7 +50,8 @@ import coil.compose.AsyncImage
 @Composable
 fun CallScreen(contacts: List<Contact>, onBack: () -> Unit, onCall: (Contact) -> Unit) {
     var selected by remember { mutableStateOf<Contact?>(null) }
-    MaterialTheme {
+    val haptic = LocalHapticFeedback.current
+    PresenceTheme {
         Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text(stringResource(R.string.call_title), fontSize = 32.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
             if (contacts.isEmpty()) {
@@ -60,9 +68,7 @@ fun CallScreen(contacts: List<Contact>, onBack: () -> Unit, onCall: (Contact) ->
                     items(contacts, key = { it.id }) { c -> ContactCard(c) { selected = c } }
                 }
             }
-            OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
-                Text("⬅  " + stringResource(R.string.back), fontSize = 28.sp)
-            }
+            BackButton(onBack)
         }
         selected?.let { c ->
             AlertDialog(
@@ -70,17 +76,53 @@ fun CallScreen(contacts: List<Contact>, onBack: () -> Unit, onCall: (Contact) ->
                 title = { Text(stringResource(R.string.call_confirm, c.name), fontSize = 28.sp) },
                 text = { Avatar(c, Modifier.fillMaxWidth().aspectRatio(1f)) },
                 confirmButton = {
-                    Button(onClick = { selected = null; onCall(c) }, modifier = Modifier.heightIn(min = 72.dp)) {
-                        Text("📞  " + stringResource(R.string.call_yes), fontSize = 24.sp)
+                    Button(
+                        onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); selected = null; onCall(c) },
+                        modifier = Modifier.heightIn(min = 72.dp),
+                    ) {
+                        Icon(Icons.Filled.Call, contentDescription = null)
+                        Text("  " + stringResource(R.string.call_yes), fontSize = 24.sp)
                     }
                 },
                 dismissButton = {
                     OutlinedButton(onClick = { selected = null }, modifier = Modifier.heightIn(min = 72.dp)) {
-                        Text(stringResource(R.string.call_no), fontSize = 24.sp)
+                        Icon(Icons.Filled.Close, contentDescription = null)
+                        Text("  " + stringResource(R.string.call_no), fontSize = 24.sp)
                     }
                 },
             )
         }
+    }
+}
+
+/** Shown between the confirmation and the system call screen: gives clear feedback and a last chance to cancel. */
+@Composable
+fun CallingScreen(contact: Contact, onCancel: () -> Unit, onLaunch: () -> Unit) {
+    androidx.compose.runtime.LaunchedEffect(contact.id) {
+        kotlinx.coroutines.delay(1_500)
+        onLaunch()
+    }
+    PresenceTheme {
+        Column(
+            Modifier.fillMaxSize().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Avatar(contact, Modifier.fillMaxWidth(0.7f).aspectRatio(1f))
+            Text(stringResource(R.string.calling, contact.name), fontSize = 36.sp, textAlign = TextAlign.Center)
+            OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
+                Icon(Icons.Filled.Close, contentDescription = null)
+                Text("  " + stringResource(R.string.call_no), fontSize = 28.sp)
+            }
+        }
+    }
+}
+
+@Composable
+fun BackButton(onBack: () -> Unit) {
+    OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
+        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+        Text("  " + stringResource(R.string.back), fontSize = 28.sp)
     }
 }
 
@@ -96,7 +138,7 @@ private fun ContactCard(contact: Contact, onClick: () -> Unit) {
 
 /** The contact's photo, or a large initial when there is none. */
 @Composable
-private fun Avatar(contact: Contact, modifier: Modifier) {
+internal fun Avatar(contact: Contact, modifier: Modifier) {
     val shape = RoundedCornerShape(16.dp)
     if (contact.photoUri != null) {
         AsyncImage(
