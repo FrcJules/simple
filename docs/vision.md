@@ -27,5 +27,5 @@ Créer une nouvelle messagerie ; exiger une application côté famille.
 - **v0.4** — Musique ; télécommande TV (Zigbee/IR) ; lecture des notifications WhatsApp (à étudier, voir questions ouvertes).
 
 ## Questions ouvertes
-- Comment obtenir les photos/messages WhatsApp sans changer les habitudes de la famille ? (NotificationListenerService côté téléphone ; dossier partagé ; album partagé…) — à trancher par ADR, avec impact vie privée.
-- Publication sur le Play Store d'un launcher lisant le journal d'appels : politique Google sur les permissions sensibles (CallLog) à vérifier tôt.
+- Fragilité du parsing des notifications selon les applications et constructeurs ([ADR 0002](adr/0002-notifications-plutot-que-journal-d-appels.md)) : prévoir des tests par application.
+- Photos de famille : comment les récupérer sans changer les habitudes (notification WhatsApp avec image, album partagé…) ? À trancher par ADR.
