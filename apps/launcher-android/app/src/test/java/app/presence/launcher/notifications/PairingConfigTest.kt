@@ -17,6 +17,9 @@ class PairingConfigTest {
     @Test
     fun rejectsPublicOrMalformedAddresses() {
         assertNull(PairingConfig.parse("http://8.8.8.8", token))
+        assertNull(PairingConfig.parse("http://127.0.0.1", token))
+        assertNull(PairingConfig.parse("http://localhost", token))
+        assertNull(PairingConfig.parse("http://192.168.1.5@evil.com", token))
         assertNull(PairingConfig.parse("http://172.32.0.1", token))
         assertNull(PairingConfig.parse("http://example.com", token))
         assertNull(PairingConfig.parse("ftp://192.168.1.2", token))

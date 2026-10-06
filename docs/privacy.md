@@ -8,4 +8,13 @@
 - Toute fonction envoyant des données hors du foyer doit être optionnelle, désactivée par défaut et justifiée par un ADR.
 
 ## Statut d'implémentation
-Lecture des notifications (ADR 0002) : **livrée en v0.2 (à valider sur appareils réels)**. Liste blanche : Téléphone/Samsung/Google, Messages, WhatsApp. Seuls expéditeur, type, heure et texte du message (≤ 500 caractères) sont envoyés, uniquement vers une adresse du réseau local (`PairingConfig`), avec un jeton d'appairage. Le jeton est exclu des sauvegardes. Le trafic HTTP en clair est autorisé car le hub n'est pas en HTTPS sur le LAN ; le client refuse toute adresse publique.
+Lecture des notifications (ADR 0002) : **livrée en v0.2, à valider sur appareils réels**.
+- Liste blanche (Téléphone, Messages, WhatsApp) vérifiée **avant** toute lecture du contenu ; seuls expéditeur, type, heure et texte (≤ 500 caractères) partent.
+- Le client n'envoie qu'à une adresse privée dont la résolution réelle est vérifiée, sans suivre de redirection. Le hub exige un jeton d'appairage (écriture) et un jeton d'affichage distinct (lecture) ; CORS limité à l'origine de l'écran.
+- Le jeton est exclu des sauvegardes et jamais réaffiché ni journalisé.
+
+**Limites connues (à traiter avant publication sur le Play Store)**
+- Le trafic hub ↔ téléphone est en HTTP clair : sur un autre Wi-Fi qu'à la maison, une machine en `192.168.x.x` pourrait recevoir jeton et messages. Piste : TLS avec certificat épinglé à l'appairage, et envoi limité au Wi-Fi du foyer.
+- Le jeton est dans des préférences privées non chiffrées (Keystore à prévoir).
+- « Réglages famille » est accessible depuis la liste des applications : prévoir un code famille.
+- Les codes à usage unique reçus par SMS sont transmis ; prévoir un filtre et une option « ne pas afficher le texte ».

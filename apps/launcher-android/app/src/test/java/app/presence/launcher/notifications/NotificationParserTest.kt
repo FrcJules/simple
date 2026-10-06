@@ -5,15 +5,15 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class NotificationParserTest {
-    private fun n(pkg: String, title: String?, text: String?, category: String? = null) = RawNotification(pkg, title, text, category)
+    private fun n(pkg: String, title: String?, text: String?, category: String? = "msg") = RawNotification(pkg, title, text, category)
 
     @Test
     fun googleDialerLabelInTitleCallerInText() =
-        assertEquals(Incoming.MissedCall("Marie"), NotificationParser.parse(n("com.google.android.dialer", "Appel manqué", "Marie")))
+        assertEquals(Incoming.MissedCall("Marie"), NotificationParser.parse(n("com.google.android.dialer", "Appel manqué", "Marie", null)))
 
     @Test
     fun callerInTitleLabelInText() =
-        assertEquals(Incoming.MissedCall("Marie"), NotificationParser.parse(n("com.samsung.android.dialer", "Marie", "Missed call")))
+        assertEquals(Incoming.MissedCall("Marie"), NotificationParser.parse(n("com.samsung.android.dialer", "Marie", "Missed call", null)))
 
     @Test
     fun missedCallCategoryAloneUsesTitle() =
@@ -21,11 +21,11 @@ class NotificationParserTest {
 
     @Test
     fun ordinaryDialerNotificationIsIgnored() =
-        assertNull(NotificationParser.parse(n("com.google.android.dialer", "Appel en cours", "Marie")))
+        assertNull(NotificationParser.parse(n("com.google.android.dialer", "Appel en cours", "Marie", null)))
 
     @Test
     fun missedCallWithoutCallerIsIgnored() =
-        assertNull(NotificationParser.parse(n("com.google.android.dialer", "Appel manqué", "")))
+        assertNull(NotificationParser.parse(n("com.google.android.dialer", "Appel manqué", "", null)))
 
     @Test
     fun whatsappMessage() =
@@ -61,5 +61,18 @@ class NotificationParserTest {
     fun otherAppsAreNeverParsed() {
         assertNull(NotificationParser.parse(n("com.bank.app", "Votre solde", "1234 €")))
         assertNull(NotificationParser.parse(n("com.example.news", "Appel manqué", "Marie")))
+    }
+
+    @Test
+    fun nonConversationNotificationsFromWatchedAppsAreIgnored() {
+        assertNull(NotificationParser.parse(n("com.whatsapp", "Marie", "Envoi en cours…", "progress")))
+        assertNull(NotificationParser.parse(n("com.google.android.apps.messaging", "Promo", "-50 % aujourd'hui", "promo")))
+        assertNull(NotificationParser.parse(n("com.android.mms", "Marie", "Salut", null)))
+    }
+
+    @Test
+    fun onlyWhitelistedPackagesAreWatched() {
+        assertEquals(true, NotificationParser.isWatched("com.whatsapp"))
+        assertEquals(false, NotificationParser.isWatched("com.bank.app"))
     }
 }

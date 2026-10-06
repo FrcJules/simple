@@ -2,7 +2,7 @@ package app.presence.launcher.notifications
 
 enum class Channel(val wire: String) { SMS("sms"), WHATSAPP("whatsapp") }
 
-/** The few fields of a notification we look at. Nothing else is read (see ADR 0002). */
+/** Notification.CATEGORY_MESSAGE is "msg". The few fields of a notification we look at. Nothing else is read (see ADR 0002). */
 data class RawNotification(val packageName: String, val title: String?, val text: String?, val category: String?)
 
 sealed interface Incoming {
@@ -27,13 +27,18 @@ object NotificationParser {
     private val missedKeywords = listOf("appel manqué", "appels manqués", "missed call", "missed calls")
     private val unreadSuffix = Regex("""\s*\(\d+\s+\S+\)\s*$""")
 
+    /** Checked first by the listener so notifications from other apps are never read at all. */
+    fun isWatched(packageName: String) =
+        packageName in dialerPackages || packageName in smsPackages || packageName in whatsappPackages
+
     fun parse(n: RawNotification): Incoming? {
         val title = n.title?.trim().orEmpty()
         val text = n.text?.trim().orEmpty()
         return when (n.packageName) {
             in dialerPackages -> missedCall(n.category, title, text)
-            in smsPackages -> message(title, text, Channel.SMS)
-            in whatsappPackages -> if (title.equals("WhatsApp", ignoreCase = true)) null else message(title, text, Channel.WHATSAPP)
+            in smsPackages -> message(n.category, title, text, Channel.SMS)
+            in whatsappPackages ->
+                if (title.equals("WhatsApp", ignoreCase = true)) null else message(n.category, title, text, Channel.WHATSAPP)
             else -> null
         }
     }
@@ -48,7 +53,9 @@ object NotificationParser {
         return if (name.isEmpty()) null else Incoming.MissedCall(name)
     }
 
-    private fun message(title: String, text: String, channel: Channel): Incoming? {
+    /** Only real conversation messages (category "msg"): skips "sending…", system and promotional notifications. */
+    private fun message(category: String?, title: String, text: String, channel: Channel): Incoming? {
+        if (category != "msg") return null
         val from = title.replace(unreadSuffix, "").take(MAX_NAME).trim()
         if (from.isEmpty() || text.isEmpty()) return null
         return Incoming.Message(from, channel, text.take(MAX_TEXT))
