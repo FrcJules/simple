@@ -35,8 +35,9 @@ class SetupActivity : ComponentActivity() {
         val store = PairingStore(this)
         setContent {
             MaterialTheme {
-                var url by remember { mutableStateOf(store.load()?.baseUrl ?: "http://") }
+                var url by remember { mutableStateOf(store.load()?.baseUrl ?: "https://") }
                 var token by remember { mutableStateOf("") } // never re-display the stored token
+                var pin by remember { mutableStateOf(store.load()?.certSha256.orEmpty()) }
                 var saved by remember { mutableStateOf<Boolean?>(null) }
                 var access by remember { mutableStateOf(hasNotificationAccess()) }
                 Column(Modifier.padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -46,8 +47,9 @@ class SetupActivity : ComponentActivity() {
                         token, { token = it }, label = { Text(stringResource(R.string.setup_token)) },
                         visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth(),
                     )
+                    OutlinedTextField(pin, { pin = it }, label = { Text(stringResource(R.string.setup_fingerprint)) }, modifier = Modifier.fillMaxWidth())
                     Button(onClick = {
-                        val config = PairingConfig.parse(url, token)
+                        val config = PairingConfig.parse(url, token, pin)
                         if (config != null) store.save(config)
                         saved = config != null
                     }) { Text(stringResource(R.string.setup_save)) }
