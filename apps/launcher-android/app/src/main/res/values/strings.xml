@@ -2,10 +2,16 @@
 <resources>
     <string name="app_name">Présence</string>
     <string name="greeting">Bonjour %1$s</string>
+    <string name="greeting_anonymous">Bonjour</string>
+    <string name="calling">J\'appelle %1$s…</string>
+    <string name="rationale_text">Pour appeler vos proches, le téléphone doit voir vos contacts.\n\nAppuyez sur « Continuer », puis sur « Autoriser ».</string>
+    <string name="rationale_continue">Continuer</string>
+    <string name="rationale_later">Plus tard</string>
+    <string name="setup_name">Prénom affiché sur l\'écran d\'accueil</string>
     <string name="tile_call">Appeler</string>
     <string name="tile_messages">Messages</string>
-    <string name="tile_camera">Prendre une photo</string>
-    <string name="tile_photos">Photos</string>
+    <string name="tile_camera">Photo</string>
+    <string name="tile_photos">Mes photos</string>
     <string name="call_title">Qui voulez-vous appeler ?</string>
     <string name="call_confirm">Appeler %1$s ?</string>
     <string name="call_yes">Oui, appeler</string>

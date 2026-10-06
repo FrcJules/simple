@@ -33,15 +33,18 @@ class SetupActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val store = PairingStore(this)
+        val profile = ProfileStore(this)
         setContent {
             MaterialTheme {
                 var url by remember { mutableStateOf(store.load()?.baseUrl ?: "https://") }
                 var token by remember { mutableStateOf("") } // never re-display the stored token
                 var pin by remember { mutableStateOf(store.load()?.certSha256.orEmpty()) }
+                var name by remember { mutableStateOf(profile.name()) }
                 var saved by remember { mutableStateOf<Boolean?>(null) }
                 var access by remember { mutableStateOf(hasNotificationAccess()) }
                 Column(Modifier.padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(stringResource(R.string.setup_title), style = MaterialTheme.typography.headlineMedium)
+                    OutlinedTextField(name, { name = it }, label = { Text(stringResource(R.string.setup_name)) }, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(url, { url = it }, label = { Text(stringResource(R.string.setup_hub_url)) }, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(
                         token, { token = it }, label = { Text(stringResource(R.string.setup_token)) },
@@ -49,6 +52,7 @@ class SetupActivity : ComponentActivity() {
                     )
                     OutlinedTextField(pin, { pin = it }, label = { Text(stringResource(R.string.setup_fingerprint)) }, modifier = Modifier.fillMaxWidth())
                     Button(onClick = {
+                        profile.saveName(name)
                         val config = PairingConfig.parse(url, token, pin)
                         if (config != null) store.save(config)
                         saved = config != null
