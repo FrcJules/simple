@@ -29,6 +29,17 @@ export const newPhotoEvent = z.object({
   photoUrl: z.string().url(),
 });
 
+export const messageChannel = z.enum(["sms", "whatsapp"]);
+
+export const newMessageEvent = z.object({
+  ...base,
+  type: z.literal("new_message"),
+  from: person,
+  channel: messageChannel,
+  /** Message body, shown (and read aloud) on the home display; kept in memory only. */
+  text: z.string().min(1).max(500),
+});
+
 export const birthdayEvent = z.object({
   ...base,
   type: z.literal("birthday"),
@@ -38,8 +49,10 @@ export const birthdayEvent = z.object({
 export const presenceEvent = z.discriminatedUnion("type", [
   missedCallEvent,
   newPhotoEvent,
+  newMessageEvent,
   birthdayEvent,
 ]);
 
 export type PresenceEvent = z.infer<typeof presenceEvent>;
+export type NewMessageEvent = z.infer<typeof newMessageEvent>;
 export type MissedCallEvent = z.infer<typeof missedCallEvent>;

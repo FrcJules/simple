@@ -54,4 +54,5 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
     implementation("io.coil-kt:coil-compose:2.7.0") // Apache-2.0, photos de contacts
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20240303")
 }
