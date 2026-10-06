@@ -48,7 +48,7 @@ jobs:
     needs: [display-hub, android]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
       - uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
