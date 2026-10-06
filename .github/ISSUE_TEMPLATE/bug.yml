@@ -1,0 +1,17 @@
+name: Bug
+description: Signaler un dysfonctionnement
+labels: [bug]
+body:
+  - type: dropdown
+    id: component
+    attributes:
+      label: Composant
+      options: [Launcher Android, Écran (display), Hub, Autre]
+    validations: {required: true}
+  - type: textarea
+    id: what
+    attributes: {label: Que s'est-il passé ? Qu'attendiez-vous ?}
+    validations: {required: true}
+  - type: textarea
+    id: env
+    attributes: {label: Environnement (appareil, version Android, Pi, version)}

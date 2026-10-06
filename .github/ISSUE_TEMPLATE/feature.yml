@@ -1,0 +1,11 @@
+name: Idée
+description: Proposer une fonctionnalité
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes: {label: Quel besoin du senior ou de la famille cela couvre-t-il ?}
+    validations: {required: true}
+  - type: textarea
+    id: idea
+    attributes: {label: Proposition (sans changer les habitudes de la famille)}
