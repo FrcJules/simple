@@ -8,4 +8,4 @@
 - Toute fonction envoyant des données hors du foyer doit être optionnelle, désactivée par défaut et justifiée par un ADR.
 
 ## Statut d'implémentation
-Lecture des notifications (ADR 0002) : **décidée, pas encore livrée**. Le client d'envoi vers le hub (et son jeton d'appairage) non plus : ils devront être revus par le `privacy-reviewer` avant fusion.
+Lecture des notifications (ADR 0002) : **livrée en v0.2 (à valider sur appareils réels)**. Liste blanche : Téléphone/Samsung/Google, Messages, WhatsApp. Seuls expéditeur, type, heure et texte du message (≤ 500 caractères) sont envoyés, uniquement vers une adresse du réseau local (`PairingConfig`), avec un jeton d'appairage. Le jeton est exclu des sauvegardes. Le trafic HTTP en clair est autorisé car le hub n'est pas en HTTPS sur le LAN ; le client refuse toute adresse publique.
