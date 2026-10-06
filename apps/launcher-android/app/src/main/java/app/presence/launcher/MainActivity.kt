@@ -1,6 +1,7 @@
 package app.presence.launcher
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -14,30 +15,48 @@ import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.presence.launcher.ui.CallScreen
-import app.presence.launcher.ui.HomeScreen
 import app.presence.launcher.ui.CallingScreen
+import app.presence.launcher.ui.HomeScreen
 import app.presence.launcher.ui.HomeTile
+import app.presence.launcher.ui.MessageScreen
 import app.presence.launcher.ui.PermissionRationaleScreen
 
 class MainActivity : ComponentActivity() {
-    private enum class Screen { HOME, RATIONALE, CALL, CALLING }
+    private enum class Screen { HOME, RATIONALE, DENIED, CALL }
 
     private val contactsVm: ContactsViewModel by viewModels()
+    private val profile by lazy { ProfileStore(this) }
     private var screen by mutableStateOf(Screen.HOME)
+
+    /** Set while "J'appelle X…" is shown; null otherwise. Kept separate so the call screen can never exist without a contact. */
     private var calling by mutableStateOf<Contact?>(null)
+    private var seniorName by mutableStateOf("")
 
     private val permissions = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-        // Whatever the answer, show the call screen: it degrades gracefully (empty state, dialer instead of direct call).
+        profile.markContactsAsked()
         contactsVm.refresh()
-        screen = Screen.CALL
+        // Contacts refused: explain simply. Only the call permission refused: still fine, the dialer is used instead.
+        screen = if (granted(Manifest.permission.READ_CONTACTS)) Screen.CALL else Screen.DENIED
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             val contacts by contactsVm.contacts.collectAsStateWithLifecycle()
-            when (screen) {
-                Screen.HOME -> HomeScreen(seniorName = ProfileStore(this).name(), onTile = ::onTile)
+            val c = calling
+            if (c != null) {
+                BackHandler { calling = null }
+                CallingScreen(
+                    contact = c,
+                    onCancel = { calling = null },
+                    onLaunch = {
+                        calling = null
+                        screen = Screen.HOME
+                        LauncherActions.call(this, c.number, direct = granted(Manifest.permission.CALL_PHONE))
+                    },
+                )
+            } else when (screen) {
+                Screen.HOME -> HomeScreen(seniorName = seniorName, onTile = ::onTile)
                 Screen.RATIONALE -> {
                     BackHandler { screen = Screen.HOME }
                     PermissionRationaleScreen(
@@ -45,26 +64,13 @@ class MainActivity : ComponentActivity() {
                         onLater = { screen = Screen.HOME },
                     )
                 }
+                Screen.DENIED -> {
+                    BackHandler { screen = Screen.HOME }
+                    MessageScreen(R.string.permission_denied, onBack = { screen = Screen.HOME })
+                }
                 Screen.CALL -> {
                     BackHandler { screen = Screen.HOME }
-                    CallScreen(
-                        contacts = contacts,
-                        onBack = { screen = Screen.HOME },
-                        onCall = { calling = it; screen = Screen.CALLING },
-                    )
-                }
-                Screen.CALLING -> {
-                    BackHandler { screen = Screen.CALL }
-                    calling?.let { c ->
-                        CallingScreen(
-                            contact = c,
-                            onCancel = { screen = Screen.CALL },
-                            onLaunch = {
-                                LauncherActions.call(this, c.number, direct = granted(Manifest.permission.CALL_PHONE))
-                                screen = Screen.HOME
-                            },
-                        )
-                    } ?: run { screen = Screen.HOME }
+                    CallScreen(contacts = contacts, onBack = { screen = Screen.HOME }, onCall = { calling = it })
                 }
             }
         }
@@ -72,7 +78,20 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        seniorName = profile.name() // may have been changed in "Réglages famille"
         if (granted(Manifest.permission.READ_CONTACTS)) contactsVm.refresh()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        calling = null // never place a call after the screen went off or another app came to the front
+    }
+
+    /** The Home button (launchMode singleTask) always returns to the home screen. */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        calling = null
+        screen = Screen.HOME
     }
 
     private fun onTile(tile: HomeTile) = when (tile) {
@@ -83,10 +102,11 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun openCallScreen() {
-        if (granted(Manifest.permission.READ_CONTACTS) && granted(Manifest.permission.CALL_PHONE)) {
-            screen = Screen.CALL
-        } else {
-            screen = Screen.RATIONALE
+        screen = when {
+            granted(Manifest.permission.READ_CONTACTS) -> Screen.CALL
+            // After a refusal Android may no longer show its dialog: do not loop on a button that does nothing.
+            profile.contactsAsked() -> Screen.DENIED
+            else -> Screen.RATIONALE
         }
     }
 

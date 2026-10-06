@@ -8,6 +8,13 @@ class ProfileStore(context: Context) {
 
     fun name(): String = prefs.getString("name", "").orEmpty()
 
+    /** Whether the system contacts dialog was already shown (it may never show again after a refusal). */
+    fun contactsAsked(): Boolean = prefs.getBoolean("contacts_asked", false)
+
+    fun markContactsAsked() {
+        prefs.edit().putBoolean("contacts_asked", true).apply()
+    }
+
     fun saveName(name: String) {
         prefs.edit().putString("name", name.trim().take(40)).apply()
     }
