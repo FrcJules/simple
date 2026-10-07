@@ -26,7 +26,7 @@ Le **test interne** convient pour vous : jusqu'à 100 testeurs, disponible en qu
 4. Les futures versions arrivent en mise à jour normale.
 
 ## 5. Production : l'exigence des 12 testeurs
-Pour un compte personnel créé après le 13 novembre 2023, Google exige avant la production un **test fermé avec au moins 12 testeurs inscrits pendant 14 jours consécutifs** (si le nombre repasse sous 12, le compteur repart à zéro). Vérifié sur la [documentation Google](https://support.google.com/googleplay/android-developer/answer/14151465). À prévoir :
+Pour un compte personnel créé après le 13 novembre 2023, Google exige avant la production un **test fermé avec au moins 12 testeurs inscrits pendant 14 jours consécutifs** (si le nombre repasse sous 12, le compteur repart à zéro). Règle confirmée par plusieurs sources début octobre 2026 ; vérifiez le chiffre exact dans la Play Console, qui peut évoluer. À prévoir :
 - *Tests* → *Test fermé* → créer une release, ajouter 12 adresses e-mail (famille, amis), les inviter via le lien.
 - Après 14 jours : *Tableau de bord* → *Demander l'accès à la production*.
 - Un compte **organisation** n'a pas cette contrainte (il faut alors un numéro D-U-N-S).
