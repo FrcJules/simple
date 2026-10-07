@@ -7,8 +7,14 @@ cd "$(dirname "$0")/../apps/launcher-android"
 
 gradle :app:installDebug :app:installDebugAndroidTest || exit 1
 
+# Become the default SMS app *before* the tests: granting the role to a running app kills its process (the test runner too).
+# This also proves the debug manifest meets the role's requirements.
+adb shell cmd role add-role-holder --user 0 android.app.role.SMS app.presence.launcher || echo "could not grant the SMS role"
+
 out=$(adb shell am instrument -w app.presence.launcher.test/androidx.test.runner.AndroidJUnitRunner 2>&1)
 echo "$out"
+
+adb shell cmd role remove-role-holder --user 0 android.app.role.SMS app.presence.launcher || true
 
 mkdir -p app/build/screenshots
 adb pull /sdcard/Android/media/app.presence.launcher/screenshots/. app/build/screenshots/ || echo "no screenshots to pull"

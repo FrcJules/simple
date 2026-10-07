@@ -1,13 +1,11 @@
 package app.presence.launcher
 
 import androidx.test.platform.app.InstrumentationRegistry
-import androidx.test.uiautomator.UiDevice
 import app.presence.launcher.messages.MessageStatus
 import app.presence.launcher.messages.MessageStore
 import app.presence.launcher.sms.SendResult
 import app.presence.launcher.sms.SmsComponents
 import app.presence.launcher.sms.SmsRole
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -20,19 +18,18 @@ import org.junit.Test
 class SmsEndToEndTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context get() = instrumentation.targetContext
-    private val device get() = UiDevice.getInstance(instrumentation)
-    private val role = "android.app.role.SMS"
 
+    /**
+     * The role is granted by scripts/ci-emulator-tests.sh *before* the tests start, and taken back after: granting runtime
+     * permissions to a running app makes Android kill its process, which here is also the test runner.
+     */
     @Before
-    fun becomeTheSmsApp() {
-        device.executeShellCommand("cmd role add-role-holder --user 0 $role ${context.packageName}")
-        assertTrue("the app must be eligible for the SMS role", SmsRole.isHeld(context))
+    fun theAppMustAlreadyBeTheSmsApp() {
+        assertTrue(
+            "the app must be the default SMS app (and so be eligible for the role): see scripts/ci-emulator-tests.sh",
+            SmsRole.isHeld(context),
+        )
         MessageStore.get(context).clear()
-    }
-
-    @After
-    fun giveTheRoleBack() {
-        device.executeShellCommand("cmd role remove-role-holder --user 0 $role ${context.packageName}")
     }
 
     @Test
