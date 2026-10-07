@@ -26,6 +26,8 @@ data class StoredMessage(
     val outgoing: Boolean = false,
     val address: String? = null,
     val status: MessageStatus = MessageStatus.NONE,
+    /** One-time code or banking alert: kept (it is the person's own SMS) but masked in lists and never read aloud or forwarded. */
+    val sensitive: Boolean = false,
 ) {
     /** Keeps the message text out of logs. */
     override fun toString() = "StoredMessage(id=$id)"
