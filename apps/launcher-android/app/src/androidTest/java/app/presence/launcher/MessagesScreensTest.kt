@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -13,7 +14,9 @@ import app.presence.launcher.messages.MessageStatus
 import app.presence.launcher.messages.StoredMessage
 import app.presence.launcher.notifications.Channel
 import app.presence.launcher.ui.HomeScreen
+import app.presence.launcher.messages.Attachment
 import app.presence.launcher.ui.ConversationScreen
+import app.presence.launcher.ui.ImageViewerScreen
 import app.presence.launcher.ui.PickContactScreen
 import app.presence.launcher.ui.SmsRoleScreen
 import app.presence.launcher.ui.MessagesScreen
@@ -185,5 +188,65 @@ class MessagesScreensTest {
         rule.onNodeWithText("Plus tard").performClick()
         assertTrue(later)
         shot("28_sms_role")
+    }
+
+    private fun pictureFile(): String {
+        val bmp = android.graphics.Bitmap.createBitmap(300, 200, android.graphics.Bitmap.Config.ARGB_8888)
+        android.graphics.Canvas(bmp).drawColor(android.graphics.Color.rgb(200, 120, 40))
+        val f = java.io.File(androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext.cacheDir, "test-picture.png")
+        f.outputStream().use { bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+        return f.path
+    }
+
+    private fun mmsFrom(text: String, status: MessageStatus, attachments: List<Attachment> = emptyList()) =
+        StoredMessage("m", "Marie", Channel.SMS, text, now - 60_000, read = false, address = "0600000001", status = status, mms = true, attachments = attachments)
+
+    @Test
+    fun aReceivedPictureIsShownAndCanBeOpened() {
+        val path = pictureFile()
+        var opened: String? = null
+        val m = mmsFrom("Regarde !", MessageStatus.NONE, listOf(Attachment("image/png", path)))
+        rule.setContent { ConversationScreen(items[0], listOf(m), now, canDictate = true, notice = null, onListen = {}, onReply = {}, onBack = {}, onImage = { opened = it }) }
+        rule.onNodeWithText("Regarde !").assertIsDisplayed()
+        rule.onNodeWithContentDescription("Photo").assertIsDisplayed()
+        shot("29_conversation_photo")
+        rule.onNodeWithContentDescription("Photo").performClick()
+        assertEquals(path, opened)
+    }
+
+    @Test
+    fun aPictureBeingReceivedIsExplainedAndHasNoRetry() {
+        val receiving = mmsFrom("", MessageStatus.SENDING)
+        rule.setContent { ConversationScreen(items[0], listOf(receiving), now, canDictate = true, notice = null, onListen = {}, onReply = {}, onBack = {}) }
+        rule.onNodeWithText("Photo en cours de réception…").assertIsDisplayed()
+        assertEquals(0, rule.onAllNodesWithText("Réessayer").fetchSemanticsNodes().size)
+    }
+
+    @Test
+    fun aPictureThatDidNotArriveOffersARetry() {
+        var retried: String? = null
+        val failed = mmsFrom("", MessageStatus.FAILED)
+        rule.setContent { ConversationScreen(items[0], listOf(failed), now, canDictate = true, notice = null, onListen = {}, onReply = {}, onBack = {}, onRetry = { retried = it.id }) }
+        rule.onNodeWithText("Cette photo n'est pas arrivée.").assertIsDisplayed()
+        shot("30_photo_failed")
+        rule.onNodeWithText("Réessayer").performClick()
+        assertEquals("m", retried)
+    }
+
+    @Test
+    fun theListPreviewSaysPhotoWhenThereIsNoText() {
+        val m = mmsFrom("", MessageStatus.NONE, listOf(Attachment("image/png", pictureFile())))
+        rule.setContent { MessagesScreen(listOf(MessageItem(m, marie, unread = 1)), now, onOpen = {}, onWrite = {}, onBack = {}) }
+        rule.onNodeWithText("Photo").assertIsDisplayed()
+    }
+
+    @Test
+    fun theImageViewerShowsThePictureWithOnlyABackButton() {
+        var back = false
+        rule.setContent { ImageViewerScreen(pictureFile(), onBack = { back = true }) }
+        rule.onNodeWithContentDescription("Photo").assertIsDisplayed()
+        shot("31_image_viewer")
+        rule.onNodeWithText("Retour").performClick()
+        assertTrue(back)
     }
 }

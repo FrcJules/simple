@@ -9,6 +9,8 @@ import android.net.Uri
 import android.os.IBinder
 import android.provider.Telephony
 import android.telephony.TelephonyManager
+import app.presence.launcher.mms.MmsComponents
+import app.presence.launcher.mms.MmsInbox
 import kotlin.concurrent.thread
 
 /** Delivered by the system only to the default SMS app. */
@@ -57,12 +59,42 @@ class SmsStatusReceiver : BroadcastReceiver() {
     }
 }
 
-/**
- * Required of every SMS app: MMS notifications arrive here. Not handled yet: MMS support is the next step and the role
- * must not be offered to a real user before it exists (see SMS_ROLE_OFFERED in build.gradle.kts).
- */
+/** MMS announcements arrive here (delivered only to the default SMS app): the operator says a message is waiting. */
 class MmsDeliverReceiver : BroadcastReceiver() {
-    override fun onReceive(context: Context, intent: Intent) = Unit
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action != Telephony.Sms.Intents.WAP_PUSH_DELIVER_ACTION) return
+        val data = intent.getByteArrayExtra("data") ?: return
+        val subId = intent.getIntExtra("subscription", -1)
+        val pending: PendingResult? = goAsync() // null when called directly (tests)
+        thread(name = "mms-notification") {
+            try {
+                MmsComponents.inbox(context).onNotification(data, subId)
+            } catch (e: RuntimeException) {
+                // Never crash the process on an incoming message; the operator will announce it again.
+            } finally {
+                pending?.finish()
+            }
+        }
+    }
+}
+
+/** The platform finished (or failed) downloading an MMS. Not exported: only our own PendingIntent reaches it. */
+class MmsDownloadedReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val id = intent.getStringExtra(MmsInbox.EXTRA_ID) ?: return
+        val file = intent.getStringExtra(MmsInbox.EXTRA_FILE) ?: return
+        val ok = resultCode == Activity.RESULT_OK
+        val pending: PendingResult? = goAsync()
+        thread(name = "mms-downloaded") {
+            try {
+                MmsComponents.inbox(context).onDownloaded(id, file, ok)
+            } catch (e: RuntimeException) {
+                // The message stays "being received" and is marked "not received" after a while, with a retry.
+            } finally {
+                pending?.finish()
+            }
+        }
+    }
 }
 
 /** Required of every SMS app: "reply with a message" from the incoming-call screen. */

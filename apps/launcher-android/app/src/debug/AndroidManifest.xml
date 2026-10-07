@@ -50,6 +50,14 @@
             </intent-filter>
         </receiver>
 
+        <receiver android:name=".sms.MmsDownloadedReceiver" android:exported="false" />
+
+        <!-- The platform's MMS service reads and writes our short-lived transfer files through this (random 128-bit names only). -->
+        <provider
+            android:name=".mms.MmsFileProvider"
+            android:authorities="${applicationId}.mms"
+            android:exported="true" />
+
         <service
             android:name=".sms.RespondViaMessageService"
             android:exported="true"

@@ -33,6 +33,9 @@ Choix **facultatif** de la famille ([ADR 0005](adr/0005-sms-par-defaut-et-histor
 - Aucune donnée ne quitte le téléphone ni le foyer. Si le rôle est retiré, l'historique reste, mais Présence ne reçoit plus de SMS.
 - **Pas encore géré : les MMS** (messages avec image). Ne pas activer le rôle sur le téléphone utilisé au quotidien tant que ce n'est pas indiqué ici.
 
+## MMS (photos reçues par SMS)
+Si Présence est l'application de messages, les photos reçues par MMS sont téléchargées par Android (réseau mobile de l'opérateur) puis gardées dans des **fichiers privés de l'application**, jamais dans la galerie ni dans les photos du téléphone ; elles sont exclues des sauvegardes et supprimées par « Effacer les messages ». Un accusé de réception est envoyé à l'opérateur, comme par toute application de messages. Les photos ne sont **jamais** envoyées à l'écran maison (seul le mot « Photo », pour une personne connue). Seules les images sont gardées ; les autres pièces jointes (vidéo, son, fichiers) sont ignorées. Les MMS ne sont pas copiés dans la base MMS d'Android.
+
 ## Limites connues des messages
 - La base de messages **n'est pas chiffrée** (elle est protégée par le stockage privé d'Android) : un téléphone « rooté » pourrait la lire. Chiffrement Keystore possible plus tard.
 - Les codes de sécurité reçus par SMS sont **conservés en clair** dans cette base (masqués à l'écran, jamais lus à voix haute ni envoyés à l'écran maison).

@@ -8,6 +8,7 @@ import app.presence.launcher.messages.MessageStore
 import app.presence.launcher.notifications.Channel
 import app.presence.launcher.sms.SendResult
 import app.presence.launcher.sms.SmsComponents
+import app.presence.launcher.sms.MmsDeliverReceiver
 import app.presence.launcher.sms.SmsDeliverReceiver
 import app.presence.launcher.sms.SmsRole
 import app.presence.launcher.sms.TelephonyGateway
@@ -75,5 +76,28 @@ class SmsEndToEndTest {
             "the system SMS box must hold the received message",
             waitFor { gateway.readAll().any { it.body == text && it.type == Telephony.Sms.MESSAGE_TYPE_INBOX } },
         )
+    }
+
+    /**
+     * There is no operator on the emulator, so the download cannot succeed; what must hold is that an announcement is shown at
+     * once, handed to the real platform, never crashes the app, and never stays silently "being received".
+     */
+    @Test
+    fun anMmsAnnouncementIsShownAtOnceAndNeverSilentlyLost() {
+        val tx = "tx-${System.nanoTime()}"
+        val intent = Intent(Telephony.Sms.Intents.WAP_PUSH_DELIVER_ACTION)
+            .putExtra("data", MmsTestPdus.notification(tx, "http://mmsc.invalid/$tx", "+33611223344"))
+        MmsDeliverReceiver().onReceive(context, intent)
+
+        val store = MessageStore.get(context)
+        assertTrue("a bubble must appear", waitFor { store.messages.value.any { it.mms && !it.outgoing } })
+        val m = store.messages.value.single { it.mms && !it.outgoing }
+        assertEquals("+33611223344", m.address)
+        assertTrue(m.status == MessageStatus.SENDING || m.status == MessageStatus.FAILED)
+        assertTrue("the operator's announcement must be remembered for a retry", store.pending(m.id) != null)
+
+        // Whatever the platform answers, after a long wait the message is shown as not received (never stuck as "being received").
+        store.expireStaleDownloads(olderThanMs = System.currentTimeMillis() + 1)
+        assertEquals(MessageStatus.FAILED, store.status(m.id))
     }
 }

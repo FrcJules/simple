@@ -29,16 +29,17 @@ interface SmsTransport {
     fun send(address: String, parts: List<String>, sent: List<PendingIntent>, delivered: List<PendingIntent>, subId: Int)
 }
 
-class SmsManagerTransport(private val context: Context) : SmsTransport {
-    private fun manager(subId: Int): SmsManager {
-        val default = if (Build.VERSION.SDK_INT >= 31) context.getSystemService(SmsManager::class.java) else @Suppress("DEPRECATION") SmsManager.getDefault()
-        return if (subId >= 0 && Build.VERSION.SDK_INT >= 31) default.createForSubscriptionId(subId) else default
-    }
+/** The SmsManager of one SIM (or the default one when [subId] is -1), shared by SMS and MMS. */
+internal fun smsManagerFor(context: Context, subId: Int): SmsManager {
+    val default = if (Build.VERSION.SDK_INT >= 31) context.getSystemService(SmsManager::class.java) else @Suppress("DEPRECATION") SmsManager.getDefault()
+    return if (subId >= 0 && Build.VERSION.SDK_INT >= 31) default.createForSubscriptionId(subId) else default
+}
 
-    override fun divide(text: String): List<String> = manager(-1).divideMessage(text)
+class SmsManagerTransport(private val context: Context) : SmsTransport {
+    override fun divide(text: String): List<String> = smsManagerFor(context, -1).divideMessage(text)
 
     override fun send(address: String, parts: List<String>, sent: List<PendingIntent>, delivered: List<PendingIntent>, subId: Int) {
-        manager(subId).sendMultipartTextMessage(address, null, ArrayList(parts), ArrayList(sent), ArrayList(delivered))
+        smsManagerFor(context, subId).sendMultipartTextMessage(address, null, ArrayList(parts), ArrayList(sent), ArrayList(delivered))
     }
 }
 
