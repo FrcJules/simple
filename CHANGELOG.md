@@ -5,6 +5,7 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnage [Se
 ### Corrigé
 - Build du hub (`tsup.config.ts`) ; CI : permissions de `paths-filter`, `ci-ok` dépend de `changes`.
 ### Ajouté
+- Launcher : thème à fort contraste, vraies icônes, écran d'explication avant les permissions, écran « J'appelle Marie… » annulable, retour haptique, prénom configurable, orientation portrait.
 - Launcher : contacts favoris en photos, appel direct avec confirmation, tuiles appareil photo / galerie / messages.
 - Lecture des notifications (appels manqués, SMS, WhatsApp) → hub → écran maison ; événement `new_message`.
 - Transport hub ↔ téléphone en HTTPS avec certificat épinglé (ADR 0003).
