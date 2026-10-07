@@ -21,11 +21,16 @@ L'application ne lit que les notifications des applications Téléphone, Message
 - Photos choisies pour les proches : copiées dans le stockage privé de l'application, jamais dans vos contacts, et supprimées à la désinstallation.
 - Sur l'écran maison : les 200 derniers événements sont gardés **en mémoire** et disparaissent au redémarrage.
 
+## Dictée et lecture à voix haute
+Ces deux fonctions sont **facultatives** et ne se déclenchent que lorsque vous touchez le bouton. Elles utilisent les services de reconnaissance et de synthèse vocales **de votre téléphone** (généralement ceux de Google). L'application demande un traitement hors ligne, mais votre téléphone peut envoyer l'audio à ces services selon ses réglages : consultez la politique de confidentialité de votre fournisseur. L'application ne reçoit que le texte dicté.
+
+Les messages qui ressemblent à un code à usage unique ou à une alerte bancaire sont ignorés et ne sont ni conservés, ni lus, ni transmis.
+
 ## Partage
 Aucune donnée n'est vendue, partagée ou transmise à un tiers.
 
 ## Vos droits
-Vous pouvez à tout moment retirer l'accès aux notifications ou aux contacts dans les réglages d'Android, ou désinstaller l'application, ce qui supprime toutes les données stockées sur le téléphone.
+Vous pouvez effacer les messages conservés et les photos des proches dans « Réglages famille ». Vous pouvez à tout moment retirer l'accès aux notifications ou aux contacts dans les réglages d'Android, ou désinstaller l'application, ce qui supprime toutes les données stockées sur le téléphone.
 
 ## Enfants
 Présence ne s'adresse pas aux enfants.

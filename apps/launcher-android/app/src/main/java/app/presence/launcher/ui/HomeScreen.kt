@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -66,6 +67,17 @@ private fun RowScope.Tile(tile: HomeTile, badge: Int, onTile: (HomeTile) -> Unit
                     Icon(tile.icon, contentDescription = null, modifier = Modifier.size(72.dp))
                 }
                 Text(stringResource(tile.label), fontSize = 24.sp, textAlign = TextAlign.Center)
+                if (badge > 0) {
+                    Text(
+                        when {
+                            badge == 1 -> stringResource(R.string.tile_new_one)
+                            badge > 9 -> stringResource(R.string.tile_new_many)
+                            else -> stringResource(R.string.tile_new_count, badge)
+                        },
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
             }
         }
     }

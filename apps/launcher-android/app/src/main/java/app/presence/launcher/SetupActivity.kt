@@ -37,6 +37,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import app.presence.launcher.messages.MessageStore
 import app.presence.launcher.photos.ContactPhotoStore
 import app.presence.launcher.ui.Avatar
 import kotlinx.coroutines.Dispatchers
@@ -111,6 +112,18 @@ class SetupActivity : ComponentActivity() {
                         access = hasNotificationAccess()
                     }) { Text(stringResource(R.string.setup_open_access)) }
                     OutlinedButton(onClick = { access = hasNotificationAccess() }) { Text(stringResource(R.string.setup_refresh)) }
+
+                    var erased by remember { mutableStateOf(false) }
+                    OutlinedButton(onClick = {
+                        MessageStore.get(this@SetupActivity).clear()
+                        erased = true
+                    }) { Text(stringResource(R.string.setup_erase_messages)) }
+                    OutlinedButton(onClick = {
+                        photoStore.clearAll()
+                        contactsVm.refresh()
+                        erased = true
+                    }) { Text(stringResource(R.string.setup_erase_photos)) }
+                    if (erased) Text(stringResource(R.string.setup_erased))
 
                     val contacts by contactsVm.contacts.collectAsStateWithLifecycle()
                     Text(stringResource(R.string.setup_people), fontSize = 28.sp)

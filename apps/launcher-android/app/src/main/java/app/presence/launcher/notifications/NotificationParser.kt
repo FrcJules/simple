@@ -57,7 +57,7 @@ object NotificationParser {
     private fun message(category: String?, title: String, text: String, channel: Channel): Incoming? {
         if (category != "msg") return null
         val from = title.replace(unreadSuffix, "").take(MAX_NAME).trim()
-        if (from.isEmpty() || text.isEmpty()) return null
+        if (from.isEmpty() || text.isEmpty() || SensitiveText.looksSensitive(text)) return null
         return Incoming.Message(from, channel, text.take(MAX_TEXT))
     }
 }
