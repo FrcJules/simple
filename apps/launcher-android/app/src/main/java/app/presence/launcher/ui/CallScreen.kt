@@ -20,12 +20,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -44,6 +44,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.unit.sp
 import app.presence.launcher.Contact
 import app.presence.launcher.R
@@ -73,28 +74,32 @@ fun CallScreen(contacts: List<Contact>, onBack: () -> Unit, onCall: (Contact) ->
             BackButton(onBack)
         }
         selected?.let { c ->
-            AlertDialog(
-                onDismissRequest = { selected = null },
-                title = { Text(stringResource(R.string.call_confirm, c.name), fontSize = 28.sp) },
-                text = { Avatar(c, Modifier.fillMaxWidth().aspectRatio(1f)) },
-                confirmButton = {
-                    Button(
-                        onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); selected = null; onCall(c) },
-                        modifier = Modifier.heightIn(min = 72.dp),
+            Dialog(onDismissRequest = { selected = null }) {
+                Surface(shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surface) {
+                    Column(
+                        Modifier.padding(24.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Icon(Icons.Filled.Call, contentDescription = null)
-                        Spacer(Modifier.width(12.dp))
-        Text(stringResource(R.string.call_yes), fontSize = 24.sp)
+                        Text(stringResource(R.string.call_confirm, c.name), fontSize = 28.sp, textAlign = TextAlign.Center)
+                        Avatar(c, Modifier.fillMaxWidth().aspectRatio(1f))
+                        // Full-width stacked buttons: easier targets, no unequal right-aligned pair.
+                        Button(
+                            onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); selected = null; onCall(c) },
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp),
+                        ) {
+                            Icon(Icons.Filled.Call, contentDescription = null)
+                            Spacer(Modifier.width(12.dp))
+                            Text(stringResource(R.string.call_yes), fontSize = 28.sp)
+                        }
+                        OutlinedButton(onClick = { selected = null }, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
+                            Icon(Icons.Filled.Close, contentDescription = null)
+                            Spacer(Modifier.width(12.dp))
+                            Text(stringResource(R.string.call_no), fontSize = 28.sp)
+                        }
                     }
-                },
-                dismissButton = {
-                    OutlinedButton(onClick = { selected = null }, modifier = Modifier.heightIn(min = 72.dp)) {
-                        Icon(Icons.Filled.Close, contentDescription = null)
-                        Spacer(Modifier.width(12.dp))
-        Text(stringResource(R.string.call_no), fontSize = 24.sp)
-                    }
-                },
-            )
+                }
+            }
         }
     }
 }
