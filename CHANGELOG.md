@@ -4,6 +4,9 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnage [Se
 ## [Non publié]
 ### Corrigé
 - Build du hub (`tsup.config.ts`) ; CI : permissions de `paths-filter`, `ci-ok` dépend de `changes`.
+### Ajouté (SMS)
+- Application SMS par défaut (facultative) : réception, envoi, import de l'historique du téléphone, conversations par personne, statut d'envoi, codes de sécurité masqués, liens `sms:`. MMS à venir ; rôle non proposé en release.
+
 ### Modifié
 - Messages : historique **illimité** sur le téléphone (base SQLite, migration automatique de l'ancien fichier), à la place de 30 messages / 7 jours.
 

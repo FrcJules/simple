@@ -1,6 +1,6 @@
 # 0005 — Application SMS par défaut, historique illimité, photos du téléphone intouchées
 
-Statut : accepté (2026-10-07), **pas encore implémenté**. Remplace, pour les points ci-dessous, certaines décisions de l'[ADR 0004](0004-messages-conserves-sur-le-telephone.md).
+Statut : accepté (2026-10-07). **Implémenté en partie** : historique illimité et SMS (réception, envoi, import de l'historique, conversations) sont codés et testés ; les **MMS ne le sont pas encore**, donc le rôle n'est proposé que dans les versions de test (`SMS_ROLE_OFFERED`) et **ne doit pas être publié** avant les MMS. Remplace, pour les points ci-dessous, certaines décisions de l'[ADR 0004](0004-messages-conserves-sur-le-telephone.md).
 
 ## Décisions du propriétaire du projet
 1. **Photos** : Présence ne lit ni ne gère la photothèque du téléphone (« trop personnel »). Les tuiles « Photo » et « Mes photos » ouvrent l'appareil photo et la galerie du téléphone, sans développement propre. Aucune permission d'accès aux photos. (Les photos de **proches** choisies par la famille dans « Réglages famille » via le sélecteur système restent possibles : elles n'ouvrent pas la photothèque.)
@@ -17,3 +17,11 @@ Statut : accepté (2026-10-07), **pas encore implémenté**. Remplace, pour les 
 
 ## Alternative écartée par le propriétaire
 Pré-remplir le message dans l'application Messages du téléphone (comportement actuel, ADR 0004), sans responsabilité sur le rôle SMS.
+
+## Mise en œuvre (état du 7 octobre 2026)
+- **Réception** : `SmsDeliverReceiver` → boîte de réception du système (obligatoire pour les autres applications), historique local, écran maison, notification. Les codes à usage unique et alertes bancaires sont **conservés mais masqués** (jamais lus à voix haute ni envoyés à l'écran maison).
+- **Envoi** : `SmsSender` (SMS longs découpés, statut « envoi / envoyé / remis / non envoyé » suivi par pièce, échec visible).
+- **Import** : à l'acquisition du rôle, les SMS existants du téléphone sont copiés dans l'historique (tous marqués lus).
+- **Conversations** : regroupées par personne (`0612…` et `+33612…` ensemble) ; WhatsApp reste séparé (répondre changerait de canal).
+- **Garde-fou** : en version « release », le rôle n'est pas proposé tant que les MMS ne sont pas gérés (un MMS reçu serait perdu).
+- **Vérification** : tests unitaires (Robolectric, vrai PDU GSM) et test de bout en bout sur émulateur (SMS envoyé à soi-même, reçu et conservé).
