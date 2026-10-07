@@ -4,7 +4,7 @@
     <string name="greeting">Bonjour %1$s</string>
     <string name="greeting_anonymous">Bonjour</string>
     <string name="calling">J\'appelle %1$s…</string>
-    <string name="rationale_text">Pour appeler vos proches, le téléphone doit voir vos contacts.\n\nAppuyez sur « Continuer », puis sur « Autoriser ».</string>
+    <string name="rationale_text">Pour appeler vos proches, le téléphone doit voir vos contacts et pouvoir appeler.\n\nAppuyez sur « Continuer ». Le téléphone posera 2 questions : répondez « Autoriser » les 2 fois.</string>
     <string name="permission_denied">Les contacts ne sont pas autorisés.\n\nDemandez à un proche de régler l\'autorisation dans ce téléphone.</string>
     <string name="number_invalid">Ce numéro ne fonctionne pas. Demandez à un proche.</string>
     <string name="rationale_continue">Continuer</string>
