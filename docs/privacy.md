@@ -13,10 +13,13 @@ Lecture des notifications (ADR 0002) : **livrée en v0.2, à valider sur apparei
 - Le client n'envoie qu'à une adresse privée dont la résolution réelle est vérifiée, sans suivre de redirection. Le hub exige un jeton d'appairage (écriture) et un jeton d'affichage distinct (lecture) ; CORS limité à l'origine de l'écran.
 - Le jeton est exclu des sauvegardes et jamais réaffiché ni journalisé.
 
+**Messages conservés sur le téléphone** (ADR 0004) : 30 derniers messages, 7 jours au plus, stockage privé exclu des sauvegardes. Photos de proches choisies par la famille : stockage privé de l'application.
+
 **Transport** : hub ↔ téléphone en HTTPS ; le certificat auto-signé du hub est généré une fois, son empreinte SHA-256 est affichée au démarrage du hub et saisie dans « Réglages famille » : le téléphone refuse tout autre certificat (voir [ADR 0003](adr/0003-tls-epingle.md)). Le HTTP en clair est désactivé sur le téléphone ; l'écran du Pi parle au hub en loopback.
 
 **Limites connues (à traiter avant publication sur le Play Store)**
 - Le jeton est dans des préférences privées non chiffrées (Keystore à prévoir).
 - « Réglages famille » est accessible depuis la liste des applications : prévoir un code famille.
-- Les codes à usage unique reçus par SMS sont transmis ; prévoir un filtre et une option « ne pas afficher le texte ».
+- Le filtre des codes à usage unique est volontairement large (faux positifs possibles) ; une option « ne pas afficher le texte » reste à faire.
+- La dictée vocale passe par le service du système et peut envoyer l'audio chez son éditeur (ADR 0004).
 - La saisie manuelle de l'empreinte est pénible : prévoir un QR code d'appairage affiché par le hub.

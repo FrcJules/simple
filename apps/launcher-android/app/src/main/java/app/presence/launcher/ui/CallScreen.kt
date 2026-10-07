@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -43,6 +44,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.unit.sp
@@ -149,7 +151,7 @@ private fun ContactCard(contact: Contact, onClick: () -> Unit) {
 
 /** The contact's photo, or a large initial when there is none. */
 @Composable
-internal fun Avatar(contact: Contact, modifier: Modifier) {
+internal fun Avatar(contact: Contact, modifier: Modifier, initialSize: TextUnit = 72.sp) {
     val shape = RoundedCornerShape(16.dp)
     if (contact.photoUri != null) {
         AsyncImage(
@@ -160,7 +162,11 @@ internal fun Avatar(contact: Contact, modifier: Modifier) {
         )
     } else {
         Box(modifier.clip(shape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
-            Text(contact.initial, fontSize = 72.sp)
+            if (contact.initial.firstOrNull()?.isLetter() == true) {
+                Text(contact.initial, fontSize = initialSize)
+            } else {
+                Icon(Icons.Filled.Person, contentDescription = null, modifier = Modifier.fillMaxSize(0.6f))
+            }
         }
     }
 }
