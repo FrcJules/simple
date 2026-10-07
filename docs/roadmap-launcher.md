@@ -39,6 +39,6 @@
 
 ## Plan
 - **Phase 1 : photos des proches.** Choisir une photo pour un proche depuis « Réglages famille » (stockée sur le téléphone, sans permission supplémentaire).
-- **Phase 2 : messages.** Mémoire locale bornée (30 messages, 7 jours), écran Messages, détail avec lecture à voix haute, pastille « nouveaux » sur l'accueil.
+- **Phase 2 : messages.** Historique local illimité (base SQLite), écran Messages, détail avec lecture à voix haute, pastille « nouveaux » sur l'accueil.
 - **Phase 3 : répondre.** Dictée vocale puis envoi par l'application Messages ; WhatsApp via l'action de réponse de la notification.
 - **Phase 4 : fiabilité.** Faux WhatsApp pour les tests d'émulateur, sons, code famille.

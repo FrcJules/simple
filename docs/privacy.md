@@ -13,7 +13,7 @@ Lecture des notifications (ADR 0002) : **livrée en v0.2, à valider sur apparei
 - Le client n'envoie qu'à une adresse privée dont la résolution réelle est vérifiée, sans suivre de redirection. Le hub exige un jeton d'appairage (écriture) et un jeton d'affichage distinct (lecture) ; CORS limité à l'origine de l'écran.
 - Le jeton est exclu des sauvegardes et jamais réaffiché ni journalisé.
 
-**Messages conservés sur le téléphone** (ADR 0004) : 30 derniers messages, 7 jours au plus, stockage privé exclu des sauvegardes. Photos de proches choisies par la famille : stockage privé de l'application.
+**Messages conservés sur le téléphone** ([ADR 0005](adr/0005-sms-par-defaut-et-historique-illimite.md)) : tout l'historique, **sans limite de durée ni de nombre**, dans une base privée exclue des sauvegardes ; effaçable depuis « Réglages famille » et supprimé à la désinstallation. Photos de proches choisies par la famille : stockage privé de l'application.
 
 **Transport** : hub ↔ téléphone en HTTPS ; le certificat auto-signé du hub est généré une fois, son empreinte SHA-256 est affichée au démarrage du hub et saisie dans « Réglages famille » : le téléphone refuse tout autre certificat (voir [ADR 0003](adr/0003-tls-epingle.md)). Le HTTP en clair est désactivé sur le téléphone ; l'écran du Pi parle au hub en loopback.
 
