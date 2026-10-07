@@ -17,8 +17,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import app.presence.launcher.R
 
 @Composable
 fun HomeScreen(seniorName: String, onTile: (HomeTile) -> Unit = {}) {
@@ -40,7 +43,7 @@ fun HomeScreen(seniorName: String, onTile: (HomeTile) -> Unit = {}) {
 
 @Composable
 private fun RowScope.Tile(tile: HomeTile, onTile: (HomeTile) -> Unit) {
-    Card(Modifier.weight(1f).fillMaxSize().clickable { onTile(tile) }) {
+    Card(Modifier.weight(1f).fillMaxSize().clickable(role = Role.Button) { onTile(tile) }.semantics(mergeDescendants = true) {}) {
         Box(Modifier.fillMaxSize().padding(8.dp), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(tile.emoji, fontSize = 56.sp)

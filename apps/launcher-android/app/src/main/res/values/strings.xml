@@ -6,4 +6,11 @@
     <string name="tile_messages">Messages</string>
     <string name="tile_camera">Prendre une photo</string>
     <string name="tile_photos">Photos</string>
+    <string name="call_title">Qui voulez-vous appeler ?</string>
+    <string name="call_confirm">Appeler %1$s ?</string>
+    <string name="call_yes">Oui, appeler</string>
+    <string name="call_no">Non, annuler</string>
+    <string name="back">Retour</string>
+    <string name="no_contacts">Demandez à un proche d\'ajouter vos contacts.</string>
+    <string name="app_missing">Cette fonction n\'est pas disponible sur ce téléphone.</string>
 </resources>
