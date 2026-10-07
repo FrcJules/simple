@@ -3,7 +3,9 @@ package app.presence.launcher.ui
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,5 +26,8 @@ private val HighContrast = lightColorScheme(
 @Composable
 fun PresenceTheme(content: @Composable () -> Unit) = MaterialTheme(colorScheme = HighContrast) {
     // Explicit opaque background: text must never depend on the window theme or the system dark mode.
-    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background, content = content)
+    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        // Android 15+ draws edge-to-edge: keep content clear of the status/navigation bars and cutouts.
+        Box(Modifier.fillMaxSize().safeDrawingPadding()) { content() }
+    }
 }
