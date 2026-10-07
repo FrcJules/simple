@@ -6,14 +6,14 @@ plugins {
 
 android {
     namespace = "app.presence.launcher"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "app.presence.launcher"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = (System.getenv("VERSION_CODE") ?: "1").toInt()
-        versionName = System.getenv("VERSION_NAME") ?: "0.1.0"
+        versionName = (System.getenv("VERSION_NAME") ?: "0.1.0").removePrefix("v")
     }
 
     signingConfigs {
