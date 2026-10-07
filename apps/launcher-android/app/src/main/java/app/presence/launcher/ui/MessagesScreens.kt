@@ -43,11 +43,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import java.io.File
 import app.presence.launcher.R
 import app.presence.launcher.messages.AgoUnit
 import app.presence.launcher.messages.MessageItem
@@ -100,10 +103,16 @@ fun MessagesScreen(
 @Composable
 private fun preview(item: MessageItem): String {
     val m = item.message
+    val text = when {
+        m.mms && !m.outgoing && m.status == MessageStatus.SENDING -> return stringResource(R.string.mms_receiving)
+        m.mms && !m.outgoing && m.status == MessageStatus.FAILED -> return stringResource(R.string.mms_failed)
+        m.text.isBlank() && m.attachments.isNotEmpty() -> stringResource(R.string.message_photo)
+        else -> m.text
+    }
     return when {
         m.sensitive -> stringResource(R.string.message_sensitive)
-        m.outgoing -> stringResource(R.string.message_you, m.text)
-        else -> m.text
+        m.outgoing -> stringResource(R.string.message_you, text)
+        else -> text
     }
 }
 
@@ -134,6 +143,7 @@ fun ConversationScreen(
     onReply: () -> Unit,
     onBack: () -> Unit,
     onRetry: (StoredMessage) -> Unit = {},
+    onImage: (String) -> Unit = {},
 ) {
     PresenceTheme {
         Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -143,7 +153,7 @@ fun ConversationScreen(
             }
             // Newest at the bottom, anchored there: a new message never makes the list jump while someone reads further up.
             LazyColumn(Modifier.weight(1f).fillMaxWidth(), reverseLayout = true, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                items(messages.asReversed(), key = { it.id }) { Bubble(it, item.message.from, nowMs, onRetry) }
+                items(messages.asReversed(), key = { it.id }) { Bubble(it, item.message.from, nowMs, onRetry, onImage) }
             }
             if (notice != null) Text(notice, fontSize = 24.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
             val canListen = messages.any { !it.outgoing && !it.sensitive }
@@ -167,9 +177,11 @@ fun ConversationScreen(
 
 /** One message. Direction is not carried by colour alone: ours sit on the right and are labelled "Vous". */
 @Composable
-private fun Bubble(m: StoredMessage, otherName: String, nowMs: Long, onRetry: (StoredMessage) -> Unit) {
+private fun Bubble(m: StoredMessage, otherName: String, nowMs: Long, onRetry: (StoredMessage) -> Unit, onImage: (String) -> Unit) {
     var revealed by remember(m.id) { mutableStateOf(false) }
     val masked = m.sensitive && !revealed
+    val receiving = m.mms && !m.outgoing && m.status == MessageStatus.SENDING // still downloading
+    val notArrived = m.mms && !m.outgoing && m.status == MessageStatus.FAILED // download failed: can be retried
     val colors = MaterialTheme.colorScheme
     Row(Modifier.fillMaxWidth(), horizontalArrangement = if (m.outgoing) Arrangement.End else Arrangement.Start) {
         Card(
@@ -178,16 +190,30 @@ private fun Bubble(m: StoredMessage, otherName: String, nowMs: Long, onRetry: (S
         ) {
             Column(Modifier.padding(12.dp)) {
                 Text(if (m.outgoing) stringResource(R.string.message_you_label) else otherName, fontSize = 24.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(
-                    if (masked) stringResource(R.string.message_sensitive) + "\n" + stringResource(R.string.message_sensitive_tap) else m.text,
-                    fontSize = 28.sp,
-                )
+                val body = when {
+                    receiving -> stringResource(R.string.mms_receiving)
+                    notArrived -> stringResource(R.string.mms_failed)
+                    masked -> stringResource(R.string.message_sensitive) + "\n" + stringResource(R.string.message_sensitive_tap)
+                    else -> m.text
+                }
+                if (body.isNotBlank()) Text(body, fontSize = 28.sp)
+                if (!receiving && !notArrived && !masked) {
+                    m.attachments.forEach { a ->
+                        AsyncImage(
+                            model = File(a.path),
+                            contentDescription = stringResource(R.string.message_photo),
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier.fillMaxWidth().heightIn(max = 260.dp).padding(vertical = 4.dp)
+                                .clickable(role = Role.Button) { onImage(a.path) },
+                        )
+                    }
+                }
                 Text(
                     listOfNotNull(agoText(m.receivedAtMs, nowMs), if (m.outgoing) statusText(m.status) else null).joinToString(" · "),
                     fontSize = 24.sp,
                     fontWeight = if (m.outgoing && m.status == MessageStatus.FAILED) FontWeight.Bold else FontWeight.Normal,
                 )
-                if (m.outgoing && m.status == MessageStatus.FAILED) {
+                if ((m.outgoing && m.status == MessageStatus.FAILED) || notArrived) {
                     Spacer(Modifier.height(8.dp))
                     Button(onClick = { onRetry(m) }, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
                         Icon(Icons.Filled.Refresh, contentDescription = null)
