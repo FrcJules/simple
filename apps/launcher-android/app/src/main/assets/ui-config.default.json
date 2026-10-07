@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "theme": {
+    "background": "#FFFFFF",
+    "text": "#000000",
+    "primary": "#0B3D91",
+    "onPrimary": "#FFFFFF",
+    "tile": "#E3E8F2",
+    "accent": "#DCE6FF",
+    "fontScale": 1.0
+  },
+  "home": {
+    "columns": 2,
+    "tiles": [
+      { "id": "call", "action": "call", "icon": "call" },
+      { "id": "messages", "action": "messages", "icon": "sms" },
+      { "id": "camera", "action": "camera", "icon": "camera" },
+      { "id": "gallery", "action": "gallery", "icon": "photos" }
+    ]
+  }
+}
