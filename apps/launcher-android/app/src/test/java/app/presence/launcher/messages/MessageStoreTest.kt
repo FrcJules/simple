@@ -92,6 +92,15 @@ class MessageStoreTest {
     }
 
     @Test
+    fun conversationGroupsDifferentWritingsOfTheSameNumber() {
+        val s = store()
+        s.add(msg("a", 1_000, address = "0612345678"))
+        s.add(msg("b", 2_000, address = "+33612345678", outgoing = true))
+        s.add(msg("c", 3_000, address = "0699999999"))
+        assertEquals(listOf("a", "b"), s.conversation("+33 6 12 34 56 78").map { it.id })
+    }
+
+    @Test
     fun statusIsStoredAndUpdated() {
         val s = store()
         s.add(msg("o", 1_000, outgoing = true).copy(status = MessageStatus.SENDING))
