@@ -30,7 +30,12 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("boolean", "SMS_ROLE_OFFERED", "true")
+        }
         release {
+            // Do NOT offer the default-SMS role in a release until MMS are handled: an MMS we cannot read would be lost.
+            buildConfigField("boolean", "SMS_ROLE_OFFERED", "false")
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
             if (System.getenv("ANDROID_KEYSTORE_PATH") != null) signingConfig = signingConfigs.getByName("release")
@@ -42,7 +47,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
     lint { abortOnError = true }
     testOptions { unitTests { isIncludeAndroidResources = true } }
 }

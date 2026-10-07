@@ -40,7 +40,8 @@ class MessageStore(
                     body TEXT NOT NULL,
                     at INTEGER NOT NULL,
                     read INTEGER NOT NULL DEFAULT 0,
-                    status INTEGER NOT NULL DEFAULT 0
+                    status INTEGER NOT NULL DEFAULT 0,
+                    sensitive INTEGER NOT NULL DEFAULT 0
                 )""",
             )
             db.execSQL("CREATE INDEX messages_at ON messages(at)")
@@ -61,7 +62,9 @@ class MessageStore(
             db.setForeignKeyConstraintsEnabled(true) // ON DELETE CASCADE for attachments
         }
 
-        override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
+        override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+            if (oldVersion < 2) db.execSQL("ALTER TABLE messages ADD COLUMN sensitive INTEGER NOT NULL DEFAULT 0")
+        }
     }
 
     private val helper = Helper(context.applicationContext, dbName)
@@ -76,6 +79,20 @@ class MessageStore(
     @Synchronized
     fun add(message: StoredMessage) {
         helper.writableDatabase.insertWithOnConflict("messages", null, values(message), SQLiteDatabase.CONFLICT_REPLACE)
+        publish()
+    }
+
+    /** Adds many messages in one transaction (history import); an existing id is kept as it is. */
+    @Synchronized
+    fun addAll(messages: List<StoredMessage>) {
+        val db = helper.writableDatabase
+        db.beginTransaction()
+        try {
+            messages.forEach { db.insertWithOnConflict("messages", null, values(it), SQLiteDatabase.CONFLICT_IGNORE) }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
         publish()
     }
 
@@ -102,11 +119,20 @@ class MessageStore(
     fun count(): Int =
         helper.readableDatabase.rawQuery("SELECT COUNT(*) FROM messages", null).use { it.moveToFirst(); it.getInt(0) }
 
+    @Synchronized
+    fun status(id: String): MessageStatus? =
+        helper.readableDatabase.rawQuery("SELECT status FROM messages WHERE id = ?", arrayOf(id))
+            .use { if (it.moveToFirst()) MessageStatus.fromCode(it.getInt(0)) else null }
+
     /** Number of received messages not opened yet (all history, not only the recent ones). */
     @Synchronized
     fun unreadCount(): Int =
         helper.readableDatabase.rawQuery("SELECT COUNT(*) FROM messages WHERE read = 0 AND outgoing = 0", null)
             .use { it.moveToFirst(); it.getInt(0) }
+
+    /** One conversation by its [ThreadKey], oldest first. */
+    @Synchronized
+    fun thread(key: String): List<StoredMessage> = query("thread = ?", arrayOf(key), "at ASC", null)
 
     /** The whole SMS conversation with one phone number (any way of writing it), oldest first. */
     @Synchronized
@@ -126,7 +152,7 @@ class MessageStore(
                         StoredMessage(
                             id = c.getString(0), from = c.getString(1), address = c.getString(2), channel = channel,
                             outgoing = c.getInt(4) != 0, text = c.getString(5), receivedAtMs = c.getLong(6),
-                            read = c.getInt(7) != 0, status = MessageStatus.fromCode(c.getInt(8)),
+                            read = c.getInt(7) != 0, status = MessageStatus.fromCode(c.getInt(8)), sensitive = c.getInt(9) != 0,
                         ),
                     )
                 }
@@ -137,7 +163,7 @@ class MessageStore(
         put("id", m.id); put("who", m.from); put("address", m.address); put("channel", m.channel.wire)
         put("thread", ThreadKey.of(m.channel, m.address, m.from))
         put("outgoing", if (m.outgoing) 1 else 0); put("body", m.text); put("at", m.receivedAtMs)
-        put("read", if (m.read) 1 else 0); put("status", m.status.code)
+        put("read", if (m.read) 1 else 0); put("status", m.status.code); put("sensitive", if (m.sensitive) 1 else 0)
     }
 
     /** One-time import of the former bounded JSON file, then the file is deleted. */
@@ -165,10 +191,15 @@ class MessageStore(
     companion object {
         const val RECENT = 500
         private const val DB_NAME = "messages.db"
-        private const val VERSION = 1
-        private val COLUMNS = arrayOf("id", "who", "address", "channel", "outgoing", "body", "at", "read", "status")
+        private const val VERSION = 2
+        private val COLUMNS = arrayOf("id", "who", "address", "channel", "outgoing", "body", "at", "read", "status", "sensitive")
 
         @Volatile private var instance: MessageStore? = null
+
+        /** Lets tests start each case with a fresh store. */
+        internal fun replaceInstanceForTests(store: MessageStore?) {
+            instance = store
+        }
 
         fun get(context: Context): MessageStore =
             instance ?: synchronized(this) { instance ?: MessageStore(context.applicationContext).also { instance = it } }
