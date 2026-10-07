@@ -22,11 +22,13 @@ class PresenceNotificationListener : NotificationListenerService() {
             category = sbn.notification.category,
         )
         val incoming = NotificationParser.parse(raw) ?: return
+        if (duplicates.isDuplicate(sbn.key, "${raw.title}|${raw.text}", System.currentTimeMillis())) return
         val json = EventJson.build(incoming, UUID.randomUUID().toString(), EventJson.timestamp(sbn.postTime))
         executor.execute { HubClient(config).send(json) }
     }
 
     private companion object {
+        val duplicates = DuplicateFilter()
         // Bounded queue: if the hub is offline, old messages are dropped instead of piling up in memory.
         val executor = ThreadPoolExecutor(
             1, 1, 0L, TimeUnit.SECONDS, ArrayBlockingQueue(20), ThreadPoolExecutor.DiscardOldestPolicy(),
