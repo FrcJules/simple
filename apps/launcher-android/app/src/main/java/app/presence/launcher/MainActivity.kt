@@ -199,12 +199,12 @@ class MainActivity : ComponentActivity() {
 
     private fun openMessage(item: MessageItem) {
         notice = null
-        messagesVm.markRead(item.message.id)
         openMessageId = item.message.id
         screen = Screen.MESSAGE
     }
 
     private fun closeMessage() {
+        openMessageId?.let { messagesVm.markRead(it) } // read once the person is done with it
         openMessageId = null
         screen = Screen.MESSAGES
     }
