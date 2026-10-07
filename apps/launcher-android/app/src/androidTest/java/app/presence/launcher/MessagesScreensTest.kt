@@ -60,7 +60,7 @@ class MessagesScreensTest {
     @Test
     fun emptyListSaysSo() {
         rule.setContent { MessagesScreen(emptyList(), now, onOpen = {}, onWrite = {}, onBack = {}) }
-        rule.onNodeWithText("Aucun nouveau message.").assertIsDisplayed()
+        rule.onNodeWithText("Pas encore de messages.").assertIsDisplayed()
         shot("21_messages_empty")
     }
 
@@ -127,9 +127,25 @@ class MessagesScreensTest {
         rule.setContent { ConversationScreen(items[0], thread, now, canDictate = true, notice = null, onListen = {}, onReply = {}, onBack = {}) }
         rule.onNodeWithText("Bonjour papa").assertIsDisplayed()
         rule.onNodeWithText("Bonjour ma chérie").assertIsDisplayed()
-        rule.onNodeWithText("Vous · il y a 25 minutes · Remis").assertIsDisplayed()
-        rule.onNodeWithText("Vous · il y a 5 minutes · Non envoyé").assertIsDisplayed()
+        rule.onNodeWithText("il y a 25 minutes · Reçu").assertIsDisplayed()
+        rule.onNodeWithText("il y a 5 minutes · Non envoyé").assertIsDisplayed()
+        rule.onNodeWithText("Réessayer").assertIsDisplayed()
         shot("25_conversation")
+    }
+
+    @Test
+    fun aFailedMessageCanBeRetried() {
+        var retried: String? = null
+        val failed = msg("f", "À demain", 5, outgoing = true, status = MessageStatus.FAILED)
+        rule.setContent { ConversationScreen(items[0], listOf(failed), now, canDictate = true, notice = null, onListen = {}, onReply = {}, onBack = {}, onRetry = { retried = it.id }) }
+        rule.onNodeWithText("Réessayer").performClick()
+        assertEquals("f", retried)
+    }
+
+    @Test
+    fun aNewConversationOffersToDictateWithoutOpeningTheMicrophoneByItself() {
+        rule.setContent { ConversationScreen(items[0], emptyList(), now, canDictate = true, notice = null, onListen = {}, onReply = {}, onBack = {}) }
+        rule.onNodeWithText("Dire mon message").assertIsDisplayed()
     }
 
     @Test
@@ -137,7 +153,7 @@ class MessagesScreensTest {
         val thread = listOf(msg("a", "Votre code est 482913", 3, sensitive = true))
         rule.setContent { ConversationScreen(items[0], thread, now, canDictate = true, notice = null, onListen = {}, onReply = {}, onBack = {}) }
         assertEquals(0, rule.onAllNodesWithText("Votre code est 482913").fetchSemanticsNodes().size)
-        rule.onNodeWithText("Message de sécurité (code)\nTouchez pour voir").performClick()
+        rule.onNodeWithText("Message de sécurité (code)\nTouchez pour voir. Un code : ne le donnez à personne.").performClick()
         rule.onNodeWithText("Votre code est 482913").assertIsDisplayed()
         // and it is never offered to be read aloud
         assertEquals(0, rule.onAllNodesWithText("Écouter").fetchSemanticsNodes().size)

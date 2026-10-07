@@ -71,7 +71,7 @@ dependencies {
     androidTestImplementation("androidx.test:runner:1.6.2")
     androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
-    testImplementation("org.json:json:20240303")
+    testImplementation("com.vaadin.external.google:android-json:0.0.20131108.vaadin1") // Apache-2.0 org.json for plain JVM tests
     // Test-only (Apache-2.0): runs SQLite, receivers and SMS code on the JVM, so they can be checked without an emulator.
     testImplementation("org.robolectric:robolectric:4.14.1")
     testImplementation("androidx.test:core:1.6.1")

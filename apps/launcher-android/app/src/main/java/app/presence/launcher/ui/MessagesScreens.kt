@@ -9,12 +9,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Button
@@ -32,7 +33,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -133,6 +133,7 @@ fun ConversationScreen(
     onListen: () -> Unit,
     onReply: () -> Unit,
     onBack: () -> Unit,
+    onRetry: (StoredMessage) -> Unit = {},
 ) {
     PresenceTheme {
         Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -140,49 +141,60 @@ fun ConversationScreen(
                 Avatar(item.displayContact, Modifier.size(72.dp), initialSize = 36.sp)
                 Text(item.message.from, fontSize = 32.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            val listState = rememberLazyListState()
-            LaunchedEffect(messages.size) { if (messages.isNotEmpty()) listState.scrollToItem(messages.lastIndex) }
-            LazyColumn(Modifier.weight(1f).fillMaxWidth(), state = listState, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                items(messages, key = { it.id }) { Bubble(it, nowMs) }
+            // Newest at the bottom, anchored there: a new message never makes the list jump while someone reads further up.
+            LazyColumn(Modifier.weight(1f).fillMaxWidth(), reverseLayout = true, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                items(messages.asReversed(), key = { it.id }) { Bubble(it, item.message.from, nowMs, onRetry) }
             }
             if (notice != null) Text(notice, fontSize = 24.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
             val canListen = messages.any { !it.outgoing && !it.sensitive }
-            // One main action: listen while something new is waiting, reply once it has been heard.
-            val listenIsMain = canListen && (item.unread > 0 || !item.canReply || !canDictate)
-            if (listenIsMain) ListenButton(onListen, main = true)
-            if (item.canReply && canDictate) {
-                ReplyButton(onReply, main = !listenIsMain)
-            } else if (item.canReply) {
+            val canWrite = item.canReply && canDictate
+            var heard by remember { mutableStateOf(false) }
+            // Fixed places (Écouter left, Répondre right); only the emphasis moves: listen first while something new waits.
+            val listenIsMain = canListen && !heard && (item.unread > 0 || !canWrite)
+            if (item.canReply && !canDictate) {
                 Text(stringResource(R.string.dictate_unavailable), fontSize = 24.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
             }
-            if (canListen && !listenIsMain) ListenButton(onListen, main = false)
+            if (canListen || canWrite) {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                    if (canListen) ListenButton({ heard = true; onListen() }, main = listenIsMain, modifier = Modifier.weight(1f))
+                    if (canWrite) ReplyButton(onReply, main = !listenIsMain, isNew = messages.isEmpty(), modifier = Modifier.weight(1f))
+                }
+            }
             BackButton(onBack)
         }
     }
 }
 
-/** One message. Direction is not carried by colour alone: ours sit on the right and say "Vous". */
+/** One message. Direction is not carried by colour alone: ours sit on the right and are labelled "Vous". */
 @Composable
-private fun Bubble(m: StoredMessage, nowMs: Long) {
+private fun Bubble(m: StoredMessage, otherName: String, nowMs: Long, onRetry: (StoredMessage) -> Unit) {
     var revealed by remember(m.id) { mutableStateOf(false) }
     val masked = m.sensitive && !revealed
     val colors = MaterialTheme.colorScheme
     Row(Modifier.fillMaxWidth(), horizontalArrangement = if (m.outgoing) Arrangement.End else Arrangement.Start) {
         Card(
-            modifier = Modifier.fillMaxWidth(0.92f).then(if (masked) Modifier.clickable(role = Role.Button) { revealed = true } else Modifier),
+            modifier = Modifier.fillMaxWidth(0.82f).then(if (masked) Modifier.clickable(role = Role.Button) { revealed = true } else Modifier),
             colors = CardDefaults.cardColors(containerColor = if (m.outgoing) colors.primaryContainer else colors.surfaceContainerHighest),
         ) {
             Column(Modifier.padding(12.dp)) {
+                Text(if (m.outgoing) stringResource(R.string.message_you_label) else otherName, fontSize = 24.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
                     if (masked) stringResource(R.string.message_sensitive) + "\n" + stringResource(R.string.message_sensitive_tap) else m.text,
                     fontSize = 28.sp,
                 )
-                val status = if (m.outgoing) statusText(m.status) else null
                 Text(
-                    listOfNotNull(if (m.outgoing) stringResource(R.string.message_you_label) else null, agoText(m.receivedAtMs, nowMs), status).joinToString(" · "),
+                    listOfNotNull(agoText(m.receivedAtMs, nowMs), if (m.outgoing) statusText(m.status) else null).joinToString(" · "),
                     fontSize = 24.sp,
                     fontWeight = if (m.outgoing && m.status == MessageStatus.FAILED) FontWeight.Bold else FontWeight.Normal,
                 )
+                if (m.outgoing && m.status == MessageStatus.FAILED) {
+                    Spacer(Modifier.height(8.dp))
+                    Button(onClick = { onRetry(m) }, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
+                        Icon(Icons.Filled.Refresh, contentDescription = null)
+                        Spacer(Modifier.width(12.dp))
+                        Text(stringResource(R.string.message_retry), fontSize = 24.sp)
+                    }
+                }
             }
         }
     }
@@ -198,25 +210,25 @@ private fun statusText(status: MessageStatus): String? = when (status) {
 }
 
 @Composable
-private fun ListenButton(onClick: () -> Unit, main: Boolean) {
+private fun ListenButton(onClick: () -> Unit, main: Boolean, modifier: Modifier = Modifier) {
     val content: @Composable () -> Unit = {
         Icon(Icons.Filled.VolumeUp, contentDescription = null)
-        Spacer(Modifier.width(12.dp))
-        Text(stringResource(R.string.message_listen), fontSize = 28.sp)
+        Spacer(Modifier.width(8.dp))
+        Text(stringResource(R.string.message_listen), fontSize = 24.sp)
     }
-    if (main) Button(onClick = onClick, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) { content() }
-    else OutlinedButton(onClick = onClick, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) { content() }
+    if (main) Button(onClick = onClick, modifier = modifier.heightIn(min = 72.dp)) { content() }
+    else OutlinedButton(onClick = onClick, modifier = modifier.heightIn(min = 72.dp)) { content() }
 }
 
 @Composable
-private fun ReplyButton(onClick: () -> Unit, main: Boolean) {
+private fun ReplyButton(onClick: () -> Unit, main: Boolean, isNew: Boolean, modifier: Modifier = Modifier) {
     val content: @Composable () -> Unit = {
         Icon(Icons.Filled.Mic, contentDescription = null)
-        Spacer(Modifier.width(12.dp))
-        Text(stringResource(R.string.message_reply), fontSize = 28.sp)
+        Spacer(Modifier.width(8.dp))
+        Text(stringResource(if (isNew) R.string.message_dictate else R.string.message_reply), fontSize = 24.sp)
     }
-    if (main) Button(onClick = onClick, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) { content() }
-    else OutlinedButton(onClick = onClick, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) { content() }
+    if (main) Button(onClick = onClick, modifier = modifier.heightIn(min = 72.dp)) { content() }
+    else OutlinedButton(onClick = onClick, modifier = modifier.heightIn(min = 72.dp)) { content() }
 }
 
 /**
@@ -232,14 +244,20 @@ fun ReplyConfirmScreen(
     onRedo: () -> Unit,
     onCancel: () -> Unit,
     directSend: Boolean = false,
+    isNew: Boolean = false,
+    notice: String? = null,
 ) {
     PresenceTheme {
-        Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Avatar(item.displayContact, Modifier.fillMaxWidth(0.4f).aspectRatio(1f))
-            Text(stringResource(R.string.reply_to, item.message.from), fontSize = 28.sp, textAlign = TextAlign.Center)
-            Box(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
-                Text(text, fontSize = 30.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-            }
+        // The whole screen scrolls: on a small screen or with a large font the text to check must never be squeezed out.
+        Column(
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Avatar(item.displayContact, Modifier.fillMaxWidth(0.28f).aspectRatio(1f))
+            Text(stringResource(if (isNew) R.string.write_to else R.string.reply_to, item.message.from), fontSize = 28.sp, textAlign = TextAlign.Center)
+            Text(text, fontSize = 30.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp))
+            if (notice != null) Text(notice, fontSize = 24.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
             Text(stringResource(if (directSend) R.string.reply_hint_direct else R.string.reply_hint), fontSize = 24.sp, textAlign = TextAlign.Center)
             Button(onClick = onSend, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
                 Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null)

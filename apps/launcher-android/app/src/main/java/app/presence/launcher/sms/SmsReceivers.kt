@@ -25,6 +25,8 @@ class SmsDeliverReceiver : BroadcastReceiver() {
         thread(name = "sms-deliver") {
             try {
                 SmsComponents.inbox(context).onReceived(address, body, first.timestampMillis, subId)
+            } catch (e: RuntimeException) {
+                // Never crash the process on an incoming SMS; SmsInbox already isolates each step.
             } finally {
                 pending?.finish()
             }

@@ -2,7 +2,7 @@
 
 - Les photos, appels, messages et contacts sont traités **localement** (téléphone et Raspberry Pi).
 - Aucune télémétrie, aucun traceur, aucun envoi vers un service tiers par défaut.
-- Permissions Android demandées au strict nécessaire, expliquées en langage simple. Permissions actuelles : `READ_CONTACTS` (favoris uniquement, lecture seule, pour afficher les photos) et `CALL_PHONE` (appel après confirmation explicite ; repli sur le composeur si refusée). Pas de journal d’appels ni de SMS : lecture des notifications uniquement, liste blanche d’applications (ADR 0002).
+- Permissions Android demandées au strict nécessaire, expliquées en langage simple. Permissions actuelles : `READ_CONTACTS` (favoris uniquement, lecture seule, pour afficher les photos) et `CALL_PHONE` (appel après confirmation explicite ; repli sur le composeur si refusée). Journal d’appels : jamais lu. SMS : lus par les notifications, ou reçus directement si la famille fait de Présence l’application de messages (section « SMS » plus bas, versions de test uniquement pour l’instant) ; lecture des notifications, liste blanche d’applications (ADR 0002).
 - Le hub n'accepte que les requêtes authentifiées par un jeton d'appairage.
 - Le senior et sa famille peuvent supprimer toutes les données en effaçant l'application / le dossier de données du Pi.
 - Toute fonction envoyant des données hors du foyer doit être optionnelle, désactivée par défaut et justifiée par un ADR.
@@ -32,3 +32,10 @@ Choix **facultatif** de la famille ([ADR 0005](adr/0005-sms-par-defaut-et-histor
 - Seuls le nom de l'expéditeur et le texte (500 caractères au plus) des messages **ordinaires** sont envoyés à l'écran maison appairé, chiffrés, sur le réseau local.
 - Aucune donnée ne quitte le téléphone ni le foyer. Si le rôle est retiré, l'historique reste, mais Présence ne reçoit plus de SMS.
 - **Pas encore géré : les MMS** (messages avec image). Ne pas activer le rôle sur le téléphone utilisé au quotidien tant que ce n'est pas indiqué ici.
+
+## Limites connues des messages
+- La base de messages **n'est pas chiffrée** (elle est protégée par le stockage privé d'Android) : un téléphone « rooté » pourrait la lire. Chiffrement Keystore possible plus tard.
+- Les codes de sécurité reçus par SMS sont **conservés en clair** dans cette base (masqués à l'écran, jamais lus à voix haute ni envoyés à l'écran maison).
+- « Effacer les messages » supprime l'historique **de Présence** (avec écrasement et compactage de la base). La boîte SMS **du système** (celle d'Android, lue par les autres applications) n'est pas touchée, et elle survit à la désinstallation de Présence.
+- À l'écran maison, seuls les SMS de **personnes connues** (présentes dans les contacts) sont affichés ; ceux d'un numéro inconnu ou d'une entreprise restent sur le téléphone.
+- Un expéditeur de SMS peut se faire passer pour quelqu'un : un faux SMS « de Marie » (même numéro falsifié) affichera sa photo. C'est inhérent au SMS.
