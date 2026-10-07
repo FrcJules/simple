@@ -97,7 +97,6 @@ jobs:
           if-no-files-found: warn
           path: |
             apps/launcher-android/app/build/screenshots/**
-            apps/launcher-android/app/build/reports/androidTests/**
 
   # Single required status check for branch protection.
   ci-ok:
