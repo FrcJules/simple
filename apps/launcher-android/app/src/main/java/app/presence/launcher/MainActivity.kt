@@ -12,6 +12,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -19,13 +20,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import app.presence.launcher.config.TileAction
+import app.presence.launcher.config.TileConfig
+import app.presence.launcher.config.UiConfig
+import app.presence.launcher.config.UiConfigStore
 import app.presence.launcher.messages.MessageItem
 import app.presence.launcher.messages.MessagesViewModel
 import app.presence.launcher.messages.Speaker
 import app.presence.launcher.ui.CallScreen
 import app.presence.launcher.ui.CallingScreen
 import app.presence.launcher.ui.HomeScreen
-import app.presence.launcher.ui.HomeTile
+import app.presence.launcher.ui.LocalThemeConfig
 import app.presence.launcher.ui.MessageDetailScreen
 import app.presence.launcher.ui.MessageScreen
 import app.presence.launcher.ui.MessagesScreen
@@ -38,6 +43,8 @@ class MainActivity : ComponentActivity() {
     private val contactsVm: ContactsViewModel by viewModels()
     private val messagesVm: MessagesViewModel by viewModels()
     private val profile by lazy { ProfileStore(this) }
+    private val uiConfigStore by lazy { UiConfigStore(this) }
+    private var uiConfig by mutableStateOf(UiConfig.Default)
     private var speakerInstance: Speaker? = null
     private fun speaker() = speakerInstance ?: Speaker(this).also { speakerInstance = it }
     private var screen by mutableStateOf(Screen.HOME)
@@ -81,6 +88,7 @@ class MainActivity : ComponentActivity() {
             val unread by messagesVm.unread.collectAsStateWithLifecycle()
             val open: MessageItem? = messages.firstOrNull { it.message.id == openMessageId }
             val c = calling
+            CompositionLocalProvider(LocalThemeConfig provides uiConfig.theme) {
             if (c != null) {
                 BackHandler { calling = null }
                 CallingScreen(
@@ -93,7 +101,7 @@ class MainActivity : ComponentActivity() {
                     },
                 )
             } else when (screen) {
-                Screen.HOME -> HomeScreen(seniorName = seniorName, unreadMessages = unread, onTile = ::onTile)
+                Screen.HOME -> HomeScreen(seniorName = seniorName, unreadMessages = unread, config = uiConfig, onTile = ::onTile)
                 Screen.RATIONALE -> {
                     BackHandler { screen = Screen.HOME }
                     PermissionRationaleScreen(
@@ -159,12 +167,14 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+            }
         }
     }
 
     override fun onResume() {
         super.onResume()
         seniorName = profile.name() // may have been changed in "Réglages famille"
+        uiConfig = uiConfigStore.load()
         if (granted(Manifest.permission.READ_CONTACTS)) {
             contactsVm.refresh()
             messagesVm.refresh() // a photo may have been chosen in "Réglages famille"
@@ -190,11 +200,11 @@ class MainActivity : ComponentActivity() {
         screen = Screen.HOME
     }
 
-    private fun onTile(tile: HomeTile) = when (tile) {
-        HomeTile.CALL -> openCallScreen()
-        HomeTile.MESSAGES -> screen = Screen.MESSAGES
-        HomeTile.CAMERA -> LauncherActions.camera(this)
-        HomeTile.PHOTOS -> LauncherActions.gallery(this)
+    private fun onTile(tile: TileConfig) = when (tile.action) {
+        TileAction.CALL -> openCallScreen()
+        TileAction.MESSAGES -> screen = Screen.MESSAGES
+        TileAction.CAMERA -> LauncherActions.camera(this)
+        TileAction.GALLERY -> LauncherActions.gallery(this)
     }
 
     private fun openMessage(item: MessageItem) {

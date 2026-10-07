@@ -29,6 +29,9 @@ Monorepo open source (Apache-2.0) d'un assistant numérique pour personne âgée
 - Pas de secret dans le dépôt ; `.env.example` documente les variables.
 - Ne pas ajouter de dépendance sans justification (taille, licence compatible Apache-2.0, maintenance).
 
+## Personnalisation
+L'apparence de l'accueil (thème, tuiles) vient d'un JSON validé : `docs/customization.md`, `apps/launcher-android/app/src/main/java/app/presence/launcher/config/`. Toute nouvelle couleur ou action passe par ce format ; une couleur en dur dans l'interface est un défaut.
+
 ## Agents (`.claude/agents`)
 `android-dev`, `display-dev`, `senior-ux-reviewer`, `privacy-reviewer`, `ci-release`. Les utiliser en revue : tout changement d'UI passe par `senior-ux-reviewer`, tout accès à des données personnelles par `privacy-reviewer`.
 Commandes : `/check` (qualité complète), `/adr <titre>` (nouvel ADR).
