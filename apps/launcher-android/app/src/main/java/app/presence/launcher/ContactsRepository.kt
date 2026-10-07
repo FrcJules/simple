@@ -6,6 +6,23 @@ import android.provider.ContactsContract.Contacts
 
 /** Reads starred contacts: the family stars the people Jean-Pierre should see, no setup screen needed. */
 class ContactsRepository(private val resolver: ContentResolver) {
+    /** The contact whose display name is [name] (ignoring case), or null. Used to put a face on a sender. */
+    fun byName(name: String): Contact? {
+        if (name.isBlank()) return null
+        resolver.query(
+            Phone.CONTENT_URI,
+            arrayOf(Phone.CONTACT_ID, Phone.DISPLAY_NAME, Phone.NUMBER, Phone.PHOTO_URI),
+            "${Phone.DISPLAY_NAME} = ? COLLATE NOCASE",
+            arrayOf(name.trim()),
+            null,
+        )?.use { c ->
+            if (c.moveToFirst()) {
+                return Contact(c.getLong(0), c.getString(1).orEmpty(), c.getString(2).orEmpty(), c.getString(3)?.takeIf { it.startsWith("content://") })
+            }
+        }
+        return null
+    }
+
     fun starred(): List<Contact> {
         val projection = arrayOf(Phone.CONTACT_ID, Phone.DISPLAY_NAME, Phone.NUMBER, Phone.PHOTO_URI)
         val seen = LinkedHashMap<Long, Contact>()

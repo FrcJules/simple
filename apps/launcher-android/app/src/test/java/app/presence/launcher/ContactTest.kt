@@ -25,4 +25,7 @@ class ContactTest {
 
     @Test
     fun initialIsUppercasedFirstLetter() = assertEquals("M", Contact(1, " marie", "0600000000", null).initial)
+
+    @Test
+    fun smsUriKeepsDigitsAndLeadingPlus() = assertEquals("smsto:+33612345678", smsUri(" +33 6 12 34 56 78"))
 }
