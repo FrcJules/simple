@@ -39,3 +39,6 @@ Présence ne s'adresse pas aux enfants.
 Questions : ouvrez une issue sur https://github.com/FrcJules/presence ou écrivez à jules.francois@epitech.eu.
 
 Le code source est public : vous pouvez vérifier ces engagements.
+
+## Si Présence devient votre application de messages (SMS)
+C'est un choix facultatif, fait dans l'application. Présence reçoit alors vos SMS : ils sont enregistrés dans la boîte de réception d'Android (comme avec toute application de messages) et copiés dans l'historique de Présence, **sur votre téléphone uniquement**, sans limite de durée tant que vous ne l'effacez pas (« Réglages famille »). Les messages existants sont copiés à l'activation. Les codes de sécurité sont masqués et jamais lus à voix haute. Aucun message n'est envoyé à Internet ni au développeur ; seuls les messages ordinaires peuvent être affichés sur votre écran maison, sur votre réseau Wi-Fi, de façon chiffrée.

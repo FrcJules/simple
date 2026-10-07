@@ -14,3 +14,5 @@ Réponses proposées. **À relire avec les définitions de Google avant de valid
 **Dictée et lecture vocale** : elles passent par des services du système (reconnaissance et synthèse vocales de l'appareil, généralement Google). L'application n'envoie aucun audio elle-même et ne reçoit que le texte. Ces traitements sont déclenchés par l'utilisateur et relèvent de l'éditeur du service vocal ; à mentionner dans la fiche. À valider avec les définitions de Google avant d'affirmer « aucune donnée partagée ».
 
 ⚠️ Si un jour l'application envoie des données à un serveur (sauvegarde, analytics, planificateur, etc.), cette page doit être refaite : contacts, messages et appels deviennent alors des données « collectées ».
+
+**Application SMS par défaut** : les SMS restent sur le téléphone (boîte du système + historique privé) ; rien n'est envoyé au développeur ni à un tiers. La réponse « aucune donnée collectée » reste exacte, mais la déclaration SMS de la Play Console (voir [declarations.md](declarations.md)) est obligatoire en plus.

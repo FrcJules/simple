@@ -23,3 +23,12 @@ Lecture des notifications (ADR 0002) : **livrée en v0.2, à valider sur apparei
 - Le filtre des codes à usage unique est volontairement large (faux positifs possibles) ; une option « ne pas afficher le texte » reste à faire.
 - La dictée vocale passe par le service du système et peut envoyer l'audio chez son éditeur (ADR 0004).
 - La saisie manuelle de l'empreinte est pénible : prévoir un QR code d'appairage affiché par le hub.
+
+## SMS (si Présence devient l'application de messages)
+Choix **facultatif** de la famille ([ADR 0005](adr/0005-sms-par-defaut-et-historique-illimite.md)). Présence reçoit alors vos SMS à la place de l'application d'origine (permissions `READ_SMS`, `SEND_SMS`, `RECEIVE_SMS`, accordées par Android uniquement tant que Présence est l'application par défaut).
+- Les SMS sont enregistrés dans la boîte de réception **du système** (comme toute application de messages) et copiés dans l'historique privé de Présence, **sur le téléphone seulement**, sans limite de durée, effaçable depuis « Réglages famille ».
+- À l'activation, les SMS déjà présents sont copiés dans l'historique (marqués lus).
+- Les codes à usage unique et alertes bancaires sont conservés mais **masqués** dans l'application, jamais lus à voix haute ni envoyés à l'écran maison.
+- Seuls le nom de l'expéditeur et le texte (500 caractères au plus) des messages **ordinaires** sont envoyés à l'écran maison appairé, chiffrés, sur le réseau local.
+- Aucune donnée ne quitte le téléphone ni le foyer. Si le rôle est retiré, l'historique reste, mais Présence ne reçoit plus de SMS.
+- **Pas encore géré : les MMS** (messages avec image). Ne pas activer le rôle sur le téléphone utilisé au quotidien tant que ce n'est pas indiqué ici.
