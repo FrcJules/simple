@@ -1,0 +1,37 @@
+package app.presence.launcher.sms
+
+import app.presence.launcher.messages.StoredMessage
+import app.presence.launcher.notifications.Channel
+import app.presence.launcher.notifications.Incoming
+import app.presence.launcher.notifications.SensitiveText
+import java.util.UUID
+
+/**
+ * What happens when an SMS arrives and we are the default SMS app: it is recorded in the system inbox (other apps and the
+ * phone rely on it), kept in our own history, forwarded to the home display and announced.
+ *
+ * A one-time code or banking alert is kept (it is the person's own SMS) but flagged: masked in lists, never read aloud,
+ * never forwarded to the home display. Only messages from known contacts are forwarded to the display at all.
+ */
+class SmsInbox(
+    private val gateway: SmsProviderGateway,
+    private val add: (StoredMessage) -> Unit,
+    private val nameFor: (String) -> String?,
+    private val forward: (Incoming) -> Unit,
+    private val notify: (StoredMessage) -> Unit,
+    private val clock: () -> Long = System::currentTimeMillis,
+    private val newId: () -> String = { "sms-${UUID.randomUUID()}" },
+) {
+    fun onReceived(address: String, body: String, dateSentMs: Long, subId: Int) {
+        val now = clock()
+        val sensitive = SensitiveText.looksSensitive(body)
+        val contactName = nameFor(address)?.takeIf { it.isNotBlank() }
+        val message = StoredMessage(newId(), contactName ?: address, Channel.SMS, body, now, address = address, sensitive = sensitive)
+        // A received SMS must never be lost: each step is isolated so that one failing does not stop the others.
+        runCatching { add(message) }
+        runCatching { gateway.insertIncoming(address, body, now, dateSentMs, subId) }
+        // The home display is visible from the whole room: only people we know appear there, never a stranger's or a company's text.
+        if (!sensitive && contactName != null) runCatching { forward(Incoming.Message(contactName.take(60), Channel.SMS, body.take(500))) }
+        runCatching { notify(message) }
+    }
+}

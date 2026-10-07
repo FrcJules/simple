@@ -1,7 +1,9 @@
 package app.presence.launcher
 
 import android.content.ContentResolver
+import android.net.Uri
 import android.provider.ContactsContract.CommonDataKinds.Phone
+import android.provider.ContactsContract.PhoneLookup
 import android.provider.ContactsContract.Contacts
 
 /** Reads starred contacts: the family stars the people Jean-Pierre should see, no setup screen needed. */
@@ -29,6 +31,19 @@ class ContactsRepository(private val resolver: ContentResolver) {
             }
         }
         return found.values.singleOrNull()
+    }
+
+    /** The contact owning [number] (the system matches the different ways of writing it), or null. */
+    fun byNumber(number: String): Contact? {
+        if (number.isBlank() || number.any { it.isLetter() }) return null
+        val uri = Uri.withAppendedPath(PhoneLookup.CONTENT_FILTER_URI, Uri.encode(number))
+        return try {
+            resolver.query(uri, arrayOf(PhoneLookup.CONTACT_ID, PhoneLookup.DISPLAY_NAME, PhoneLookup.PHOTO_URI), null, null, null)?.use { c ->
+                if (c.moveToFirst()) Contact(c.getLong(0), c.getString(1).orEmpty(), number, c.getString(2)?.takeIf { it.startsWith("content://") }) else null
+            }
+        } catch (e: SecurityException) {
+            null // contacts permission not granted: the number will be shown instead of a name
+        }
     }
 
     fun starred(): List<Contact> {

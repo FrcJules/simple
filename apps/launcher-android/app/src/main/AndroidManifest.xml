@@ -44,6 +44,8 @@
             </intent-filter>
         </activity>
 
+        <receiver android:name=".sms.SmsStatusReceiver" android:exported="false" />
+
         <service
             android:name=".notifications.PresenceNotificationListener"
             android:exported="true"
