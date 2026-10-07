@@ -9,6 +9,21 @@ describe("presenceEvent", () => {
     expect(r.success).toBe(true);
   });
 
+  it("accepts a WhatsApp message and rejects an empty or oversized one", () => {
+    const msg = { ...base, type: "new_message", from: { name: "Marie" }, channel: "whatsapp", text: "Bonjour !" };
+    expect(presenceEvent.safeParse(msg).success).toBe(true);
+    expect(presenceEvent.safeParse({ ...msg, text: "" }).success).toBe(false);
+    expect(presenceEvent.safeParse({ ...msg, text: "x".repeat(501) }).success).toBe(false);
+    expect(presenceEvent.safeParse({ ...msg, channel: "telegram" }).success).toBe(false);
+  });
+
+  it("rejects non-http photo URLs", () => {
+    const e = { ...base, type: "new_photo", from: { name: "Jules" } };
+    expect(presenceEvent.safeParse({ ...e, photoUrl: "file:///etc/passwd" }).success).toBe(false);
+    expect(presenceEvent.safeParse({ ...e, photoUrl: "javascript:alert(1)" }).success).toBe(false);
+    expect(presenceEvent.safeParse({ ...e, photoUrl: "http://192.168.1.5/p.jpg" }).success).toBe(true);
+  });
+
   it("rejects an unknown type", () => {
     expect(presenceEvent.safeParse({ ...base, type: "nope" }).success).toBe(false);
   });

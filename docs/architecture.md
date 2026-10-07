@@ -19,6 +19,9 @@
 
 Décisions : [adr/](adr/).
 
+## Transport
+Écran → hub : HTTP loopback (même appareil). Téléphone → hub : HTTPS, certificat auto-signé épinglé par empreinte ([ADR 0003](adr/0003-tls-epingle.md)).
+
 ## CI/CD
 - `ci.yml` : lint/typecheck/test/build web (Node 22) et lint/test/APK Android, filtré par chemins ; job `ci-ok` = check requis.
 - `codeql.yml` : analyse statique hebdomadaire et sur PR.
