@@ -1,72 +1,138 @@
 package app.presence.launcher.messages
 
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import app.presence.launcher.notifications.Channel
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import java.io.File
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class MessageStoreTest {
     @get:Rule val tmp = TemporaryFolder()
+    private val context: Context get() = ApplicationProvider.getApplicationContext()
+    private val dbName = "test-messages.db"
 
-    private val day = 24L * 3600 * 1000
-    private fun msg(id: String, at: Long, read: Boolean = false) = StoredMessage(id, "Marie", Channel.SMS, "Bonjour $id", at, read)
-    private fun store(file: File, now: Long, max: Int = 30) = MessageStore(file, maxMessages = max, clock = { now })
+    @Before fun clean() { context.deleteDatabase(dbName) }
+    @After fun cleanUp() { context.deleteDatabase(dbName) }
+
+    private fun store(legacy: File? = null) = MessageStore(context, dbName, legacy)
+    private fun msg(id: String, at: Long, read: Boolean = false, address: String? = null, outgoing: Boolean = false) =
+        StoredMessage(id, "Marie", Channel.SMS, "Bonjour $id", at, read, outgoing, address)
 
     @Test
     fun addedMessagesSurviveARestart() {
-        val f = File(tmp.root, "m.json")
-        store(f, 10_000).add(msg("a", 9_000))
-        val again = store(f, 10_000)
-        assertEquals(listOf("a"), again.messages.value.map { it.id })
-        assertEquals("Bonjour a", again.messages.value.single().text)
-        assertEquals(Channel.SMS, again.messages.value.single().channel)
+        store().add(msg("a", 9_000, address = "+33600000001"))
+        val again = store().messages.value.single()
+        assertEquals("a", again.id)
+        assertEquals("Bonjour a", again.text)
+        assertEquals(Channel.SMS, again.channel)
+        assertEquals("+33600000001", again.address)
     }
 
     @Test
-    fun keepsOnlyTheMostRecentMessages() {
-        val s = store(File(tmp.root, "m.json"), 100_000, max = 3)
-        (1..5).forEach { s.add(msg("m$it", it * 1_000L)) }
-        assertEquals(listOf("m3", "m4", "m5"), s.messages.value.map { it.id })
+    fun historyIsNeverTrimmedByAgeOrCount() {
+        val s = store()
+        val tenYears = 10L * 365 * 24 * 3600 * 1000
+        s.add(msg("ancient", 1_000, address = "+9"))
+        (1..700).forEach { s.add(msg("m$it", tenYears + it)) }
+        assertEquals(701, s.count()) // all kept in the database
+        assertEquals(MessageStore.RECENT, s.messages.value.size) // the screens only load the recent ones
+        assertEquals("m700", s.messages.value.last().id)
+        assertEquals("ancient", store().conversation("+9").single().id) // still there, just not loaded in the recent list
     }
 
     @Test
-    fun dropsMessagesOlderThanAWeek() {
-        val now = 20 * day
-        val s = store(File(tmp.root, "m.json"), now)
-        s.add(msg("old", now - 8 * day))
-        s.add(msg("fresh", now - 1 * day))
-        assertEquals(listOf("fresh"), s.messages.value.map { it.id })
+    fun sameIdReplacesInsteadOfDuplicating() {
+        val s = store()
+        s.add(msg("a", 1_000))
+        s.add(msg("a", 1_000).copy(text = "changed"))
+        assertEquals(1, s.count())
+        assertEquals("changed", s.messages.value.single().text)
     }
 
     @Test
     fun markReadChangesOnlyThatMessageAndPersists() {
-        val f = File(tmp.root, "m.json")
-        val s = store(f, 10_000)
+        val s = store()
         s.add(msg("a", 1_000))
         s.add(msg("b", 2_000))
         s.markRead("a")
-        val reloaded = store(f, 10_000).messages.value
+        val reloaded = store().messages.value
         assertTrue(reloaded.first { it.id == "a" }.read)
         assertFalse(reloaded.first { it.id == "b" }.read)
+        assertEquals(1, store().unreadCount())
     }
 
     @Test
-    fun aCorruptFileStartsEmptyInsteadOfCrashing() {
-        val f = File(tmp.root, "m.json").apply { writeText("{ not json") }
-        assertEquals(emptyList<StoredMessage>(), store(f, 10_000).messages.value)
+    fun outgoingMessagesDoNotCountAsUnread() {
+        val s = store()
+        s.add(msg("in", 1_000))
+        s.add(msg("out", 2_000, outgoing = true))
+        assertEquals(1, s.unreadCount())
     }
 
     @Test
-    fun clearEmptiesTheStoreAndTheFile() {
-        val f = File(tmp.root, "m.json")
-        val s = store(f, 10_000)
+    fun conversationReturnsOneNumberOldestFirst() {
+        val s = store()
+        s.add(msg("c", 3_000, address = "+1"))
+        s.add(msg("a", 1_000, address = "+1"))
+        s.add(msg("x", 2_000, address = "+2"))
+        s.add(msg("b", 2_500, address = "+1", outgoing = true))
+        assertEquals(listOf("a", "b", "c"), s.conversation("+1").map { it.id })
+    }
+
+    @Test
+    fun conversationGroupsDifferentWritingsOfTheSameNumber() {
+        val s = store()
+        s.add(msg("a", 1_000, address = "0612345678"))
+        s.add(msg("b", 2_000, address = "+33612345678", outgoing = true))
+        s.add(msg("c", 3_000, address = "0699999999"))
+        assertEquals(listOf("a", "b"), s.conversation("+33 6 12 34 56 78").map { it.id })
+    }
+
+    @Test
+    fun statusIsStoredAndUpdated() {
+        val s = store()
+        s.add(msg("o", 1_000, outgoing = true).copy(status = MessageStatus.SENDING))
+        s.setStatus("o", MessageStatus.SENT)
+        assertEquals(MessageStatus.SENT, store().messages.value.single().status)
+    }
+
+    @Test
+    fun clearErasesEverything() {
+        val s = store()
         s.add(msg("a", 1_000))
         s.clear()
-        assertEquals(emptyList<StoredMessage>(), store(f, 10_000).messages.value)
+        assertEquals(0, store().count())
+        assertTrue(store().messages.value.isEmpty())
+    }
+
+    @Test
+    fun theOldJsonFileIsImportedOnceThenRemoved() {
+        val f = File(tmp.root, "messages.json")
+        f.writeText("""[{"id":"old1","from":"Jules","channel":"whatsapp","text":"Salut","at":5000,"read":true}]""")
+        val s = store(f)
+        assertEquals("old1", s.messages.value.single().id)
+        assertEquals(Channel.WHATSAPP, s.messages.value.single().channel)
+        assertTrue(s.messages.value.single().read)
+        assertFalse(f.exists())
+    }
+
+    @Test
+    fun aCorruptOldFileIsDroppedWithoutCrashing() {
+        val f = File(tmp.root, "messages.json").apply { writeText("{ not json") }
+        assertEquals(0, store(f).count())
+        assertFalse(f.exists())
     }
 
     @Test

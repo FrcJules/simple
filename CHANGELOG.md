@@ -4,6 +4,9 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnage [Se
 ## [Non publié]
 ### Corrigé
 - Build du hub (`tsup.config.ts`) ; CI : permissions de `paths-filter`, `ci-ok` dépend de `changes`.
+### Modifié
+- Messages : historique **illimité** sur le téléphone (base SQLite, migration automatique de l'ancien fichier), à la place de 30 messages / 7 jours.
+
 ### Ajouté
 - Apparence de l'accueil configurable par un fichier JSON validé (contraste imposé, texte jamais plus petit) ; import dans « Réglages famille ».
 - Launcher : écran Messages (liste, détail, lecture à voix haute, dictée et réponse via l'application Messages), pastille « nouveaux » sur l'accueil, mémoire locale bornée (ADR 0004).

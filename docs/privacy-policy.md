@@ -17,7 +17,7 @@ Présence est une application libre et gratuite. Elle n'a **ni compte, ni public
 L'application ne lit que les notifications des applications Téléphone, Messages et WhatsApp, et ignore toutes les autres.
 
 ## Conservation
-- Sur le téléphone : les réglages ci-dessus, et les **30 derniers messages** reçus (SMS et WhatsApp) pendant **7 jours au plus**, pour pouvoir les afficher et les lire à voix haute dans l'application. Ils restent dans le stockage privé de l'application, exclus des sauvegardes, et disparaissent à la désinstallation. Les appels manqués ne sont pas enregistrés.
+- Sur le téléphone : les réglages ci-dessus, et **l'historique des messages** (SMS et WhatsApp), **conservé sans limite de durée** tant que vous ne l'effacez pas, pour pouvoir les afficher et les lire à voix haute dans l'application. Ils restent dans le stockage privé de l'application, exclus des sauvegardes, et disparaissent à la désinstallation. Les appels manqués ne sont pas enregistrés.
 - Photos choisies pour les proches : copiées dans le stockage privé de l'application, jamais dans vos contacts, et supprimées à la désinstallation.
 - Sur l'écran maison : les 200 derniers événements sont gardés **en mémoire** et disparaissent au redémarrage.
 
