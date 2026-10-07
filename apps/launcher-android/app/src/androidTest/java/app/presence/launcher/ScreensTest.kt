@@ -2,12 +2,15 @@ package app.presence.launcher
 
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.ExperimentalTestApi
+import app.presence.launcher.config.UiConfigParser
+import app.presence.launcher.config.ParseResult
 import app.presence.launcher.ui.CallScreen
 import app.presence.launcher.ui.CallingScreen
 import app.presence.launcher.ui.HomeScreen
@@ -40,7 +43,7 @@ class ScreensTest {
     @Test
     fun homeTileTapIsReported() {
         var tapped: String? = null
-        rule.setContent { HomeScreen(seniorName = "", onTile = { tapped = it.name }) }
+        rule.setContent { HomeScreen(seniorName = "", onTile = { tapped = it.action.name }) }
         rule.onNodeWithText("Bonjour").assertIsDisplayed()
         rule.onNodeWithText("Appeler").performClick()
         assertEquals("CALL", tapped)
@@ -112,5 +115,18 @@ class ScreensTest {
         rule.setContent { MessageScreen(R.string.permission_denied, onBack = {}) }
         rule.onNodeWithText("Retour").assertIsDisplayed()
         shot("06_denied")
+    }
+
+    @Test
+    fun homeFollowsACustomConfig() {
+        val json = """{"schemaVersion":1,"home":{"columns":1,"tiles":[
+            {"id":"a","action":"call","label":"Téléphoner","icon":"person"},
+            {"id":"b","action":"camera"}]}}"""
+        val config = (UiConfigParser.parse(json) as ParseResult.Ok).config
+        rule.setContent { HomeScreen(seniorName = "Jean-Pierre", config = config) }
+        rule.onNodeWithText("Téléphoner").assertIsDisplayed()
+        rule.onNodeWithText("Photo").assertIsDisplayed()
+        rule.onNodeWithText("Messages").assertDoesNotExist()
+        shot("07_home_custom_config")
     }
 }
