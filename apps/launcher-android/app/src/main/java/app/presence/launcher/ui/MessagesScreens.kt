@@ -209,26 +209,27 @@ private fun statusText(status: MessageStatus): String? = when (status) {
     MessageStatus.NONE -> null
 }
 
+/** Icon above the label: two of these share a row, and a label such as "Répondre" must never be split across lines. */
+@Composable
+private fun StackedLabel(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Icon(icon, contentDescription = null)
+        Text(label, fontSize = 24.sp, maxLines = 1, softWrap = false)
+    }
+}
+
 @Composable
 private fun ListenButton(onClick: () -> Unit, main: Boolean, modifier: Modifier = Modifier) {
-    val content: @Composable () -> Unit = {
-        Icon(Icons.Filled.VolumeUp, contentDescription = null)
-        Spacer(Modifier.width(8.dp))
-        Text(stringResource(R.string.message_listen), fontSize = 24.sp)
-    }
-    if (main) Button(onClick = onClick, modifier = modifier.heightIn(min = 72.dp)) { content() }
-    else OutlinedButton(onClick = onClick, modifier = modifier.heightIn(min = 72.dp)) { content() }
+    val content: @Composable () -> Unit = { StackedLabel(Icons.Filled.VolumeUp, stringResource(R.string.message_listen)) }
+    if (main) Button(onClick = onClick, modifier = modifier.heightIn(min = 88.dp)) { content() }
+    else OutlinedButton(onClick = onClick, modifier = modifier.heightIn(min = 88.dp)) { content() }
 }
 
 @Composable
 private fun ReplyButton(onClick: () -> Unit, main: Boolean, isNew: Boolean, modifier: Modifier = Modifier) {
-    val content: @Composable () -> Unit = {
-        Icon(Icons.Filled.Mic, contentDescription = null)
-        Spacer(Modifier.width(8.dp))
-        Text(stringResource(if (isNew) R.string.message_dictate else R.string.message_reply), fontSize = 24.sp)
-    }
-    if (main) Button(onClick = onClick, modifier = modifier.heightIn(min = 72.dp)) { content() }
-    else OutlinedButton(onClick = onClick, modifier = modifier.heightIn(min = 72.dp)) { content() }
+    val content: @Composable () -> Unit = { StackedLabel(Icons.Filled.Mic, stringResource(if (isNew) R.string.message_dictate else R.string.message_reply)) }
+    if (main) Button(onClick = onClick, modifier = modifier.heightIn(min = 88.dp)) { content() }
+    else OutlinedButton(onClick = onClick, modifier = modifier.heightIn(min = 88.dp)) { content() }
 }
 
 /**
