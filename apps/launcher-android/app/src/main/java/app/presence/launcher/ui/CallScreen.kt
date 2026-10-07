@@ -140,7 +140,7 @@ fun BackButton(onBack: () -> Unit) {
 }
 
 @Composable
-private fun ContactCard(contact: Contact, onClick: () -> Unit) {
+internal fun ContactCard(contact: Contact, onClick: () -> Unit) {
     Card(Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onClick).semantics(mergeDescendants = true) {}) {
         Column(Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Avatar(contact, Modifier.fillMaxWidth().aspectRatio(1f))

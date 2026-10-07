@@ -4,6 +4,8 @@ import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.speech.RecognizerIntent
 import android.widget.Toast
@@ -20,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import app.presence.launcher.config.TileAction
 import app.presence.launcher.config.TileConfig
 import app.presence.launcher.config.UiConfig
@@ -27,18 +30,29 @@ import app.presence.launcher.config.UiConfigStore
 import app.presence.launcher.messages.MessageItem
 import app.presence.launcher.messages.MessagesViewModel
 import app.presence.launcher.messages.Speaker
+import app.presence.launcher.messages.StoredMessage
+import app.presence.launcher.notifications.Channel
+import app.presence.launcher.sms.MessageNotifier
+import app.presence.launcher.sms.SendResult
+import app.presence.launcher.sms.SmsComponents
+import app.presence.launcher.sms.SmsRole
 import app.presence.launcher.ui.CallScreen
 import app.presence.launcher.ui.CallingScreen
+import app.presence.launcher.ui.ConversationScreen
 import app.presence.launcher.ui.HomeScreen
 import app.presence.launcher.ui.LocalThemeConfig
-import app.presence.launcher.ui.MessageDetailScreen
 import app.presence.launcher.ui.MessageScreen
 import app.presence.launcher.ui.MessagesScreen
 import app.presence.launcher.ui.PermissionRationaleScreen
+import app.presence.launcher.ui.PickContactScreen
 import app.presence.launcher.ui.ReplyConfirmScreen
+import app.presence.launcher.ui.SmsRoleScreen
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
-    private enum class Screen { HOME, RATIONALE, DENIED, CALL, MESSAGES, MESSAGE, REPLY }
+    private enum class Screen { HOME, RATIONALE, DENIED, CALL, SMS_ROLE, MESSAGES, PICK_RECIPIENT, MESSAGE, REPLY }
 
     private val contactsVm: ContactsViewModel by viewModels()
     private val messagesVm: MessagesViewModel by viewModels()
@@ -53,11 +67,14 @@ class MainActivity : ComponentActivity() {
     private var calling by mutableStateOf<Contact?>(null)
     private var seniorName by mutableStateOf("")
 
-    /** The message being read, by id: the live item is looked up so a late photo or contact update still shows. */
-    private var openMessageId by mutableStateOf<String?>(null)
+    /** The conversation being read, by its thread key: the live item is looked up so a late photo or message still shows. */
+    private var openThreadKey by mutableStateOf<String?>(null)
+
+    /** A conversation that does not exist yet (writing to someone for the first time, or a `sms:` link). */
+    private var composeItem by mutableStateOf<MessageItem?>(null)
     private var replyText by mutableStateOf("")
 
-    /** A short explanation shown on the message screen (e.g. nothing was heard), as text and not a fleeting toast. */
+    /** A short explanation shown on the conversation screen (e.g. nothing was heard), as text and not a fleeting toast. */
     private var notice by mutableStateOf<Int?>(null)
 
     private val permissions = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
@@ -67,6 +84,9 @@ class MainActivity : ComponentActivity() {
         // Contacts refused: explain simply. Only the call permission refused: still fine, the dialer is used instead.
         screen = if (granted(Manifest.permission.READ_CONTACTS)) Screen.CALL else Screen.DENIED
     }
+
+    private val smsRole = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { onSmsRoleAnswered() }
+    private val notificationsPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     private val dictation = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         val spoken = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()?.trim().orEmpty()
@@ -82,91 +102,96 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (savedInstanceState == null) handleIntent(intent)
         setContent {
             val contacts by contactsVm.contacts.collectAsStateWithLifecycle()
-            val messages by messagesVm.items.collectAsStateWithLifecycle()
+            val conversations by messagesVm.items.collectAsStateWithLifecycle()
+            val thread by messagesVm.thread.collectAsStateWithLifecycle()
             val unread by messagesVm.unread.collectAsStateWithLifecycle()
-            val open: MessageItem? = messages.firstOrNull { it.message.id == openMessageId }
+            val open: MessageItem? = conversations.firstOrNull { it.threadKey == openThreadKey }
+                ?: composeItem?.takeIf { it.threadKey == openThreadKey }
             val c = calling
             CompositionLocalProvider(LocalThemeConfig provides uiConfig.theme) {
-            if (c != null) {
-                BackHandler { calling = null }
-                CallingScreen(
-                    contact = c,
-                    onCancel = { calling = null },
-                    onLaunch = {
-                        calling = null
-                        screen = Screen.HOME
-                        LauncherActions.call(this, c.number, direct = granted(Manifest.permission.CALL_PHONE))
-                    },
-                )
-            } else when (screen) {
-                Screen.HOME -> HomeScreen(seniorName = seniorName, unreadMessages = unread, config = uiConfig, onTile = ::onTile)
-                Screen.RATIONALE -> {
-                    BackHandler { screen = Screen.HOME }
-                    PermissionRationaleScreen(
-                        onContinue = { permissions.launch(arrayOf(Manifest.permission.READ_CONTACTS, Manifest.permission.CALL_PHONE)) },
-                        onLater = { screen = Screen.HOME },
+                if (c != null) {
+                    BackHandler { calling = null }
+                    CallingScreen(
+                        contact = c,
+                        onCancel = { calling = null },
+                        onLaunch = {
+                            calling = null
+                            screen = Screen.HOME
+                            LauncherActions.call(this, c.number, direct = granted(Manifest.permission.CALL_PHONE))
+                        },
                     )
-                }
-                Screen.DENIED -> {
-                    BackHandler { screen = Screen.HOME }
-                    MessageScreen(R.string.permission_denied, onBack = { screen = Screen.HOME })
-                }
-                Screen.CALL -> {
-                    BackHandler { screen = Screen.HOME }
-                    CallScreen(contacts = contacts, onBack = { screen = Screen.HOME }, onCall = { calling = it })
-                }
-                Screen.MESSAGES -> {
-                    BackHandler { screen = Screen.HOME }
-                    MessagesScreen(
-                        items = messages,
-                        nowMs = System.currentTimeMillis(),
-                        onOpen = { openMessage(it) },
-                        onWrite = { LauncherActions.messages(this) },
-                        onBack = { screen = Screen.HOME },
-                    )
-                }
-                Screen.MESSAGE -> {
-                    BackHandler { closeMessage() }
-                    if (open == null) {
-                        LaunchedEffect(Unit) { closeMessage() } // the message vanished (expired): back to the list
-                    } else {
-                        MessageDetailScreen(
-                            item = open,
+                } else when (screen) {
+                    Screen.HOME -> HomeScreen(seniorName = seniorName, unreadMessages = unread, config = uiConfig, onTile = ::onTile)
+                    Screen.RATIONALE -> {
+                        BackHandler { screen = Screen.HOME }
+                        PermissionRationaleScreen(
+                            onContinue = { permissions.launch(arrayOf(Manifest.permission.READ_CONTACTS, Manifest.permission.CALL_PHONE)) },
+                            onLater = { screen = Screen.HOME },
+                        )
+                    }
+                    Screen.DENIED -> {
+                        BackHandler { screen = Screen.HOME }
+                        MessageScreen(R.string.permission_denied, onBack = { screen = Screen.HOME })
+                    }
+                    Screen.CALL -> {
+                        BackHandler { screen = Screen.HOME }
+                        CallScreen(contacts = contacts, onBack = { screen = Screen.HOME }, onCall = { calling = it })
+                    }
+                    Screen.SMS_ROLE -> {
+                        BackHandler { screen = Screen.HOME }
+                        SmsRoleScreen(onContinue = { requestSmsRole() }, onLater = { declineSmsRole() })
+                    }
+                    Screen.MESSAGES -> {
+                        BackHandler { screen = Screen.HOME }
+                        MessagesScreen(
+                            items = conversations,
                             nowMs = System.currentTimeMillis(),
-                            canDictate = canDictate(),
-                            notice = notice?.let { stringResource(it) },
-                            onListen = { listen(open) },
-                            onReply = { dictate() },
-                            onBack = { closeMessage() },
+                            onOpen = { openConversation(it) },
+                            onWrite = { write() },
+                            onBack = { screen = Screen.HOME },
                         )
                     }
-                }
-                Screen.REPLY -> {
-                    BackHandler { screen = Screen.MESSAGE }
-                    if (open == null) {
-                        LaunchedEffect(Unit) { closeMessage() }
-                    } else {
-                        ReplyConfirmScreen(
-                            item = open,
-                            text = replyText,
-                            onListen = { speakText(replyText) },
-                            onSend = {
-                                val number = open.contact?.number
-                                if (number != null) {
-                                    LauncherActions.smsDraft(this, number, replyText)
-                                    closeMessage()
-                                } else {
-                                    Toast.makeText(this, R.string.number_invalid, Toast.LENGTH_LONG).show() // stay here: nothing was prepared
-                                }
-                            },
-                            onRedo = { dictate() },
-                            onCancel = { screen = Screen.MESSAGE },
-                        )
+                    Screen.PICK_RECIPIENT -> {
+                        BackHandler { screen = Screen.MESSAGES }
+                        PickContactScreen(R.string.write_to_title, contacts, onPick = { startNewConversation(it) }, onBack = { screen = Screen.MESSAGES })
+                    }
+                    Screen.MESSAGE -> {
+                        BackHandler { closeConversation() }
+                        if (open == null) {
+                            LaunchedEffect(Unit) { closeConversation() } // the conversation vanished (history erased): back to the list
+                        } else {
+                            ConversationScreen(
+                                item = open,
+                                messages = thread,
+                                nowMs = System.currentTimeMillis(),
+                                canDictate = canDictate(),
+                                notice = notice?.let { stringResource(it) },
+                                onListen = { listen(thread) },
+                                onReply = { dictate() },
+                                onBack = { closeConversation() },
+                            )
+                        }
+                    }
+                    Screen.REPLY -> {
+                        BackHandler { screen = Screen.MESSAGE }
+                        if (open == null) {
+                            LaunchedEffect(Unit) { closeConversation() }
+                        } else {
+                            ReplyConfirmScreen(
+                                item = open,
+                                text = replyText,
+                                directSend = SmsRole.isHeld(this),
+                                onListen = { speakText(replyText) },
+                                onSend = { sendReply(open, replyText) },
+                                onRedo = { dictate() },
+                                onCancel = { screen = Screen.MESSAGE },
+                            )
+                        }
                     }
                 }
-            }
             }
         }
     }
@@ -192,36 +217,168 @@ class MainActivity : ComponentActivity() {
         super.onDestroy()
     }
 
-    /** The Home button (launchMode singleTask) always returns to the home screen. */
+    /** The Home button (launchMode singleTask) returns to the home screen; a notification or an `sms:` link goes where it says. */
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        setIntent(intent)
         calling = null
-        openMessageId = null
-        screen = Screen.HOME
+        if (!handleIntent(intent)) {
+            leaveConversation()
+            screen = Screen.HOME
+        }
+    }
+
+    /** Returns true when the intent asked for something specific (and we moved there). */
+    private fun handleIntent(intent: Intent?): Boolean {
+        intent ?: return false
+        if (intent.action == MessageNotifier.ACTION_OPEN_MESSAGES) {
+            screen = Screen.MESSAGES
+            return true
+        }
+        val uri = intent.data
+        if ((intent.action == Intent.ACTION_SENDTO || intent.action == Intent.ACTION_SEND) && uri != null && uri.scheme in SMS_SCHEMES) {
+            val number = Uri.decode(uri.schemeSpecificPart).substringBefore('?').trim()
+            if (number.isBlank()) return false
+            val body = (intent.getStringExtra("sms_body") ?: intent.getStringExtra(Intent.EXTRA_TEXT))?.trim().orEmpty()
+            startConversationWithNumber(number, body)
+            return true
+        }
+        return false
     }
 
     private fun onTile(tile: TileConfig) = when (tile.action) {
         TileAction.CALL -> openCallScreen()
-        TileAction.MESSAGES -> screen = Screen.MESSAGES
+        TileAction.MESSAGES -> openMessages()
         TileAction.CAMERA -> LauncherActions.camera(this)
         TileAction.GALLERY -> LauncherActions.gallery(this)
     }
 
-    private fun openMessage(item: MessageItem) {
-        notice = null
-        openMessageId = item.message.id
-        screen = Screen.MESSAGE
+    // ---- SMS role ----
+
+    private fun shouldOfferSmsRole() =
+        BuildConfig.SMS_ROLE_OFFERED && !SmsRole.isHeld(this) && !profile.smsRoleDeclined() && SmsRole.requestIntent(this) != null
+
+    private fun openMessages() {
+        screen = if (shouldOfferSmsRole()) Screen.SMS_ROLE else Screen.MESSAGES
     }
 
-    private fun closeMessage() {
-        openMessageId?.let { messagesVm.markRead(it) } // read once the person is done with it
-        openMessageId = null
+    private fun requestSmsRole() {
+        val intent = SmsRole.requestIntent(this)
+        if (intent == null) {
+            screen = Screen.MESSAGES
+            return
+        }
+        try {
+            smsRole.launch(intent)
+        } catch (e: ActivityNotFoundException) {
+            screen = Screen.MESSAGES
+        }
+    }
+
+    private fun declineSmsRole() {
+        profile.setSmsRoleDeclined(true)
         screen = Screen.MESSAGES
     }
 
-    private fun listen(item: MessageItem) = speakText("${item.message.from}. ${item.message.text}")
+    private fun onSmsRoleAnswered() {
+        if (SmsRole.isHeld(this)) {
+            profile.setSmsRoleDeclined(false)
+            if (Build.VERSION.SDK_INT >= 33 && !granted(Manifest.permission.POST_NOTIFICATIONS)) {
+                notificationsPermission.launch(Manifest.permission.POST_NOTIFICATIONS) // so new messages can be announced
+            }
+            if (!profile.smsImported()) {
+                lifecycleScope.launch {
+                    withContext(Dispatchers.IO) { SmsComponents.importer(this@MainActivity).importAll() }
+                    profile.markSmsImported()
+                    messagesVm.refresh()
+                }
+            }
+        } else {
+            profile.setSmsRoleDeclined(true)
+        }
+        screen = Screen.MESSAGES
+    }
 
-    /** Only ever called from a button press: nothing is read aloud on its own. */
+    // ---- Messages ----
+
+    private fun openConversation(item: MessageItem) {
+        notice = null
+        composeItem = null
+        openThreadKey = item.threadKey
+        messagesVm.select(item.threadKey)
+        screen = Screen.MESSAGE
+    }
+
+    /** Leaves the open conversation, reading what was received in it. */
+    private fun leaveConversation() {
+        openThreadKey?.let { messagesVm.markThreadRead(it) }
+        openThreadKey = null
+        composeItem = null
+        messagesVm.select(null)
+    }
+
+    private fun closeConversation() {
+        leaveConversation()
+        screen = Screen.MESSAGES
+    }
+
+    private fun write() {
+        if (SmsRole.isHeld(this)) screen = Screen.PICK_RECIPIENT else LauncherActions.messages(this)
+    }
+
+    private fun startNewConversation(contact: Contact) = startConversationWithNumber(contact.number, "", contact)
+
+    private fun startConversationWithNumber(number: String, body: String, known: Contact? = null) {
+        val contact = known ?: try {
+            ContactsRepository(contentResolver).byNumber(number)
+        } catch (e: SecurityException) {
+            null
+        }
+        val name = contact?.name ?: number
+        val first = StoredMessage("new", name, Channel.SMS, "", System.currentTimeMillis(), address = number)
+        val item = MessageItem(first, contact)
+        notice = null
+        composeItem = item
+        openThreadKey = item.threadKey
+        messagesVm.select(item.threadKey)
+        if (body.isNotEmpty()) {
+            replyText = body
+            screen = Screen.REPLY
+        } else {
+            screen = Screen.MESSAGE
+            if (canDictate()) dictate()
+        }
+    }
+
+    private fun sendReply(item: MessageItem, text: String) {
+        val number = item.replyNumber
+        if (number == null) {
+            Toast.makeText(this, R.string.number_invalid, Toast.LENGTH_LONG).show() // stay here: nothing was prepared
+            return
+        }
+        if (!SmsRole.isHeld(this)) {
+            LauncherActions.smsDraft(this, number, text)
+            closeConversation()
+            return
+        }
+        lifecycleScope.launch {
+            val result = withContext(Dispatchers.IO) { SmsComponents.sender(this@MainActivity).send(number, text, item.message.from) }
+            if (result is SendResult.Started) {
+                notice = null
+                screen = Screen.MESSAGE // the new message appears in the conversation with its progress
+            } else {
+                notice = R.string.send_failed
+                screen = Screen.MESSAGE
+            }
+        }
+    }
+
+    /** Reads the newest message received in the open conversation. Only ever from a button press: nothing is read aloud on its own. */
+    private fun listen(thread: List<StoredMessage>) {
+        val last = thread.lastOrNull { !it.outgoing && !it.sensitive } ?: return
+        speakText("${last.from}. ${last.text}")
+    }
+
     private fun speakText(text: String) {
         speaker().speak(text) { Toast.makeText(this, R.string.listen_unavailable, Toast.LENGTH_LONG).show() }
     }
@@ -253,4 +410,8 @@ class MainActivity : ComponentActivity() {
 
     private fun granted(permission: String) =
         ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+
+    private companion object {
+        val SMS_SCHEMES = setOf("sms", "smsto", "mms", "mmsto")
+    }
 }

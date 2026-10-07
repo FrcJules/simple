@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -39,23 +40,35 @@ class MessagesViewModel(app: Application) : AndroidViewModel(app) {
         rebuild(store.messages.value)
     }
 
-    fun markRead(id: String) {
-        viewModelScope.launch(Dispatchers.IO) { store.markRead(id) }
-    }
-
     private fun rebuild(list: List<StoredMessage>) {
         viewModelScope.launch {
-            _items.value = withContext(Dispatchers.IO) {
-                list.sortedByDescending { it.receivedAtMs }.map { MessageItem(it, face(it.from)) }
-            }
+            _items.value = withContext(Dispatchers.IO) { groupConversations(list, ::face) }
         }
     }
 
-    private fun face(name: String): Contact? =
-        faces.getOrPut(name) {
+    /** The conversation currently open, oldest message first; empty when none. */
+    fun select(threadKey: String?) {
+        selected.value = threadKey
+    }
+
+    fun markThreadRead(key: String) {
+        viewModelScope.launch(Dispatchers.IO) { store.markThreadRead(key) }
+    }
+
+    private val selected = MutableStateFlow<String?>(null)
+
+    val thread: StateFlow<List<StoredMessage>> = combine(selected, store.messages) { key, _ -> key }
+        .map { key -> if (key == null) emptyList() else store.thread(key) }
+        .flowOn(Dispatchers.IO)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    /** The face of whoever wrote [m]: by number when the SMS carries one (an identity), by name otherwise (not an identity). */
+    private fun face(m: StoredMessage): Contact? =
+        faces.getOrPut(m.address ?: "name:${m.from}") {
             try {
-                ContactsRepository(getApplication<Application>().contentResolver).byName(name)
-                    ?.let { c -> c.copy(photoUri = photos.uriFor(c.id) ?: c.photoUri) }
+                val repo = ContactsRepository(getApplication<Application>().contentResolver)
+                val c = if (m.address != null) repo.byNumber(m.address) else repo.byName(m.from)
+                c?.let { it.copy(photoUri = photos.uriFor(it.id) ?: it.photoUri) }
             } catch (e: SecurityException) {
                 null // contacts permission not granted: show the initial instead
             }

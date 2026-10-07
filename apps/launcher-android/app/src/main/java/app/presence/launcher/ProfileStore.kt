@@ -15,6 +15,20 @@ class ProfileStore(context: Context) {
         prefs.edit().putBoolean("contacts_asked", true).apply()
     }
 
+    /** The person (or family) said "Plus tard" to making Présence the SMS app: do not ask again by surprise. */
+    fun smsRoleDeclined(): Boolean = prefs.getBoolean("sms_role_declined", false)
+
+    fun setSmsRoleDeclined(declined: Boolean) {
+        prefs.edit().putBoolean("sms_role_declined", declined).apply()
+    }
+
+    /** The phone's old SMS were copied into our history. */
+    fun smsImported(): Boolean = prefs.getBoolean("sms_imported", false)
+
+    fun markSmsImported() {
+        prefs.edit().putBoolean("sms_imported", true).apply()
+    }
+
     fun saveName(name: String) {
         prefs.edit().putString("name", name.trim().take(40)).apply()
     }
