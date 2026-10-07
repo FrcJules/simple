@@ -102,6 +102,13 @@ class MessageStore(
         publish()
     }
 
+    /** Opening a conversation reads everything received in it. */
+    @Synchronized
+    fun markThreadRead(key: String) {
+        helper.writableDatabase.update("messages", ContentValues().apply { put("read", 1) }, "thread = ? AND outgoing = 0", arrayOf(key))
+        publish()
+    }
+
     @Synchronized
     fun setStatus(id: String, status: MessageStatus) {
         helper.writableDatabase.update("messages", ContentValues().apply { put("status", status.code) }, "id = ?", arrayOf(id))
