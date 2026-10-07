@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -25,7 +26,7 @@ class MessagesViewModel(app: Application) : AndroidViewModel(app) {
     val items: StateFlow<List<MessageItem>> = _items.asStateFlow()
 
     /** Number of messages not opened yet, shown as a badge on the home screen. */
-    val unread: StateFlow<Int> = store.messages.map { list -> list.count { !it.read } }
+    val unread: StateFlow<Int> = store.messages.map { store.unreadCount() }.flowOn(Dispatchers.IO)
         .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
 
     init {

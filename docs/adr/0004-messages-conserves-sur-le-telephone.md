@@ -1,6 +1,6 @@
 # 0004 — Conserver les derniers messages sur le téléphone
 
-Statut : accepté (2026-10-07)
+Statut : accepté (2026-10-07) — **remplacé en partie par l'[ADR 0005](0005-sms-par-defaut-et-historique-illimite.md)** : plus de limite de 30 messages / 7 jours, et l'envoi de SMS passe par le rôle d'application SMS par défaut. Le reste (dictée, lecture, données sensibles écartées, effacement) reste valable.
 
 ## Contexte
 Le launcher doit montrer à Jean-Pierre les messages reçus (photo de l'expéditeur, lecture à voix haute). Google Play interdit de lire la boîte SMS ([ADR 0002](0002-notifications-plutot-que-journal-d-appels.md)) : la seule source est la **notification**, qui disparaît dès qu'on la balaie. Sans mémoire, un message ignoré quelques minutes serait perdu.
