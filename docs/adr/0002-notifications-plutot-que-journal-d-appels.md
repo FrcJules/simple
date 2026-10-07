@@ -11,7 +11,7 @@ Utiliser un `NotificationListenerService` (accès aux notifications, accordé ma
 - afficher les SMS et messages (WhatsApp inclus) reçus, pour les montrer en grand et les lire à voix haute.
 
 Garde-fous :
-- Le téléphone ne conserve rien. Le hub garde les 200 derniers événements (expéditeur, type, heure, texte du message) **en mémoire seulement**, jusqu'à son redémarrage. Aucun envoi hors du réseau local ([privacy.md](../privacy.md)).
+- Le téléphone conserve les 30 derniers messages pendant 7 jours au plus, dans son stockage privé ([ADR 0004](0004-messages-conserves-sur-le-telephone.md)). Le hub garde les 200 derniers événements (expéditeur, type, heure, texte du message) **en mémoire seulement**, jusqu'à son redémarrage. Aucun envoi hors du réseau local ([privacy.md](../privacy.md)).
 - Seuls les messages de conversation (catégorie `msg`) sont transmis, pas les notifications de progression, système ou promotionnelles.
 - Liste blanche de paquets surveillés (Téléphone, Messages, WhatsApp) ; toutes les autres notifications sont ignorées sans être lues.
 - Écran d'explication en langage simple avant d'ouvrir les réglages d'accès aux notifications ; formulaire de déclaration Play rempli en conséquence.

@@ -33,6 +33,15 @@ object LauncherActions {
         }
     }
 
+    /** Opens the messaging app on a draft: Play does not allow us to send SMS ourselves (ADR 0002). */
+    fun smsDraft(c: Context, number: String, text: String) {
+        if (!isDialable(number)) {
+            Toast.makeText(c, R.string.number_invalid, Toast.LENGTH_LONG).show()
+            return
+        }
+        launch(c, Intent(Intent.ACTION_SENDTO, Uri.parse(smsUri(number))).putExtra("sms_body", text))
+    }
+
     private fun launch(c: Context, intent: Intent) {
         try {
             c.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))

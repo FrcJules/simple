@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -21,13 +23,14 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.presence.launcher.R
 
 @Composable
-fun HomeScreen(seniorName: String, onTile: (HomeTile) -> Unit = {}) {
+fun HomeScreen(seniorName: String, unreadMessages: Int = 0, onTile: (HomeTile) -> Unit = {}) {
     PresenceTheme {
         Column(
             modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -38,7 +41,7 @@ fun HomeScreen(seniorName: String, onTile: (HomeTile) -> Unit = {}) {
             Text(greeting, fontSize = 32.sp, textAlign = TextAlign.Center)
             HomeTile.entries.chunked(2).forEach { pair ->
                 Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    pair.forEach { Tile(it, onTile) }
+                    pair.forEach { Tile(it, if (it == HomeTile.MESSAGES) unreadMessages else 0, onTile) }
                 }
             }
         }
@@ -46,7 +49,7 @@ fun HomeScreen(seniorName: String, onTile: (HomeTile) -> Unit = {}) {
 }
 
 @Composable
-private fun RowScope.Tile(tile: HomeTile, onTile: (HomeTile) -> Unit) {
+private fun RowScope.Tile(tile: HomeTile, badge: Int, onTile: (HomeTile) -> Unit) {
     val haptic = LocalHapticFeedback.current
     Card(
         Modifier.weight(1f).fillMaxSize()
@@ -58,8 +61,23 @@ private fun RowScope.Tile(tile: HomeTile, onTile: (HomeTile) -> Unit) {
     ) {
         Box(Modifier.fillMaxSize().padding(8.dp), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(tile.icon, contentDescription = null, modifier = Modifier.size(72.dp))
+                BadgedBox(badge = {
+                    if (badge > 0) Badge { Text("$badge", fontSize = 22.sp, modifier = Modifier.padding(horizontal = 6.dp)) }
+                }) {
+                    Icon(tile.icon, contentDescription = null, modifier = Modifier.size(72.dp))
+                }
                 Text(stringResource(tile.label), fontSize = 24.sp, textAlign = TextAlign.Center)
+                if (badge > 0) {
+                    Text(
+                        when {
+                            badge == 1 -> stringResource(R.string.tile_new_one)
+                            badge > 9 -> stringResource(R.string.tile_new_many)
+                            else -> stringResource(R.string.tile_new_count, badge)
+                        },
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
             }
         }
     }
