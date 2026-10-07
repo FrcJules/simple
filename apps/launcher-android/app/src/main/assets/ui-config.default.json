@@ -15,7 +15,7 @@
       { "id": "call", "action": "call", "icon": "call" },
       { "id": "messages", "action": "messages", "icon": "sms" },
       { "id": "camera", "action": "camera", "icon": "camera" },
-      { "id": "photos", "action": "gallery", "icon": "photos" }
+      { "id": "gallery", "action": "gallery", "icon": "photos" }
     ]
   }
 }
