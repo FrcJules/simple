@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -161,7 +162,11 @@ internal fun Avatar(contact: Contact, modifier: Modifier, initialSize: TextUnit 
         )
     } else {
         Box(modifier.clip(shape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
-            Text(contact.initial, fontSize = initialSize)
+            if (contact.initial.firstOrNull()?.isLetter() == true) {
+                Text(contact.initial, fontSize = initialSize)
+            } else {
+                Icon(Icons.Filled.Person, contentDescription = null, modifier = Modifier.fillMaxSize(0.6f))
+            }
         }
     }
 }

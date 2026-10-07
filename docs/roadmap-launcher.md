@@ -6,19 +6,22 @@
 
 | Fonction | État |
 |---|---|
-| Accueil à 4 gros boutons, thème contrasté, icônes | **Vérifié** |
+| Accueil à 4 gros boutons, thème contrasté, icônes, pastille « N nouveaux » | **Vérifié** |
 | Appeler : proches (contacts étoilés) en photos, confirmation, « J'appelle… », appel direct | **Vérifié** (appel simulé) |
-| Photos de contacts prises dans Android | Codé, **non vérifié** avec une vraie photo |
-| Explication avant les permissions, écran de refus | **Vérifié** |
-| Appareil photo et galerie | Ouvrent les applications du système, **non vérifié** |
-| Messages | Ouvre l'application Messages du système. **Pas de lecture dans le launcher** |
-| Notifications (SMS, appels manqués) → écran maison, TLS épinglé | **Vérifié** de bout en bout |
+| Photo d'un proche choisie par la famille (sélecteur Android, sans permission) | **Vérifié** : visible sur l'appel et les messages |
+| Photos de contacts prises dans Android | Codé, non vérifié avec une vraie photo de contact |
+| Messages : liste, détail, pastille, photo de l'expéditeur | **Vérifié** (SMS simulés) |
+| Messages : codes à usage unique écartés | **Vérifié** |
+| Messages : lecture à voix haute | **Déclenchée** sans erreur ; le son n'a pas pu être entendu depuis l'émulateur |
+| Messages : répondre (dictée puis application Messages) | Chemin d'**erreur** vérifié (dictée indisponible). **Dictée réussie non vérifiée** : pas de reconnaissance vocale sur l'émulateur |
+| Appareil photo et galerie | Ouvrent les applications du système, non vérifié |
+| Notifications SMS / appels manqués → écran maison, TLS épinglé | **Vérifié** de bout en bout |
 | Notifications WhatsApp | **Testé** (décodeur) seulement : pas de WhatsApp sur l'émulateur |
-| Réglages famille (prénom, hub, appairage) | **Vérifié** ; pas protégé par un code |
+| Réglages famille (prénom, hub, appairage, effacement) | **Vérifié** ; pas protégé par un code |
 
 ## Ce qui manque (par priorité)
-1. **Messages dans le launcher** : voir les messages reçus avec la photo de l'expéditeur, les écouter (voix), répondre en dictant.
-2. **Photos des proches choisies par la famille** quand le contact n'en a pas.
+1. **Répondre à WhatsApp** (aujourd'hui seulement par SMS) et vérifier la dictée sur un vrai téléphone.
+2. Contrôles de lecture (« Arrêter »), état conservé à la rotation ou à la mort du processus.
 3. Protéger « Réglages famille » (code famille), QR code d'appairage.
 4. Retour sonore / vocal (« J'appelle Marie »), double appui, grandes polices à 200 %.
 5. Appareil photo et galerie intégrés (pas d'application externe).

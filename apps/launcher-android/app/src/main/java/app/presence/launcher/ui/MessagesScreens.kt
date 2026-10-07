@@ -93,12 +93,12 @@ private fun MessageRow(item: MessageItem, nowMs: Long, onOpen: (MessageItem) -> 
         Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Avatar(item.displayContact, Modifier.size(80.dp), initialSize = 40.sp)
             Column(Modifier.weight(1f)) {
+                // Not colour alone: unread messages also carry a word, above the name so the text keeps the full width.
+                if (!item.message.read) Text(stringResource(R.string.message_new), fontSize = 24.sp, fontWeight = FontWeight.Bold)
                 Text(item.message.from, fontSize = 28.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(item.message.text, fontSize = 24.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(agoText(item.message.receivedAtMs, nowMs), fontSize = 24.sp)
+                Text(item.message.text, fontSize = 24.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                Text(agoText(item.message.receivedAtMs, nowMs), fontSize = 24.sp, maxLines = 1)
             }
-            // Not colour alone: unread messages also carry a word.
-            if (!item.message.read) Text(stringResource(R.string.message_new), fontSize = 24.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
