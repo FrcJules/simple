@@ -1,6 +1,6 @@
 # 0002 — Lire les notifications plutôt que le journal d'appels / les SMS
 
-Statut : accepté (2026-10-06) — implémenté en v0.2, à valider sur appareils réels.
+Statut : accepté (2026-10-06) — implémenté en v0.2, à valider sur appareils réels. **Pour les SMS, voir [ADR 0004](0004-photos-messages-sms.md)** (application SMS par défaut).
 
 ## Contexte
 Présence doit afficher « Marie vous a appelé » et rendre visibles les SMS/messages sans que la famille change d'outil. Les permissions `READ_CALL_LOG`, `READ_SMS`, `RECEIVE_SMS` sont, selon la [politique Google Play](https://support.google.com/googleplay/android-developer/answer/9047303), réservées à l'application SMS, Téléphone ou Assistant **par défaut**, hors exceptions rares. Un launcher n'est dans aucun de ces cas ; devenir l'application SMS/Téléphone par défaut serait disproportionné.

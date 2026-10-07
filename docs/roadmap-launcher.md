@@ -31,6 +31,12 @@
 ## Contraintes Google Play (voir ADR 0002)
 - Pas de lecture de la boîte SMS (`READ_SMS`) ni d'envoi direct (`SEND_SMS`), réservés à l'application SMS par défaut. Les messages affichés viennent donc des **notifications**, et l'envoi passe par l'application Messages (texte pré-rempli) ou, plus tard, par l'action « répondre » de la notification.
 
+## Décisions du 7 octobre 2026 (ADR 0005)
+- Photos du téléphone : **jamais touchées** (caméra et galerie = applications du système).
+- Historique des messages **illimité**, sur le téléphone seulement (remplace 30 messages / 7 jours).
+- Application **SMS par défaut** (réception, envoi, MMS) : décidée, **pas implémentée** ; voir les risques dans l'ADR 0005.
+- Apparence modifiable par **JSON** : livrée ([customization.md](customization.md)).
+
 ## Plan
 - **Phase 1 : photos des proches.** Choisir une photo pour un proche depuis « Réglages famille » (stockée sur le téléphone, sans permission supplémentaire).
 - **Phase 2 : messages.** Mémoire locale bornée (30 messages, 7 jours), écran Messages, détail avec lecture à voix haute, pastille « nouveaux » sur l'accueil.

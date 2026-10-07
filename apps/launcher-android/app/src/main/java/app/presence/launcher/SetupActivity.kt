@@ -37,6 +37,9 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import app.presence.launcher.config.ParseResult
+import app.presence.launcher.config.UiConfigParser
+import app.presence.launcher.config.UiConfigStore
 import app.presence.launcher.messages.MessageStore
 import app.presence.launcher.photos.ContactPhotoStore
 import app.presence.launcher.ui.Avatar
@@ -63,6 +66,27 @@ class SetupActivity : ComponentActivity() {
                     photoFailed = !ok
                     contactsVm.refresh()
                 }
+            }
+        }
+    }
+
+    private val uiStore by lazy { UiConfigStore(this) }
+    private var appearanceMessage by mutableStateOf<String?>(null)
+
+    /** Reads at most MAX_CHARS + 1 characters: a larger file is refused by the parser without being loaded whole. */
+    private val configPicker = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            val text = try {
+                contentResolver.openInputStream(uri)?.bufferedReader()?.use { r ->
+                    val buf = CharArray(UiConfigParser.MAX_CHARS + 1)
+                    String(buf, 0, maxOf(r.read(buf), 0))
+                }.orEmpty()
+            } catch (e: java.io.IOException) {
+                ""
+            }
+            appearanceMessage = when (val r = uiStore.import(text)) {
+                is ParseResult.Ok -> getString(R.string.setup_appearance_ok)
+                is ParseResult.Error -> getString(R.string.setup_appearance_error, r.message)
             }
         }
     }
@@ -112,6 +136,14 @@ class SetupActivity : ComponentActivity() {
                         access = hasNotificationAccess()
                     }) { Text(stringResource(R.string.setup_open_access)) }
                     OutlinedButton(onClick = { access = hasNotificationAccess() }) { Text(stringResource(R.string.setup_refresh)) }
+
+                    Text(stringResource(R.string.setup_appearance_title), fontSize = 28.sp)
+                    OutlinedButton(onClick = { configPicker.launch(arrayOf("*/*")) }) { Text(stringResource(R.string.setup_appearance_import)) }
+                    OutlinedButton(onClick = {
+                        uiStore.reset()
+                        appearanceMessage = getString(R.string.setup_appearance_reset)
+                    }) { Text(stringResource(R.string.setup_appearance_reset_button)) }
+                    appearanceMessage?.let { Text(it) }
 
                     var erased by remember { mutableStateOf(false) }
                     OutlinedButton(onClick = {

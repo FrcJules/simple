@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -28,9 +29,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.presence.launcher.R
+import app.presence.launcher.config.TileAction
+import app.presence.launcher.config.TileConfig
+import app.presence.launcher.config.UiConfig
 
 @Composable
-fun HomeScreen(seniorName: String, unreadMessages: Int = 0, onTile: (HomeTile) -> Unit = {}) {
+fun HomeScreen(
+    seniorName: String,
+    unreadMessages: Int = 0,
+    config: UiConfig = UiConfig.Default,
+    onTile: (TileConfig) -> Unit = {},
+) {
     PresenceTheme {
         Column(
             modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -39,9 +48,11 @@ fun HomeScreen(seniorName: String, unreadMessages: Int = 0, onTile: (HomeTile) -
         ) {
             val greeting = if (seniorName.isBlank()) stringResource(R.string.greeting_anonymous) else stringResource(R.string.greeting, seniorName)
             Text(greeting, fontSize = 32.sp, textAlign = TextAlign.Center)
-            HomeTile.entries.chunked(2).forEach { pair ->
+            config.home.tiles.chunked(config.home.columns).forEach { rowTiles ->
                 Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    pair.forEach { Tile(it, if (it == HomeTile.MESSAGES) unreadMessages else 0, onTile) }
+                    rowTiles.forEach { Tile(it, if (it.action == TileAction.MESSAGES) unreadMessages else 0, onTile) }
+                    // Keep tile widths equal when the last row is not full.
+                    repeat(config.home.columns - rowTiles.size) { Spacer(Modifier.weight(1f)) }
                 }
             }
         }
@@ -49,7 +60,7 @@ fun HomeScreen(seniorName: String, unreadMessages: Int = 0, onTile: (HomeTile) -
 }
 
 @Composable
-private fun RowScope.Tile(tile: HomeTile, badge: Int, onTile: (HomeTile) -> Unit) {
+private fun RowScope.Tile(tile: TileConfig, badge: Int, onTile: (TileConfig) -> Unit) {
     val haptic = LocalHapticFeedback.current
     Card(
         Modifier.weight(1f).fillMaxSize()
@@ -64,9 +75,9 @@ private fun RowScope.Tile(tile: HomeTile, badge: Int, onTile: (HomeTile) -> Unit
                 BadgedBox(badge = {
                     if (badge > 0) Badge { Text("$badge", fontSize = 22.sp, modifier = Modifier.padding(horizontal = 6.dp)) }
                 }) {
-                    Icon(tile.icon, contentDescription = null, modifier = Modifier.size(72.dp))
+                    Icon(tile.icon.vector(), contentDescription = null, modifier = Modifier.size(72.dp))
                 }
-                Text(stringResource(tile.label), fontSize = 24.sp, textAlign = TextAlign.Center)
+                Text(tile.label ?: stringResource(tile.action.defaultLabel), fontSize = 24.sp, textAlign = TextAlign.Center)
                 if (badge > 0) {
                     Text(
                         when {
