@@ -28,4 +28,15 @@ class ContactTest {
 
     @Test
     fun smsUriKeepsDigitsAndLeadingPlus() = assertEquals("smsto:+33612345678", smsUri(" +33 6 12 34 56 78"))
+
+    @Test
+    fun dialableNumbersAllowOnlyDigitsAndSeparators() {
+        assertEquals(true, isDialable("+33 6 12 34 56 78"))
+        assertEquals(true, isDialable("(01) 23-45.67.89"))
+        assertEquals(false, isDialable("0611223344,0699887766")) // several recipients
+        assertEquals(false, isDialable("0611223344;1"))
+        assertEquals(false, isDialable("*#06#")) // a dialer code
+        assertEquals(false, isDialable("abc123"))
+        assertEquals(false, isDialable("12"))
+    }
 }

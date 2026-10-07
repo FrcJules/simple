@@ -29,4 +29,17 @@ class SensitiveTextTest {
         val ok = RawNotification("com.google.android.apps.messaging", "Marie", "Je passe à 15h", "msg")
         assertEquals(Incoming.Message("Marie", Channel.SMS, "Je passe à 15h"), NotificationParser.parse(ok))
     }
+
+    @Test
+    fun codesSplitInTwoBlocksOrVeryLongAreCaught() {
+        assertTrue(SensitiveText.looksSensitive("Votre code de connexion : 123 456"))
+        assertTrue(SensitiveText.looksSensitive("Code de validation 123-456, expire dans 5 minutes"))
+        assertTrue(SensitiveText.looksSensitive("Identifiant de paiement 1234567890"))
+    }
+
+    @Test
+    fun moreBankingWordsAreCaught() {
+        assertTrue(SensitiveText.looksSensitive("Achat de 59 EUR chez X : saisissez 482913 pour valider"))
+        assertTrue(SensitiveText.looksSensitive("Pour votre securite, le CVV temporaire est 4821"))
+    }
 }

@@ -24,7 +24,7 @@ L'application ne lit que les notifications des applications Téléphone, Message
 ## Dictée et lecture à voix haute
 Ces deux fonctions sont **facultatives** et ne se déclenchent que lorsque vous touchez le bouton. Elles utilisent les services de reconnaissance et de synthèse vocales **de votre téléphone** (généralement ceux de Google). L'application demande un traitement hors ligne, mais votre téléphone peut envoyer l'audio à ces services selon ses réglages : consultez la politique de confidentialité de votre fournisseur. L'application ne reçoit que le texte dicté.
 
-Les messages qui ressemblent à un code à usage unique ou à une alerte bancaire sont ignorés et ne sont ni conservés, ni lus, ni transmis.
+Les messages qui ressemblent à un code à usage unique ou à une alerte bancaire ne sont ni lus à voix haute ni transmis à l'écran maison. Reçus par les notifications, ils sont ignorés ; reçus directement par SMS (si Présence est votre application de messages), ils sont conservés sur le téléphone mais masqués.
 
 ## Partage
 Aucune donnée n'est vendue, partagée ou transmise à un tiers.
@@ -39,3 +39,9 @@ Présence ne s'adresse pas aux enfants.
 Questions : ouvrez une issue sur https://github.com/FrcJules/presence ou écrivez à jules.francois@epitech.eu.
 
 Le code source est public : vous pouvez vérifier ces engagements.
+
+## Si Présence devient votre application de messages (SMS)
+C'est un choix facultatif, fait dans l'application. Présence reçoit alors vos SMS : ils sont enregistrés dans la boîte de réception d'Android (comme avec toute application de messages) et copiés dans l'historique de Présence, **sur votre téléphone uniquement**, sans limite de durée tant que vous ne l'effacez pas (« Réglages famille »). Les messages existants sont copiés à l'activation. Les codes de sécurité sont masqués et jamais lus à voix haute. Aucun message n'est envoyé à Internet ni au développeur ; seuls les messages ordinaires peuvent être affichés sur votre écran maison, sur votre réseau Wi-Fi, de façon chiffrée.
+
+## Ce qui reste après une désinstallation ou un effacement
+« Effacer les messages » supprime l'historique de Présence. Les SMS enregistrés dans la boîte de réception d'Android (si Présence était votre application de messages) **restent** dans Android, comme avec toute application de messages, y compris après la désinstallation de Présence.

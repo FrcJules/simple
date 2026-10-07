@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The default-SMS-app role (ADR 0005) is declared for DEBUG builds only, until MMS are handled: a release that declared
+  these components could be chosen as the phone's SMS app in Android settings and would silently lose every MMS.
+  When MMS exist, move this content back into src/main/AndroidManifest.xml and remove SMS_ROLE_OFFERED.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-feature android:name="android.hardware.telephony" android:required="false" />
+
+    <!-- SMS/MMS: granted only while we are the default SMS app (ADR 0005); Play requires its permissions declaration form. -->
+    <uses-permission android:name="android.permission.READ_SMS" />
+    <uses-permission android:name="android.permission.SEND_SMS" />
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.RECEIVE_MMS" />
+    <uses-permission android:name="android.permission.RECEIVE_WAP_PUSH" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application>
+        <activity android:name="app.presence.launcher.MainActivity" android:exported="true">
+            <!-- Required of an SMS app: "write to this number" from other apps and links. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SENDTO" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="sms" />
+                <data android:scheme="smsto" />
+                <data android:scheme="mms" />
+                <data android:scheme="mmsto" />
+            </intent-filter>
+        </activity>
+
+        <receiver
+            android:name=".sms.SmsDeliverReceiver"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_SMS">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.SMS_DELIVER" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".sms.MmsDeliverReceiver"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_WAP_PUSH">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.WAP_PUSH_DELIVER" />
+                <data android:mimeType="application/vnd.wap.mms-message" />
+            </intent-filter>
+        </receiver>
+
+        <service
+            android:name=".sms.RespondViaMessageService"
+            android:exported="true"
+            android:permission="android.permission.SEND_RESPOND_VIA_MESSAGE">
+            <intent-filter>
+                <action android:name="android.intent.action.RESPOND_VIA_MESSAGE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="sms" />
+                <data android:scheme="smsto" />
+                <data android:scheme="mms" />
+                <data android:scheme="mmsto" />
+            </intent-filter>
+        </service>
+    </application>
+</manifest>
