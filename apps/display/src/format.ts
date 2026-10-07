@@ -24,10 +24,14 @@ export function timeAgo(from: Date, now: Date): string {
 export function headline(e: PresenceEvent): string {
   switch (e.type) {
     case "missed_call": return `${e.from.name} vous a appelé`;
+    case "new_message": return `Message de ${e.from.name}`;
     case "new_photo": return `Nouvelle photo envoyée par ${e.from.name}`;
     case "birthday": return `Anniversaire de ${e.who.name} aujourd'hui`;
   }
 }
 
 export const icon = (e: PresenceEvent) =>
-  ({ missed_call: "📞", new_photo: "📷", birthday: "🎂" })[e.type];
+  ({ missed_call: "📞", new_photo: "📷", new_message: "💬", birthday: "🎂" })[e.type];
+
+/** Extra line under the headline (message body), if the event carries one. */
+export const body = (e: PresenceEvent): string | undefined => (e.type === "new_message" ? e.text : undefined);

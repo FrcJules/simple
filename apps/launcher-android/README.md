@@ -6,4 +6,4 @@ Kotlin + Jetpack Compose. Se déclare comme application d'accueil (HOME). Ouvrir
 gradle :app:lintDebug :app:testDebugUnitTest :app:assembleDebug
 ```
 
-> TODO : ajouter le Gradle Wrapper (`gradle wrapper --gradle-version 8.10.2`) depuis une machine avec JDK 17 et le committer.
+> TODO : ajouter le Gradle Wrapper (`gradle wrapper --gradle-version 8.13`) depuis une machine avec JDK 17 et le committer.
