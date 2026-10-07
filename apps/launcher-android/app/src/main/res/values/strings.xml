@@ -13,4 +13,16 @@
     <string name="back">Retour</string>
     <string name="no_contacts">Demandez à un proche d\'ajouter vos contacts.</string>
     <string name="app_missing">Cette fonction n\'est pas disponible sur ce téléphone.</string>
+    <string name="setup_label">Réglages famille</string>
+    <string name="setup_title">Réglages famille</string>
+    <string name="setup_hub_url">Adresse de l\'écran maison (ex. https://192.168.1.20:8788)</string>
+    <string name="setup_token">Code d\'appairage (16 caractères minimum)</string>
+    <string name="setup_fingerprint">Empreinte du certificat (affichée par l\'écran maison au démarrage)</string>
+    <string name="setup_save">Enregistrer</string>
+    <string name="setup_saved">Enregistré.</string>
+    <string name="setup_invalid">Adresse https du réseau local, code de 16 caractères minimum et empreinte du certificat (64 caractères) requis.</string>
+    <string name="setup_access_on">Lecture des notifications : activée</string>
+    <string name="setup_access_off">Lecture des notifications : désactivée. Elle sert uniquement aux appels manqués, SMS et WhatsApp, et rien ne quitte la maison.</string>
+    <string name="setup_open_access">Ouvrir l\'accès aux notifications</string>
+    <string name="setup_refresh">Vérifier à nouveau</string>
 </resources>

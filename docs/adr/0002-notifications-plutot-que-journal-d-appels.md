@@ -1,6 +1,6 @@
 # 0002 — Lire les notifications plutôt que le journal d'appels / les SMS
 
-Statut : accepté (2026-10-06) — décision prise ; le `NotificationListenerService` n'est pas encore implémenté.
+Statut : accepté (2026-10-06) — implémenté en v0.2, à valider sur appareils réels.
 
 ## Contexte
 Présence doit afficher « Marie vous a appelé » et rendre visibles les SMS/messages sans que la famille change d'outil. Les permissions `READ_CALL_LOG`, `READ_SMS`, `RECEIVE_SMS` sont, selon la [politique Google Play](https://support.google.com/googleplay/android-developer/answer/9047303), réservées à l'application SMS, Téléphone ou Assistant **par défaut**, hors exceptions rares. Un launcher n'est dans aucun de ces cas ; devenir l'application SMS/Téléphone par défaut serait disproportionné.
@@ -11,7 +11,8 @@ Utiliser un `NotificationListenerService` (accès aux notifications, accordé ma
 - afficher les SMS et messages (WhatsApp inclus) reçus, pour les montrer en grand et les lire à voix haute.
 
 Garde-fous :
-- On ne conserve que expéditeur + type + heure (+ texte du message uniquement en mémoire pour l'affichage/TTS) ; jamais d'envoi hors du réseau local ([privacy.md](../privacy.md)).
+- Le téléphone ne conserve rien. Le hub garde les 200 derniers événements (expéditeur, type, heure, texte du message) **en mémoire seulement**, jusqu'à son redémarrage. Aucun envoi hors du réseau local ([privacy.md](../privacy.md)).
+- Seuls les messages de conversation (catégorie `msg`) sont transmis, pas les notifications de progression, système ou promotionnelles.
 - Liste blanche de paquets surveillés (Téléphone, Messages, WhatsApp) ; toutes les autres notifications sont ignorées sans être lues.
 - Écran d'explication en langage simple avant d'ouvrir les réglages d'accès aux notifications ; formulaire de déclaration Play rempli en conséquence.
 

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/main.ts",
-    "build": "tsup src/main.ts --format esm --target node22 --noExternal @presence/contracts --clean",
+    "build": "tsup",
     "start": "node dist/main.js",
     "typecheck": "tsc -p .",
     "test": "vitest run"

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { formatDate, formatTime, greeting, headline, icon, timeAgo } from "./format";
+import { body, formatDate, formatTime, greeting, headline, icon, timeAgo } from "./format";
 import { useEvents } from "./useEvents";
 import "./app.css";
 
@@ -26,6 +26,7 @@ export function App() {
         <section className="card" aria-live="polite">
           <span className="icon" aria-hidden="true">{icon(latest)}</span>
           <p className="headline">{headline(latest)}</p>
+          {body(latest) && <p className="body">{body(latest)}</p>}
           <p className="ago">{timeAgo(new Date(latest.occurredAt), now)}</p>
         </section>
       )}
