@@ -20,5 +20,6 @@ Lecture des notifications (ADR 0002) : **livrée en v0.2, à valider sur apparei
 **Limites connues (à traiter avant publication sur le Play Store)**
 - Le jeton est dans des préférences privées non chiffrées (Keystore à prévoir).
 - « Réglages famille » est accessible depuis la liste des applications : prévoir un code famille.
-- Les codes à usage unique reçus par SMS sont transmis ; prévoir un filtre et une option « ne pas afficher le texte ».
+- Le filtre des codes à usage unique est volontairement large (faux positifs possibles) ; une option « ne pas afficher le texte » reste à faire.
+- La dictée vocale passe par le service du système et peut envoyer l'audio chez son éditeur (ADR 0004).
 - La saisie manuelle de l'empreinte est pénible : prévoir un QR code d'appairage affiché par le hub.

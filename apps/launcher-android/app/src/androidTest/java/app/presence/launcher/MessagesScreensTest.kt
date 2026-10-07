@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -63,7 +64,7 @@ class MessagesScreensTest {
     @Test
     fun detailOffersListenAndReplyOnlyForKnownContacts() {
         var listened = false
-        rule.setContent { MessageDetailScreen(items[0], now, onListen = { listened = true }, onReply = {}, onBack = {}) }
+        rule.setContent { MessageDetailScreen(items[0], now, canDictate = true, notice = null, onListen = { listened = true }, onReply = {}, onBack = {}) }
         rule.onNodeWithText("Répondre").assertIsDisplayed()
         shot("22_message_detail")
         rule.onNodeWithText("Écouter").performClick()
@@ -72,20 +73,20 @@ class MessagesScreensTest {
 
     @Test
     fun detailHidesReplyForUnknownSenders() {
-        rule.setContent { MessageDetailScreen(items[1], now, onListen = {}, onReply = {}, onBack = {}) }
+        rule.setContent { MessageDetailScreen(items[1], now, canDictate = true, notice = null, onListen = {}, onReply = {}, onBack = {}) }
         rule.onNodeWithText("Écouter").assertIsDisplayed()
-        rule.onAllNodesWithTextCount("Répondre", 0)
+        assertEquals(0, rule.onAllNodesWithText("Répondre").fetchSemanticsNodes().size)
     }
 
     @Test
     fun replyConfirmationShowsTheDictatedTextAndLetsYouCancel() {
         var sent = false
         var cancelled = false
-        rule.setContent { ReplyConfirmScreen(items[0], "Oui, venez à 15 heures", onSend = { sent = true }, onRedo = {}, onCancel = { cancelled = true }) }
+        rule.setContent { ReplyConfirmScreen(items[0], "Oui, venez à 15 heures", onListen = {}, onSend = { sent = true }, onRedo = {}, onCancel = { cancelled = true }) }
         rule.onNodeWithText("Oui, venez à 15 heures").assertIsDisplayed()
         rule.onNodeWithText("Répondre à Marie").assertIsDisplayed()
         shot("23_reply_confirm")
-        rule.onNodeWithText("Non, annuler").performClick()
+        rule.onNodeWithText("Ne pas envoyer").performClick()
         assertTrue(cancelled)
         assertEquals(false, sent)
     }
@@ -93,11 +94,20 @@ class MessagesScreensTest {
     @Test
     fun homeShowsTheUnreadBadge() {
         rule.setContent { HomeScreen(seniorName = "Jean-Pierre", unreadMessages = 2) }
-        rule.onNodeWithText("2").assertIsDisplayed()
+        rule.onNodeWithText("2 nouveaux").assertIsDisplayed()
         shot("24_home_badge")
     }
-}
 
-private fun androidx.compose.ui.test.junit4.ComposeContentTestRule.onAllNodesWithTextCount(text: String, expected: Int) {
-    assertEquals(expected, onAllNodesWithText(text).fetchSemanticsNodes().size)
+    @Test
+    fun detailExplainsWhenDictationIsUnavailable() {
+        rule.setContent { MessageDetailScreen(items[0], now, canDictate = false, notice = null, onListen = {}, onReply = {}, onBack = {}) }
+        rule.onNodeWithText("Je ne peux pas écouter votre voix sur ce téléphone. Demandez à un proche.").assertIsDisplayed()
+        assertEquals(0, rule.onAllNodesWithText("Répondre").fetchSemanticsNodes().size)
+    }
+
+    @Test
+    fun detailShowsTheNoticeAfterAnEmptyDictation() {
+        rule.setContent { MessageDetailScreen(items[0], now, canDictate = true, notice = "Je n'ai rien entendu. Touchez « Répondre » pour réessayer.", onListen = {}, onReply = {}, onBack = {}) }
+        rule.onNodeWithText("Je n'ai rien entendu. Touchez « Répondre » pour réessayer.").assertIsDisplayed()
+    }
 }

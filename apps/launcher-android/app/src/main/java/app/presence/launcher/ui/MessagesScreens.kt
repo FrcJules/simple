@@ -107,6 +107,8 @@ private fun MessageRow(item: MessageItem, nowMs: Long, onOpen: (MessageItem) -> 
 fun MessageDetailScreen(
     item: MessageItem,
     nowMs: Long,
+    canDictate: Boolean,
+    notice: String?,
     onListen: () -> Unit,
     onReply: () -> Unit,
     onBack: () -> Unit,
@@ -119,37 +121,73 @@ fun MessageDetailScreen(
             Box(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
                 Text(item.message.text, fontSize = 32.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
             }
-            Button(onClick = onListen, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
-                Icon(Icons.Filled.VolumeUp, contentDescription = null)
-                Spacer(Modifier.width(12.dp))
-                Text(stringResource(R.string.message_listen), fontSize = 28.sp)
+            if (notice != null) Text(notice, fontSize = 24.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+            // One main action: listen while the message is new, reply once it has been heard.
+            val listenIsMain = !item.message.read || !item.canReply || !canDictate
+            if (listenIsMain) ListenButton(onListen, main = true)
+            if (item.canReply && canDictate) {
+                ReplyButton(onReply, main = !listenIsMain)
+            } else if (item.canReply) {
+                Text(stringResource(R.string.dictate_unavailable), fontSize = 24.sp, textAlign = TextAlign.Center)
             }
-            if (item.canReply) {
-                Button(onClick = onReply, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
-                    Icon(Icons.Filled.Mic, contentDescription = null)
-                    Spacer(Modifier.width(12.dp))
-                    Text(stringResource(R.string.message_reply), fontSize = 28.sp)
-                }
-            }
+            if (!listenIsMain) ListenButton(onListen, main = false)
             BackButton(onBack)
         }
     }
 }
 
-/** Shows what was dictated before anything is sent, with a big way out. */
 @Composable
-fun ReplyConfirmScreen(item: MessageItem, text: String, onSend: () -> Unit, onRedo: () -> Unit, onCancel: () -> Unit) {
+private fun ListenButton(onClick: () -> Unit, main: Boolean) {
+    val content: @Composable () -> Unit = {
+        Icon(Icons.Filled.VolumeUp, contentDescription = null)
+        Spacer(Modifier.width(12.dp))
+        Text(stringResource(R.string.message_listen), fontSize = 28.sp)
+    }
+    if (main) Button(onClick = onClick, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) { content() }
+    else OutlinedButton(onClick = onClick, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) { content() }
+}
+
+@Composable
+private fun ReplyButton(onClick: () -> Unit, main: Boolean) {
+    val content: @Composable () -> Unit = {
+        Icon(Icons.Filled.Mic, contentDescription = null)
+        Spacer(Modifier.width(12.dp))
+        Text(stringResource(R.string.message_reply), fontSize = 28.sp)
+    }
+    if (main) Button(onClick = onClick, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) { content() }
+    else OutlinedButton(onClick = onClick, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) { content() }
+}
+
+/**
+ * Shows what was dictated before anything happens. We cannot send an SMS ourselves (Play policy, ADR 0002): the
+ * messaging app opens on a draft and the person taps its send arrow, so the screen says so instead of promising "Envoyer".
+ */
+@Composable
+fun ReplyConfirmScreen(
+    item: MessageItem,
+    text: String,
+    onListen: () -> Unit,
+    onSend: () -> Unit,
+    onRedo: () -> Unit,
+    onCancel: () -> Unit,
+) {
     PresenceTheme {
         Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Avatar(item.displayContact, Modifier.fillMaxWidth(0.4f).aspectRatio(1f))
             Text(stringResource(R.string.reply_to, item.message.from), fontSize = 28.sp, textAlign = TextAlign.Center)
             Box(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
-                Text(text, fontSize = 32.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                Text(text, fontSize = 30.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
             }
+            Text(stringResource(R.string.reply_hint), fontSize = 24.sp, textAlign = TextAlign.Center)
             Button(onClick = onSend, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
                 Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null)
                 Spacer(Modifier.width(12.dp))
                 Text(stringResource(R.string.reply_send), fontSize = 28.sp)
+            }
+            OutlinedButton(onClick = onListen, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
+                Icon(Icons.Filled.VolumeUp, contentDescription = null)
+                Spacer(Modifier.width(12.dp))
+                Text(stringResource(R.string.reply_listen), fontSize = 28.sp)
             }
             OutlinedButton(onClick = onRedo, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
                 Icon(Icons.Filled.Mic, contentDescription = null)
@@ -159,7 +197,7 @@ fun ReplyConfirmScreen(item: MessageItem, text: String, onSend: () -> Unit, onRe
             OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
                 Icon(Icons.Filled.Close, contentDescription = null)
                 Spacer(Modifier.width(12.dp))
-                Text(stringResource(R.string.call_no), fontSize = 28.sp)
+                Text(stringResource(R.string.reply_cancel), fontSize = 28.sp)
             }
         }
     }

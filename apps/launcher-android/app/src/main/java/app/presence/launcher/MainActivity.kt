@@ -16,6 +16,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.presence.launcher.messages.MessageItem
@@ -37,7 +38,8 @@ class MainActivity : ComponentActivity() {
     private val contactsVm: ContactsViewModel by viewModels()
     private val messagesVm: MessagesViewModel by viewModels()
     private val profile by lazy { ProfileStore(this) }
-    private val speaker by lazy { Speaker(this) }
+    private var speakerInstance: Speaker? = null
+    private fun speaker() = speakerInstance ?: Speaker(this).also { speakerInstance = it }
     private var screen by mutableStateOf(Screen.HOME)
 
     /** Set while "J'appelle X…" is shown; null otherwise. Kept separate so the call screen can never exist without a contact. */
@@ -47,6 +49,9 @@ class MainActivity : ComponentActivity() {
     /** The message being read, by id: the live item is looked up so a late photo or contact update still shows. */
     private var openMessageId by mutableStateOf<String?>(null)
     private var replyText by mutableStateOf("")
+
+    /** A short explanation shown on the message screen (e.g. nothing was heard), as text and not a fleeting toast. */
+    private var notice by mutableStateOf<Int?>(null)
 
     private val permissions = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         profile.markContactsAsked()
@@ -60,7 +65,11 @@ class MainActivity : ComponentActivity() {
         val spoken = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()?.trim().orEmpty()
         if (spoken.isNotEmpty()) {
             replyText = spoken
+            notice = null
             screen = Screen.REPLY
+        } else {
+            notice = R.string.dictate_empty
+            screen = Screen.MESSAGE
         }
     }
 
@@ -118,6 +127,8 @@ class MainActivity : ComponentActivity() {
                         MessageDetailScreen(
                             item = open,
                             nowMs = System.currentTimeMillis(),
+                            canDictate = canDictate(),
+                            notice = notice?.let { stringResource(it) },
                             onListen = { listen(open) },
                             onReply = { dictate() },
                             onBack = { closeMessage() },
@@ -132,9 +143,15 @@ class MainActivity : ComponentActivity() {
                         ReplyConfirmScreen(
                             item = open,
                             text = replyText,
+                            onListen = { speakText(replyText) },
                             onSend = {
-                                open.contact?.let { LauncherActions.smsDraft(this, it.number, replyText) }
-                                closeMessage()
+                                val number = open.contact?.number
+                                if (number != null) {
+                                    LauncherActions.smsDraft(this, number, replyText)
+                                    closeMessage()
+                                } else {
+                                    Toast.makeText(this, R.string.number_invalid, Toast.LENGTH_LONG).show() // stay here: nothing was prepared
+                                }
                             },
                             onRedo = { dictate() },
                             onCancel = { screen = Screen.MESSAGE },
@@ -157,11 +174,11 @@ class MainActivity : ComponentActivity() {
     override fun onPause() {
         super.onPause()
         calling = null // never place a call after the screen went off or another app came to the front
-        speaker.stop()
+        speakerInstance?.stop()
     }
 
     override fun onDestroy() {
-        speaker.shutdown()
+        speakerInstance?.shutdown()
         super.onDestroy()
     }
 
@@ -181,6 +198,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun openMessage(item: MessageItem) {
+        notice = null
         messagesVm.markRead(item.message.id)
         openMessageId = item.message.id
         screen = Screen.MESSAGE
@@ -191,21 +209,26 @@ class MainActivity : ComponentActivity() {
         screen = Screen.MESSAGES
     }
 
-    private fun listen(item: MessageItem) {
-        if (!speaker.speak("${item.message.from}. ${item.message.text}")) {
-            Toast.makeText(this, R.string.listen_unavailable, Toast.LENGTH_LONG).show()
-        }
+    private fun listen(item: MessageItem) = speakText("${item.message.from}. ${item.message.text}")
+
+    /** Only ever called from a button press: nothing is read aloud on its own. */
+    private fun speakText(text: String) {
+        speaker().speak(text) { Toast.makeText(this, R.string.listen_unavailable, Toast.LENGTH_LONG).show() }
     }
 
+    private fun dictationIntent() = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+        .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+        .putExtra(RecognizerIntent.EXTRA_LANGUAGE, "fr-FR")
+        .putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true) // a request: the system service may still use its servers (ADR 0004)
+        .putExtra(RecognizerIntent.EXTRA_PROMPT, getString(R.string.dictate_prompt))
+
+    private fun canDictate() = dictationIntent().resolveActivity(packageManager) != null
+
     private fun dictate() {
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
-            .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            .putExtra(RecognizerIntent.EXTRA_LANGUAGE, "fr-FR")
-            .putExtra(RecognizerIntent.EXTRA_PROMPT, getString(R.string.dictate_prompt))
         try {
-            dictation.launch(intent)
+            dictation.launch(dictationIntent())
         } catch (e: ActivityNotFoundException) {
-            Toast.makeText(this, R.string.dictate_unavailable, Toast.LENGTH_LONG).show()
+            notice = R.string.dictate_unavailable
         }
     }
 

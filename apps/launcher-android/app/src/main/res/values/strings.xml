@@ -40,11 +40,11 @@
     <string name="message_listen">Écouter</string>
     <string name="message_reply">Répondre</string>
     <string name="reply_to">Répondre à %1$s</string>
-    <string name="reply_send">Envoyer</string>
+    <string name="reply_send">Passer à l\'envoi</string>
     <string name="reply_redo">Dire autre chose</string>
     <string name="dictate_prompt">Parlez maintenant</string>
-    <string name="dictate_unavailable">La dictée n\'est pas disponible sur ce téléphone.</string>
-    <string name="listen_unavailable">La lecture à voix haute n\'est pas disponible sur ce téléphone.</string>
+    <string name="dictate_unavailable">Je ne peux pas écouter votre voix sur ce téléphone. Demandez à un proche.</string>
+    <string name="listen_unavailable">Je ne peux pas lire à voix haute sur ce téléphone.</string>
     <string name="ago_now">à l\'instant</string>
     <string name="ago_minute">il y a 1 minute</string>
     <string name="ago_minutes">il y a %1$d minutes</string>
@@ -57,4 +57,14 @@
     <string name="setup_photo_choose">Choisir une photo</string>
     <string name="setup_photo_remove">Retirer la photo</string>
     <string name="setup_photo_failed">Cette photo n\'a pas pu être utilisée.</string>
+    <string name="reply_hint">Le message sera préparé dans l\'application Messages. Touchez la flèche d\'envoi pour l\'envoyer.</string>
+    <string name="reply_listen">Écouter ma réponse</string>
+    <string name="reply_cancel">Ne pas envoyer</string>
+    <string name="dictate_empty">Je n\'ai rien entendu. Touchez « Répondre » pour réessayer.</string>
+    <string name="tile_new_count">%1$d nouveaux</string>
+    <string name="tile_new_one">1 nouveau</string>
+    <string name="tile_new_many">Plus de 9 nouveaux</string>
+    <string name="setup_erase_messages">Effacer les messages conservés</string>
+    <string name="setup_erase_photos">Effacer les photos des proches</string>
+    <string name="setup_erased">C\'est effacé.</string>
 </resources>

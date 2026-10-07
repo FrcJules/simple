@@ -19,6 +19,11 @@ class ContactPhotoStore(context: Context) {
 
     fun uriFor(contactId: Long): String? = File(dir, "$contactId.jpg").takeIf { it.exists() }?.let { Uri.fromFile(it).toString() }
 
+    /** Deletes every photo chosen through the app ("Effacer les photos" in Réglages famille). */
+    fun clearAll() {
+        dir.listFiles()?.forEach { it.delete() }
+    }
+
     fun remove(contactId: Long) {
         File(dir, "$contactId.jpg").delete()
     }
