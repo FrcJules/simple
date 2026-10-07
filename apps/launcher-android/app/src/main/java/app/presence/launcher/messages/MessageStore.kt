@@ -34,6 +34,7 @@ class MessageStore(
                     id TEXT PRIMARY KEY,
                     who TEXT NOT NULL,
                     address TEXT,
+                    thread TEXT NOT NULL,
                     channel TEXT NOT NULL,
                     outgoing INTEGER NOT NULL DEFAULT 0,
                     body TEXT NOT NULL,
@@ -43,7 +44,21 @@ class MessageStore(
                 )""",
             )
             db.execSQL("CREATE INDEX messages_at ON messages(at)")
-            db.execSQL("CREATE INDEX messages_address ON messages(address, at)")
+            db.execSQL("CREATE INDEX messages_thread ON messages(thread, at)")
+            // MMS parts (images, audio, video) are stored as private files; the row only points to them.
+            db.execSQL(
+                """CREATE TABLE attachments (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    message_id TEXT NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+                    mime TEXT NOT NULL,
+                    path TEXT NOT NULL
+                )""",
+            )
+            db.execSQL("CREATE INDEX attachments_message ON attachments(message_id)")
+        }
+
+        override fun onConfigure(db: SQLiteDatabase) {
+            db.setForeignKeyConstraintsEnabled(true) // ON DELETE CASCADE for attachments
         }
 
         override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
@@ -93,10 +108,10 @@ class MessageStore(
         helper.readableDatabase.rawQuery("SELECT COUNT(*) FROM messages WHERE read = 0 AND outgoing = 0", null)
             .use { it.moveToFirst(); it.getInt(0) }
 
-    /** The whole conversation with one phone number, oldest first. */
+    /** The whole SMS conversation with one phone number (any way of writing it), oldest first. */
     @Synchronized
     fun conversation(address: String): List<StoredMessage> =
-        query("address = ?", arrayOf(address), "at ASC", null)
+        query("thread = ?", arrayOf(ThreadKey.of(Channel.SMS, address, address)), "at ASC", null)
 
     private fun publish() {
         _messages.value = query(null, null, "at DESC", RECENT.toString()).reversed()
@@ -120,6 +135,7 @@ class MessageStore(
 
     private fun values(m: StoredMessage) = ContentValues().apply {
         put("id", m.id); put("who", m.from); put("address", m.address); put("channel", m.channel.wire)
+        put("thread", ThreadKey.of(m.channel, m.address, m.from))
         put("outgoing", if (m.outgoing) 1 else 0); put("body", m.text); put("at", m.receivedAtMs)
         put("read", if (m.read) 1 else 0); put("status", m.status.code)
     }
