@@ -11,7 +11,7 @@ import java.util.UUID
  * phone rely on it), kept in our own history, forwarded to the home display and announced.
  *
  * A one-time code or banking alert is kept (it is the person's own SMS) but flagged: masked in lists, never read aloud,
- * never forwarded to the home display.
+ * never forwarded to the home display. Only messages from known contacts are forwarded to the display at all.
  */
 class SmsInbox(
     private val gateway: SmsProviderGateway,
@@ -24,12 +24,14 @@ class SmsInbox(
 ) {
     fun onReceived(address: String, body: String, dateSentMs: Long, subId: Int) {
         val now = clock()
-        gateway.insertIncoming(address, body, now, dateSentMs, subId)
         val sensitive = SensitiveText.looksSensitive(body)
-        val name = nameFor(address)?.takeIf { it.isNotBlank() } ?: address
-        val message = StoredMessage(newId(), name, Channel.SMS, body, now, address = address, sensitive = sensitive)
-        add(message)
-        if (!sensitive) forward(Incoming.Message(name.take(60), Channel.SMS, body.take(500)))
-        notify(message)
+        val contactName = nameFor(address)?.takeIf { it.isNotBlank() }
+        val message = StoredMessage(newId(), contactName ?: address, Channel.SMS, body, now, address = address, sensitive = sensitive)
+        // A received SMS must never be lost: each step is isolated so that one failing does not stop the others.
+        runCatching { add(message) }
+        runCatching { gateway.insertIncoming(address, body, now, dateSentMs, subId) }
+        // The home display is visible from the whole room: only people we know appear there, never a stranger's or a company's text.
+        if (!sensitive && contactName != null) runCatching { forward(Incoming.Message(contactName.take(60), Channel.SMS, body.take(500))) }
+        runCatching { notify(message) }
     }
 }

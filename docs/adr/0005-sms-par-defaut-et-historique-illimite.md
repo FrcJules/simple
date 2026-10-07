@@ -23,5 +23,6 @@ Pré-remplir le message dans l'application Messages du téléphone (comportement
 - **Envoi** : `SmsSender` (SMS longs découpés, statut « envoi / envoyé / remis / non envoyé » suivi par pièce, échec visible).
 - **Import** : à l'acquisition du rôle, les SMS existants du téléphone sont copiés dans l'historique (tous marqués lus).
 - **Conversations** : regroupées par personne (`0612…` et `+33612…` ensemble) ; WhatsApp reste séparé (répondre changerait de canal).
-- **Garde-fou** : en version « release », le rôle n'est pas proposé tant que les MMS ne sont pas gérés (un MMS reçu serait perdu).
+- **Garde-fou** : le rôle (permissions SMS, récepteurs, service, filtre `sms:`) n'est déclaré que dans `src/debug/AndroidManifest.xml` ; le manifeste **release** n'en contient rien, donc Android ne peut pas proposer l'application comme application SMS tant que les MMS ne sont pas gérés (un MMS reçu serait perdu). À déplacer dans `src/main` avec les MMS.
+- **Écran maison** : seuls les SMS de personnes présentes dans les contacts y sont envoyés. **Effacement** : écrasement et compactage de la base ; la boîte SMS du système n'est pas touchée.
 - **Vérification** : tests unitaires (Robolectric, vrai PDU GSM) et test de bout en bout sur émulateur (SMS envoyé à soi-même, reçu et conservé).

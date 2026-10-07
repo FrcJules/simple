@@ -146,15 +146,23 @@ class SetupActivity : ComponentActivity() {
                     appearanceMessage?.let { Text(it) }
 
                     var erased by remember { mutableStateOf(false) }
-                    OutlinedButton(onClick = {
+                    ConfirmedButton(stringResource(R.string.setup_erase_messages), stringResource(R.string.setup_erase_confirm)) {
                         MessageStore.get(this@SetupActivity).clear()
                         erased = true
-                    }) { Text(stringResource(R.string.setup_erase_messages)) }
-                    OutlinedButton(onClick = {
+                    }
+                    ConfirmedButton(stringResource(R.string.setup_erase_photos), stringResource(R.string.setup_erase_confirm)) {
                         photoStore.clearAll()
                         contactsVm.refresh()
                         erased = true
-                    }) { Text(stringResource(R.string.setup_erase_photos)) }
+                    }
+                    if (BuildConfig.SMS_ROLE_OFFERED) {
+                        var offered by remember { mutableStateOf(false) }
+                        OutlinedButton(onClick = {
+                            profile.setSmsRoleDeclined(false)
+                            offered = true
+                        }) { Text(stringResource(R.string.setup_sms_offer)) }
+                        if (offered) Text(stringResource(R.string.setup_sms_offered))
+                    }
                     if (erased) Text(stringResource(R.string.setup_erased))
 
                     val contacts by contactsVm.contacts.collectAsStateWithLifecycle()
@@ -185,4 +193,13 @@ class SetupActivity : ComponentActivity() {
     }
 
     private fun hasNotificationAccess() = NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName)
+}
+
+/** A destructive action needs two touches: the first one only asks. */
+@androidx.compose.runtime.Composable
+private fun ConfirmedButton(label: String, confirmLabel: String, onConfirmed: () -> Unit) {
+    var armed by remember { mutableStateOf(false) }
+    OutlinedButton(onClick = { if (armed) { armed = false; onConfirmed() } else armed = true }) {
+        Text(if (armed) confirmLabel else label)
+    }
 }

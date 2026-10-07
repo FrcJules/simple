@@ -18,5 +18,9 @@ fun telUri(number: String): String = "tel:${dialable(number)}"
 /** Same cleaning for an `smsto:` URI (opens the messaging app with a draft). */
 fun smsUri(number: String): String = "smsto:${dialable(number)}"
 
-/** A number worth dialing directly: at least 3 digits. */
-fun isDialable(number: String): Boolean = number.count { it.isDigit() } >= 3
+/**
+ * A number worth dialing or texting: only digits and the usual separators (never `,` `;` `*` `#` or letters, which could
+ * chain several recipients or dial a code), with at least 3 digits.
+ */
+fun isDialable(number: String): Boolean =
+    number.count { it.isDigit() } >= 3 && number.all { it.isDigit() || it in "+ ()-." }

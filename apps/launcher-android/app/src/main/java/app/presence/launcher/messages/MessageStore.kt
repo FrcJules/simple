@@ -115,10 +115,16 @@ class MessageStore(
         publish()
     }
 
-    /** Erases the whole history. */
+    /**
+     * Erases the whole history of this app (the system SMS box is not touched). Freed pages are overwritten and the file is
+     * compacted, so deleted messages cannot be recovered from the database file.
+     */
     @Synchronized
     fun clear() {
-        helper.writableDatabase.delete("messages", null, null)
+        val db = helper.writableDatabase
+        db.rawQuery("PRAGMA secure_delete = ON", null).use { it.moveToFirst() }
+        db.delete("messages", null, null)
+        db.execSQL("VACUUM")
         publish()
     }
 

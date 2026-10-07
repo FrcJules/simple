@@ -1,6 +1,7 @@
 package app.presence.launcher
 
 import android.Manifest
+import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -74,6 +75,10 @@ class MainActivity : ComponentActivity() {
     private var composeItem by mutableStateOf<MessageItem?>(null)
     private var replyText by mutableStateOf("")
 
+    /** "Plus tard" on the SMS-role screen lasts until the app is restarted; only a "no" in Android's own dialog is remembered. */
+    private var smsRoleLater = false
+    private var importing by mutableStateOf(false)
+
     /** A short explanation shown on the conversation screen (e.g. nothing was heard), as text and not a fleeting toast. */
     private var notice by mutableStateOf<Int?>(null)
 
@@ -95,7 +100,8 @@ class MainActivity : ComponentActivity() {
             notice = null
             screen = Screen.REPLY
         } else {
-            notice = R.string.dictate_empty
+            // Closing the microphone window is not "nothing heard": only say so when it really listened.
+            notice = if (result.resultCode == Activity.RESULT_CANCELED) null else R.string.dictate_empty
             screen = Screen.MESSAGE
         }
     }
@@ -146,7 +152,7 @@ class MainActivity : ComponentActivity() {
                     }
                     Screen.MESSAGES -> {
                         BackHandler { screen = Screen.HOME }
-                        MessagesScreen(
+                        if (importing) MessageScreen(R.string.importing, onBack = { screen = Screen.HOME }) else MessagesScreen(
                             items = conversations,
                             nowMs = System.currentTimeMillis(),
                             onOpen = { openConversation(it) },
@@ -172,6 +178,7 @@ class MainActivity : ComponentActivity() {
                                 onListen = { listen(thread) },
                                 onReply = { dictate() },
                                 onBack = { closeConversation() },
+                                onRetry = { failed -> sendReply(open, failed.text) },
                             )
                         }
                     }
@@ -184,6 +191,8 @@ class MainActivity : ComponentActivity() {
                                 item = open,
                                 text = replyText,
                                 directSend = SmsRole.isHeld(this),
+                                isNew = thread.isEmpty(),
+                                notice = notice?.let { stringResource(it) } ?: if (open.contact == null) stringResource(R.string.reply_unknown_number) else null,
                                 onListen = { speakText(replyText) },
                                 onSend = { sendReply(open, replyText) },
                                 onRedo = { dictate() },
@@ -256,7 +265,7 @@ class MainActivity : ComponentActivity() {
     // ---- SMS role ----
 
     private fun shouldOfferSmsRole() =
-        BuildConfig.SMS_ROLE_OFFERED && !SmsRole.isHeld(this) && !profile.smsRoleDeclined() && SmsRole.requestIntent(this) != null
+        BuildConfig.SMS_ROLE_OFFERED && !SmsRole.isHeld(this) && !profile.smsRoleDeclined() && !smsRoleLater && SmsRole.requestIntent(this) != null
 
     private fun openMessages() {
         screen = if (shouldOfferSmsRole()) Screen.SMS_ROLE else Screen.MESSAGES
@@ -276,7 +285,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun declineSmsRole() {
-        profile.setSmsRoleDeclined(true)
+        smsRoleLater = true // not remembered: the family can still choose it later, and it is offered again next time the app starts
         screen = Screen.MESSAGES
     }
 
@@ -287,9 +296,18 @@ class MainActivity : ComponentActivity() {
                 notificationsPermission.launch(Manifest.permission.POST_NOTIFICATIONS) // so new messages can be announced
             }
             if (!profile.smsImported()) {
+                importing = true
                 lifecycleScope.launch {
-                    withContext(Dispatchers.IO) { SmsComponents.importer(this@MainActivity).importAll() }
-                    profile.markSmsImported()
+                    val ok = withContext(Dispatchers.IO) {
+                        try {
+                            SmsComponents.importer(this@MainActivity).importAll()
+                            true
+                        } catch (e: RuntimeException) {
+                            false // try again next time: the history is only copied, never moved
+                        }
+                    }
+                    if (ok) profile.markSmsImported()
+                    importing = false
                     messagesVm.refresh()
                 }
             }
@@ -345,15 +363,14 @@ class MainActivity : ComponentActivity() {
             replyText = body
             screen = Screen.REPLY
         } else {
-            screen = Screen.MESSAGE
-            if (canDictate()) dictate()
+            screen = Screen.MESSAGE // the big "Dire mon message" button starts the microphone, never a surprise
         }
     }
 
     private fun sendReply(item: MessageItem, text: String) {
         val number = item.replyNumber
         if (number == null) {
-            Toast.makeText(this, R.string.number_invalid, Toast.LENGTH_LONG).show() // stay here: nothing was prepared
+            notice = R.string.number_invalid // stay on the confirmation, with the text still there
             return
         }
         if (!SmsRole.isHeld(this)) {
@@ -361,14 +378,16 @@ class MainActivity : ComponentActivity() {
             closeConversation()
             return
         }
+        // Leave the confirmation at once so a second touch cannot send twice; the message shows up with "Envoi en cours…".
+        notice = null
+        screen = Screen.MESSAGE
         lifecycleScope.launch {
             val result = withContext(Dispatchers.IO) { SmsComponents.sender(this@MainActivity).send(number, text, item.message.from) }
-            if (result is SendResult.Started) {
-                notice = null
-                screen = Screen.MESSAGE // the new message appears in the conversation with its progress
-            } else {
+            if (result !is SendResult.Started) {
+                // Nothing was stored: go back to the confirmation with the text, instead of losing what was dictated.
+                replyText = text
                 notice = R.string.send_failed
-                screen = Screen.MESSAGE
+                screen = Screen.REPLY
             }
         }
     }
@@ -412,6 +431,6 @@ class MainActivity : ComponentActivity() {
         ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
 
     private companion object {
-        val SMS_SCHEMES = setOf("sms", "smsto", "mms", "mmsto")
+        val SMS_SCHEMES = setOf("sms", "smsto") // mms:/mmsto: once MMS are handled
     }
 }

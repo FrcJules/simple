@@ -33,9 +33,11 @@ class SmsInboxTest {
     }
 
     @Test
-    fun anUnknownSenderIsShownByNumber() {
+    fun anUnknownSenderIsShownByNumberAndNeverSentToTheDisplay() {
         inbox().onReceived("0611223344", "Bonjour", 0L, -1)
         assertEquals("0611223344", stored.single().from)
+        assertTrue(forwarded.isEmpty()) // the display is visible from the whole room: strangers' texts stay on the phone
+        assertEquals(1, notified.size)
     }
 
     @Test
@@ -45,6 +47,19 @@ class SmsInboxTest {
         assertEquals(1, gateway.inserted.size) // still in the system inbox
         assertTrue(forwarded.isEmpty()) // never leaves the phone
         assertEquals(1, notified.size) // the person is still told a message arrived
+    }
+
+    @Test
+    fun aFailingStepNeverLosesTheMessageOrStopsTheOthers() {
+        val boom = object : SmsProviderGateway by FakeGateway() {
+            override fun insertIncoming(address: String, body: String, dateMs: Long, dateSentMs: Long, subId: Int): Long? =
+                throw IllegalStateException("provider down")
+        }
+        val kept = mutableListOf<StoredMessage>()
+        val told = mutableListOf<StoredMessage>()
+        SmsInbox(boom, kept::add, { "Marie" }, { throw IllegalStateException("hub down") }, told::add).onReceived("0611223344", "Bonjour", 0L, -1)
+        assertEquals(1, kept.size)
+        assertEquals(1, told.size)
     }
 
     @Test
