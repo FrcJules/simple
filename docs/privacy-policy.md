@@ -12,11 +12,13 @@ Présence est une application libre et gratuite. Elle n'a **ni compte, ni public
 | Autorisation d'appeler | Lancer l'appel après votre confirmation | Reste sur le téléphone |
 | Notifications d'appel manqué, de SMS et de WhatsApp (expéditeur, heure, texte) — **facultatif**, uniquement si la famille active l'accès aux notifications | Afficher « Marie vous a appelé » ou le dernier message sur l'écran maison de la famille | Envoyé **uniquement** à l'écran maison que vous avez vous-même installé (Raspberry Pi) sur votre réseau Wi-Fi, chiffré (HTTPS). Jamais vers Internet ni vers le développeur |
 | Prénom, adresse de l'écran maison, code d'appairage | Réglages de la famille | Reste sur le téléphone, exclu des sauvegardes |
+| Photos choisies par la famille pour les proches (depuis le sélecteur de photos d'Android, sans autorisation supplémentaire) | Reconnaître la personne | Copiées dans l'application, restent sur le téléphone |
 
 L'application ne lit que les notifications des applications Téléphone, Messages et WhatsApp, et ignore toutes les autres.
 
 ## Conservation
-- Sur le téléphone : seuls les réglages ci-dessus sont conservés. Les notifications ne sont pas enregistrées.
+- Sur le téléphone : les réglages ci-dessus, et les **30 derniers messages** reçus (SMS et WhatsApp) pendant **7 jours au plus**, pour pouvoir les afficher et les lire à voix haute dans l'application. Ils restent dans le stockage privé de l'application, exclus des sauvegardes, et disparaissent à la désinstallation. Les appels manqués ne sont pas enregistrés.
+- Photos choisies pour les proches : copiées dans le stockage privé de l'application, jamais dans vos contacts, et supprimées à la désinstallation.
 - Sur l'écran maison : les 200 derniers événements sont gardés **en mémoire** et disparaissent au redémarrage.
 
 ## Partage

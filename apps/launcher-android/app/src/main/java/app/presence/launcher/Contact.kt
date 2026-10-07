@@ -9,11 +9,14 @@ data class Contact(val id: Long, val name: String, val number: String, val photo
     val initial: String get() = name.trim().take(1).uppercase()
 }
 
+private fun dialable(number: String) =
+    number.filterIndexed { i, c -> c.isDigit() || (c == '+' && i == number.indexOfFirst { !it.isWhitespace() }) }
+
 /** Builds a `tel:` URI string keeping only digits and a leading `+`. */
-fun telUri(number: String): String {
-    val cleaned = number.filterIndexed { i, c -> c.isDigit() || (c == '+' && i == number.indexOfFirst { !it.isWhitespace() }) }
-    return "tel:$cleaned"
-}
+fun telUri(number: String): String = "tel:${dialable(number)}"
+
+/** Same cleaning for an `smsto:` URI (opens the messaging app with a draft). */
+fun smsUri(number: String): String = "smsto:${dialable(number)}"
 
 /** A number worth dialing directly: at least 3 digits. */
 fun isDialable(number: String): Boolean = number.count { it.isDigit() } >= 3
