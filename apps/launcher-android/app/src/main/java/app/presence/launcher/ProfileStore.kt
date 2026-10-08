@@ -29,6 +29,13 @@ class ProfileStore(context: Context) {
         prefs.edit().putBoolean("sms_imported", true).apply()
     }
 
+    /** Sounds and vibrations after sending, on failure, and "J'appelle …" aloud. On by default; the family can switch them off. */
+    fun feedbackEnabled(): Boolean = prefs.getBoolean("feedback", true)
+
+    fun setFeedbackEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean("feedback", enabled).apply()
+    }
+
     fun saveName(name: String) {
         prefs.edit().putString("name", name.trim().take(40)).apply()
     }
