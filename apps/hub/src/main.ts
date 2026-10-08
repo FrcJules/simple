@@ -27,7 +27,15 @@ await app.listen({ port, host: "127.0.0.1" });
 // The phone reaches the hub over the home network: HTTPS with a self-signed certificate pinned at pairing.
 const tls = loadOrCreateTls(process.env.PRESENCE_TLS_DIR ?? "./data/tls");
 const tlsPort = Number(process.env.PRESENCE_TLS_PORT ?? 8788);
-createServer({ key: tls.key, cert: tls.cert }, (req, res) => app.routing(req, res)).listen(tlsPort, "0.0.0.0");
+// Only what a phone needs is reachable from the network: pairing and pushing events. Reading events (the display token) stays on loopback.
+const phoneRoutes = new Set(["POST /pair", "POST /events"]);
+createServer({ key: tls.key, cert: tls.cert }, (req, res) => {
+  if (!phoneRoutes.has(`${req.method} ${(req.url ?? "").split("?")[0]}`)) {
+    res.writeHead(404).end();
+    return;
+  }
+  app.routing(req, res);
+}).listen(tlsPort, "0.0.0.0");
 
 const lan = lanAddress() ?? "<ip-du-pi>";
 console.log(`Presence hub: display on http://127.0.0.1:${port}`);

@@ -1,16 +1,23 @@
 import { createHash, randomBytes } from "node:crypto";
-import { mkdirSync, readdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, renameSync, statSync, unlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 
-const claimFile = z.object({ expiresAt: z.number() }).strict();
-const deviceFile = z.object({ createdAt: z.number() }).strict();
+const label = z.string().max(40);
+const claimFile = z.object({ expiresAt: z.number(), label: label.optional() }).strict();
+const deviceFile = z.object({ createdAt: z.number(), label: label.optional() }).strict();
+/** A used token touches its file at most this often: "last seen" is accurate to ten minutes, and requests do not write the disk. */
+const TOUCH_EVERY_MS = 600_000;
 const HASH = /^[0-9a-f]{64}$/;
 
 export interface DeviceInfo {
   /** The first 8 characters of the token's hash: enough to tell phones apart, useless to impersonate one. */
   id: string;
+  /** The name given when the QR code was made (e.g. "Téléphone de Marie"), if any. */
+  label?: string;
   createdAt: number;
+  /** When the phone last pushed an event (to ten minutes), or when it paired. */
+  lastUsedAt: number;
 }
 
 const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
@@ -31,6 +38,7 @@ export class DeviceRegistry {
   static readonly CLAIM_TTL_MS = 120_000;
   private readonly claimsDir: string;
   private readonly devicesDir: string;
+  private readonly touched = new Map<string, number>();
 
   constructor(dir: string, private readonly clock: () => number = Date.now) {
     this.claimsDir = join(dir, "claims");
@@ -40,10 +48,11 @@ export class DeviceRegistry {
   }
 
   /** A fresh single-use secret for the QR code. Older unused claims are dropped so only the latest QR works. */
-  createClaim(): string {
+  createClaim(deviceLabel?: string): string {
+    const name = deviceLabel?.trim().slice(0, 40) || undefined;
     for (const name of this.names(this.claimsDir)) this.remove(join(this.claimsDir, name));
     const secret = token(18);
-    this.write(join(this.claimsDir, sha256(secret)), { expiresAt: this.clock() + DeviceRegistry.CLAIM_TTL_MS });
+    this.write(join(this.claimsDir, sha256(secret)), { expiresAt: this.clock() + DeviceRegistry.CLAIM_TTL_MS, ...(name ? { label: name } : {}) });
     return secret;
   }
 
@@ -67,21 +76,33 @@ export class DeviceRegistry {
     if (!this.remove(file)) return null;
     if (this.clock() > parsed.data.expiresAt) return null;
     const deviceToken = token(24);
-    this.write(join(this.devicesDir, sha256(deviceToken)), { createdAt: this.clock() });
+    const path = join(this.devicesDir, sha256(deviceToken));
+    this.write(path, { createdAt: this.clock(), ...(parsed.data.label ? { label: parsed.data.label } : {}) });
+    this.setTimes(path, this.clock());
     return deviceToken;
   }
 
   isDeviceToken(candidate: string): boolean {
     if (!candidate || candidate.length > 200) return false;
     // The file name is the hash of the candidate (hex only): nothing the caller sends can reach another path.
-    return deviceFile.safeParse(this.readJson(join(this.devicesDir, sha256(candidate)))).success;
+    const hash = sha256(candidate);
+    const file = join(this.devicesDir, hash);
+    if (!deviceFile.safeParse(this.readJson(file)).success) return false;
+    const now = this.clock();
+    if (now - (this.touched.get(hash) ?? 0) >= TOUCH_EVERY_MS) {
+      this.touched.set(hash, now);
+      this.setTimes(file, now);
+    }
+    return true;
   }
 
   devices(): DeviceInfo[] {
     const out: DeviceInfo[] = [];
     for (const name of this.names(this.devicesDir)) {
       const parsed = deviceFile.safeParse(this.readJson(join(this.devicesDir, name)));
-      if (parsed.success) out.push({ id: name.slice(0, 8), createdAt: parsed.data.createdAt });
+      if (!parsed.success) continue;
+      const lastUsedAt = this.lastUsed(join(this.devicesDir, name)) ?? parsed.data.createdAt;
+      out.push({ id: name.slice(0, 8), createdAt: parsed.data.createdAt, lastUsedAt, ...(parsed.data.label ? { label: parsed.data.label } : {}) });
     }
     return out.sort((a, b) => a.createdAt - b.createdAt);
   }
@@ -102,6 +123,22 @@ export class DeviceRegistry {
   revokeAll(): void {
     for (const name of this.names(this.devicesDir)) this.remove(join(this.devicesDir, name));
     for (const name of this.names(this.claimsDir)) this.remove(join(this.claimsDir, name));
+  }
+
+  private setTimes(file: string, ms: number): void {
+    try {
+      utimesSync(file, ms / 1000, ms / 1000);
+    } catch {
+      /* the device was revoked in between: nothing to record */
+    }
+  }
+
+  private lastUsed(file: string): number | undefined {
+    try {
+      return statSync(file).mtimeMs;
+    } catch {
+      return undefined;
+    }
   }
 
   private names(dir: string): string[] {

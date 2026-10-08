@@ -16,5 +16,5 @@ if (arg === "--all") {
 } else {
   const list = devices.devices();
   if (list.length === 0) console.log("Aucun téléphone appairé.");
-  for (const d of list) console.log(`${d.id}  appairé le ${new Date(d.createdAt).toLocaleString("fr-FR")}`);
+  for (const d of list) console.log(`${d.id}  ${d.label ?? "(sans nom)"}  appairé le ${new Date(d.createdAt).toLocaleString("fr-FR")}, vu le ${new Date(d.lastUsedAt).toLocaleString("fr-FR")}`);
 }

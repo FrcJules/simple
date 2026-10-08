@@ -12,7 +12,8 @@ if (!host) {
 }
 const tls = loadOrCreateTls(process.env.PRESENCE_TLS_DIR ?? "./data/tls");
 const devices = new DeviceRegistry(process.env.PRESENCE_DATA_DIR ?? "./data");
-const claim = devices.createClaim();
+const name = process.argv[2]; // optional: `npm run pair -w @presence/hub -- "Téléphone de Marie"`, shown by `npm run devices`
+const claim = devices.createClaim(name);
 const link = buildPairingLink({ address: `https://${host}:${process.env.PRESENCE_TLS_PORT ?? 8788}`, claim, fingerprint: tls.fingerprint });
 
 console.log(await QRCode.toString(link, { type: "terminal", small: true }));

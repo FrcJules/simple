@@ -54,6 +54,27 @@ describe("DeviceRegistry", () => {
     expect(statSync(join(dir, "devices", readdirSync(join(dir, "devices"))[0]!)).mode & 0o077).toBe(0);
   });
 
+  it("remembers the name given at pairing and when the phone was last seen", () => {
+    const r = registry();
+    const token = r.redeemClaim(r.createClaim("  Téléphone de Marie  "))!;
+    expect(r.devices()).toMatchObject([{ label: "Téléphone de Marie", createdAt: now, lastUsedAt: now }]);
+    now += 3_600_000;
+    expect(r.isDeviceToken(token)).toBe(true);
+    expect(r.devices()[0]!.lastUsedAt).toBe(now);
+    now += 60_000; // used again within ten minutes: no disk write, the date stays
+    r.isDeviceToken(token);
+    expect(r.devices()[0]!.lastUsedAt).toBe(now - 60_000);
+  });
+
+  it("works without a name, and a name is capped", () => {
+    const r = registry();
+    r.redeemClaim(r.createClaim());
+    r.redeemClaim(r.createClaim("x".repeat(100)));
+    const labels = r.devices().map((d) => d.label);
+    expect(labels).toContain(undefined);
+    expect(labels).toContain("x".repeat(40));
+  });
+
   it("is shared between the pairing command and the running hub (two instances, one folder)", () => {
     const claim = registry().createClaim();
     const token = registry().redeemClaim(claim)!;
@@ -195,6 +216,28 @@ describe("hub pairing", () => {
     const deviceToken = reg.redeemClaim(reg.createClaim())!;
     reg.revokeAll();
     expect((await app.inject({ method: "POST", url: "/events", payload: event, headers: { authorization: `Bearer ${deviceToken}` } })).statusCode).toBe(401);
+  });
+
+  it("counts wrong tokens on every route and blocks that address, not the others", async () => {
+    const reg = registry();
+    const app = buildApp({ pairingToken: TOKEN, displayToken: DISPLAY, devices: reg });
+    const bad = (url: string, ip: string) => app.inject({ method: "GET", url, remoteAddress: ip, headers: { authorization: "Bearer nope-nope-nope-nope" } });
+    for (let i = 0; i < 10; i++) expect((await bad("/events", "10.0.0.66")).statusCode).toBe(401);
+    expect((await bad("/events", "10.0.0.66")).statusCode).toBe(429);
+    expect((await app.inject({ method: "GET", url: "/events/stream", remoteAddress: "10.0.0.66", headers: { authorization: `Bearer ${DISPLAY}` } })).statusCode).toBe(429);
+    expect((await app.inject({ method: "POST", url: "/events", payload: event, remoteAddress: "10.0.0.66", headers: { authorization: `Bearer ${TOKEN}` } })).statusCode).toBe(429);
+    expect((await app.inject({ method: "GET", url: "/events", remoteAddress: "10.0.0.7", headers: { authorization: `Bearer ${DISPLAY}` } })).statusCode).toBe(200);
+  });
+
+  it("a valid device token is never blocked, even from an address that failed a lot; and a bad body is refused before it is parsed", async () => {
+    const reg = registry();
+    const app = buildApp({ pairingToken: TOKEN, displayToken: DISPLAY, devices: reg });
+    const deviceToken = reg.redeemClaim(reg.createClaim())!;
+    for (let i = 0; i < 12; i++) await app.inject({ method: "POST", url: "/events", remoteAddress: "10.0.0.9", payload: event, headers: { authorization: "Bearer wrong-wrong-wrong-wrong" } });
+    expect((await app.inject({ method: "POST", url: "/events", remoteAddress: "10.0.0.9", payload: event, headers: { authorization: `Bearer ${deviceToken}` } })).statusCode).toBe(202);
+    expect((await app.inject({ method: "POST", url: "/events", remoteAddress: "10.0.0.9", payload: event, headers: { authorization: `Bearer ${TOKEN}` } })).statusCode).toBe(429);
+    const huge = { ...event, from: { name: "x".repeat(20_000) } };
+    expect((await app.inject({ method: "POST", url: "/events", remoteAddress: "10.0.0.10", payload: huge, headers: { authorization: `Bearer ${TOKEN}` } })).statusCode).toBe(413);
   });
 
   it("there is no /pair without a device registry", async () => {
