@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { body, formatDate, formatTime, greeting, headline, icon, timeAgo } from "./format";
 import { PairingScreen } from "./PairingScreen";
 import { useEvents } from "./useEvents";
@@ -24,6 +24,7 @@ export function App() {
   const latest = useEvents()[0];
   const [pairing, setPairing] = useState(false);
   const taps = useRef<number[]>([]);
+  const closePairing = useCallback(() => setPairing(false), []);
   const onClockTap = () => {
     const t = Date.now();
     taps.current = [...taps.current.filter((x) => t - x < SECRET_WINDOW_MS), t];
@@ -32,7 +33,7 @@ export function App() {
       setPairing(true);
     }
   };
-  if (pairing) return <PairingScreen onClose={() => setPairing(false)} />;
+  if (pairing) return <PairingScreen onClose={closePairing} />;
   return (
     <main className="screen">
       <h1>{greeting(now, NAME)}</h1>

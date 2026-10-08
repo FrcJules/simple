@@ -255,6 +255,24 @@ describe("hub pairing", () => {
     expect((await go({ authorization: `Bearer ${DISPLAY}` })).statusCode).toBe(429); // too soon
   });
 
+  it("/pairing/start refuses a foreign Host or Origin, a token in the URL, and the QR code can be cancelled", async () => {
+    const reg = registry();
+    const app = buildApp({ displayToken: DISPLAY, devices: reg, displayOrigin: "http://localhost:5173", startPairing: () => ({ link: `presence://pair?s=${reg.createClaim()}`, fingerprint: "A", expiresInSeconds: 120 }) });
+    const auth = { authorization: `Bearer ${DISPLAY}` };
+    const post = (url: string, headers: Record<string, string>) => app.inject({ method: "POST", url, headers });
+    expect((await post("/pairing/start", { ...auth, host: "evil.example:8787" })).statusCode).toBe(404);
+    expect((await post("/pairing/start", { ...auth, origin: "http://evil.example" })).statusCode).toBe(404);
+    expect((await app.inject({ method: "POST", url: `/pairing/start?token=${DISPLAY}` })).statusCode).toBe(401);
+    expect(reg.hasActiveClaim()).toBe(false);
+    const ok = await post("/pairing/start", { ...auth, host: "localhost:8787", origin: "http://localhost:5173" });
+    expect(ok.statusCode).toBe(200);
+    expect(ok.headers["cache-control"]).toBe("no-store");
+    expect(reg.hasActiveClaim()).toBe(true);
+    expect((await post("/pairing/cancel", {})).statusCode).toBe(401);
+    expect((await post("/pairing/cancel", auth)).statusCode).toBe(204);
+    expect(reg.hasActiveClaim()).toBe(false);
+  });
+
   it("/pairing/start is absent without the feature, refuses other addresses and reports a missing network", async () => {
     const reg = registry();
     const plain = buildApp({ displayToken: DISPLAY, devices: reg });
