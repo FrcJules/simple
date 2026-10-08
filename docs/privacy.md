@@ -53,6 +53,17 @@ Garde-fous contre une réponse envoyée à la mauvaise personne (la conversation
 - si **deux conversations différentes portent le même nom** (autre application WhatsApp, autre discussion), ce nom n'est plus répondable : on propose d'ouvrir WhatsApp ;
 - la réponse part **uniquement par la notification qui était là au moment de la confirmation** : si un autre message est arrivé entre-temps, il faut recommencer.
 
+## Appairage par QR code
+Sur l'écran maison, `npm run pair -w @presence/hub` (à la demande, jamais au démarrage) affiche un QR code et l'**empreinte du certificat du hub** en groupes de quatre. Le QR code contient `presence://pair?u=<adresse>&s=<secret à usage unique>&f=<empreinte>` : **aucun secret durable**. Le secret n'est valable que **2 minutes et une seule fois** ; le téléphone l'échange, sur une connexion chiffrée épinglée à l'empreinte du lien, contre **son propre jeton d'appareil** (le hub n'en garde que l'empreinte SHA-256 ; chaque téléphone se révoque séparément : `npm run devices -w @presence/hub` les liste, `npm run revoke -w @presence/hub -- <identifiant>` en oublie un, `-- --all` les oublie tous). Le hub ne répond à `/pair` que pendant qu'un QR code est actif, et limite les essais ratés par adresse : on ne peut pas s'en servir pour bloquer le téléphone de la famille. Un QR code resté dans l'historique d'une application de scan, d'un terminal ou d'un cloud ne donne donc rien une fois utilisé.
+
+Ce qui protège un lien **piégé** (n'importe quelle application ou page web peut ouvrir un lien `presence://`) :
+1. il ne **fait rien** tout seul : les réglages demandent le **code famille**, puis affichent l'**adresse réelle** (reconstruite à partir de l'adresse analysée : identifiants, chemin, requête, fragment, zéros en tête et adresses hors du réseau local sont refusés) et l'**empreinte**, avec la consigne de **la comparer** à celle du terminal du hub ; un lien venu d'ailleurs ne peut pas connaître l'empreinte du vrai hub ;
+2. l'appairage n'a lieu qu'après « Appairer », et l'écran dit s'il **remplace** un appairage existant ;
+3. le lien est lu une fois et oublié (de l'Intent comme de la mémoire) quand il est utilisé ou quand les réglages se verrouillent ;
+4. un lien à l'ancien format (jeton durable) est refusé.
+
+**Limite connue** : l'empreinte contenue dans le lien n'authentifie pas à elle seule le premier contact ; c'est la **comparaison faite par la famille** qui le fait. Un attaquant du réseau local qui obtient que la famille ouvre *son* lien **et** que celle-ci saute la comparaison peut faire enregistrer un faux hub. Un schéma `presence://` peut aussi être revendiqué par une autre application installée (Android propose alors un choix). Le hub ne répond à `/pair` que 10 fois par minute.
+
 ## Limites connues des messages
 - La base de messages **n'est pas chiffrée** (elle est protégée par le stockage privé d'Android) : un téléphone « rooté » pourrait la lire. Chiffrement Keystore possible plus tard.
 - Les codes de sécurité reçus par SMS sont **conservés en clair** dans cette base (masqués à l'écran, jamais lus à voix haute ni envoyés à l'écran maison).
