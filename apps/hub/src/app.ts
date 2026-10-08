@@ -7,6 +7,7 @@ import { DeviceRegistry } from "./devices";
 import { FailureLimiter } from "./limiter";
 
 const pairBody = z.object({ claim: z.string().min(16).max(200) }).strict();
+const LOOPBACK = new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1"]);
 const MAX_PAIR_FAILURES_PER_MINUTE = 5;
 const MAX_AUTH_FAILURES_PER_MINUTE = 10;
 
@@ -23,6 +24,11 @@ export interface HubOptions {
   maxStreams?: number;
   /** Paired phones (one-time claim → device token). Without it, only [pairingToken] writes and /pair is off. */
   devices?: DeviceRegistry;
+  /**
+   * Starts a pairing from the home display: makes a one-time claim and returns the link for the QR code and the grouped fingerprint
+   * shown beside it. Throws if the hub has no home-network address. Without it, `/pairing/start` does not exist.
+   */
+  startPairing?: () => { link: string; fingerprint: string; expiresInSeconds: number };
 }
 
 function tokenMatches(expected: string, given: string): boolean {
@@ -92,6 +98,24 @@ export function buildApp(opts: HubOptions): FastifyInstance {
     if (authFailures.blocked(req.ip)) return tooMany(reply);
     if (!canWrite(given)) return unauthorized(req.ip, reply);
   };
+  // The display (same device, loopback only) asks for a QR code when someone touches it on purpose. Needs the display token, at most one
+  // every 3 seconds, and only from the Pi itself: the phone-facing HTTPS port does not route this path either.
+  let lastStart = 0;
+  app.post("/pairing/start", async (req, reply) => {
+    if (!opts.startPairing) return reply.code(404).send({ error: "not_found" });
+    if (!LOOPBACK.has(req.ip)) return reply.code(404).send({ error: "not_found" });
+    if (authFailures.blocked(req.ip)) return tooMany(reply);
+    if (!canRead(req)) return unauthorized(req.ip, reply);
+    const now = Date.now();
+    if (now - lastStart < 3_000) return tooMany(reply);
+    lastStart = now;
+    try {
+      return opts.startPairing();
+    } catch {
+      return reply.code(503).send({ error: "no_network_address" });
+    }
+  });
+
   app.post("/events", { bodyLimit: 16_384, onRequest: authenticateWriter }, async (req, reply) => {
     const parsed = presenceEvent.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: "invalid_event" });
