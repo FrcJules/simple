@@ -3,12 +3,16 @@ package app.presence.launcher.mms
 import android.content.Context
 import com.google.android.mms.InvalidHeaderValueException
 import com.google.android.mms.pdu_alt.CharacterSets
+import com.google.android.mms.pdu_alt.EncodedStringValue
 import com.google.android.mms.pdu_alt.NotificationInd
 import com.google.android.mms.pdu_alt.NotifyRespInd
+import com.google.android.mms.pdu_alt.PduBody
 import com.google.android.mms.pdu_alt.PduComposer
 import com.google.android.mms.pdu_alt.PduHeaders
 import com.google.android.mms.pdu_alt.PduParser
+import com.google.android.mms.pdu_alt.PduPart
 import com.google.android.mms.pdu_alt.RetrieveConf
+import com.google.android.mms.pdu_alt.SendReq
 import app.presence.launcher.messages.TextSafety
 import com.google.android.mms.pdu_alt.GenericPdu
 import java.io.UnsupportedEncodingException
@@ -117,6 +121,49 @@ object MmsPdu {
     fun notifyResponse(context: Context, transactionId: String): ByteArray? =
         try {
             PduComposer(context.applicationContext, NotifyRespInd(PduHeaders.CURRENT_MMS_VERSION, transactionId.toByteArray(Charsets.ISO_8859_1), PduHeaders.STATUS_RETRIEVED)).make()
+        } catch (e: InvalidHeaderValueException) {
+            null
+        } catch (e: RuntimeException) {
+            null
+        }
+
+    /** An M-Send.req carrying one picture (and an optional text) to one recipient. Null if the PDU cannot be built. */
+    fun sendRequest(context: Context, to: String, jpeg: ByteArray, text: String = ""): ByteArray? =
+        try {
+            val req = SendReq()
+            req.from = EncodedStringValue(PduHeaders.FROM_INSERT_ADDRESS_TOKEN_STR) // the operator fills in our number
+            req.to = arrayOf(EncodedStringValue(to.filter { it.isDigit() || it == '+' })) // some operators refuse spaces and brackets
+            req.date = System.currentTimeMillis() / 1000
+            req.messageClass = PduHeaders.MESSAGE_CLASS_PERSONAL_STR.toByteArray()
+            req.expiry = 7 * 24 * 3600L
+            req.priority = PduHeaders.PRIORITY_NORMAL
+            req.deliveryReport = PduHeaders.VALUE_NO
+            req.readReport = PduHeaders.VALUE_NO
+            val body = PduBody()
+            body.addPart(
+                PduPart().apply {
+                    contentType = "image/jpeg".toByteArray()
+                    name = "photo.jpg".toByteArray()
+                    contentLocation = "photo.jpg".toByteArray()
+                    contentId = "<photo>".toByteArray()
+                    data = jpeg
+                },
+            )
+            if (text.isNotBlank()) {
+                body.addPart(
+                    PduPart().apply {
+                        contentType = "text/plain".toByteArray()
+                        name = "text.txt".toByteArray()
+                        contentLocation = "text.txt".toByteArray()
+                        contentId = "<text>".toByteArray()
+                        charset = CharacterSets.UTF_8
+                        data = text.toByteArray(Charsets.UTF_8)
+                    },
+                )
+            }
+            req.body = body
+            req.messageSize = jpeg.size.toLong() + text.length
+            PduComposer(context.applicationContext, req).make()
         } catch (e: InvalidHeaderValueException) {
             null
         } catch (e: RuntimeException) {

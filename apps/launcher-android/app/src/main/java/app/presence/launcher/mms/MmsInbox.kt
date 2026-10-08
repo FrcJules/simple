@@ -19,8 +19,8 @@ interface MmsTransport {
     /** Downloads [location] into [target]; [done] is broadcast with the result. Throws SecurityException / IllegalArgumentException if refused. */
     fun download(location: String, target: Uri, subId: Int, done: PendingIntent)
 
-    /** Posts the PDU stored at [pdu] to the operator's MMSC (used for the acknowledgement). */
-    fun post(pdu: Uri, subId: Int)
+    /** Posts the PDU stored at [pdu] to the operator's MMSC (acknowledgements, outgoing pictures); [sent] reports the outcome. */
+    fun post(pdu: Uri, subId: Int, sent: PendingIntent? = null)
 }
 
 class SmsManagerMmsTransport(private val context: Context) : MmsTransport {
@@ -28,8 +28,8 @@ class SmsManagerMmsTransport(private val context: Context) : MmsTransport {
         smsManagerFor(context, subId).downloadMultimediaMessage(context, location, target, null, done)
     }
 
-    override fun post(pdu: Uri, subId: Int) {
-        smsManagerFor(context, subId).sendMultimediaMessage(context, pdu, null, null, null)
+    override fun post(pdu: Uri, subId: Int, sent: PendingIntent?) {
+        smsManagerFor(context, subId).sendMultimediaMessage(context, pdu, null, null, sent)
     }
 }
 
