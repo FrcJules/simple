@@ -41,6 +41,9 @@ Si Présence est l'application de messages, les photos reçues par MMS sont tél
 - **Expéditeur usurpé** : comme pour les SMS, le numéro d'un MMS peut être falsifié. Pour un MMS, nous préférons l'expéditeur écrit dans le message téléchargé à celui de l'annonce.
 - **Fournisseur de fichiers** : il est visible des autres applications car le système doit pouvoir y écrire ; seuls des noms aléatoires de 128 bits, valables quelques minutes, y sont servis. Compromis assumé : le restreindre risquerait de casser le téléchargement sur certains téléphones.
 
+## Envoyer une photo (MMS)
+La personne choisit **une** photo, explicitement, à chaque envoi : l'appareil photo du système, ou le sélecteur de photos du système (Présence ne voit que la photo choisie, jamais la photothèque, et ne demande aucune permission d'accès aux photos). La photo est réduite avant l'envoi (≤ 1280 px, ≤ 280 Ko) et **ne contient plus ses métadonnées** (position GPS, appareil, date). Elle part uniquement vers l'opérateur, au destinataire choisi. Une copie réduite reste dans l'historique privé de l'application (effacée par « Effacer les messages »). Une photo prise avec l'appareil photo est écrite dans un fichier privé temporaire, pas dans la galerie.
+
 ## Limites connues des messages
 - La base de messages **n'est pas chiffrée** (elle est protégée par le stockage privé d'Android) : un téléphone « rooté » pourrait la lire. Chiffrement Keystore possible plus tard.
 - Les codes de sécurité reçus par SMS sont **conservés en clair** dans cette base (masqués à l'écran, jamais lus à voix haute ni envoyés à l'écran maison).

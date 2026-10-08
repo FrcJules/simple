@@ -13,6 +13,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.CompositionLocalProvider
@@ -31,6 +32,8 @@ import app.presence.launcher.config.UiConfigStore
 import app.presence.launcher.messages.MessageItem
 import app.presence.launcher.messages.MessageStore
 import app.presence.launcher.mms.MmsComponents
+import app.presence.launcher.mms.MmsFiles
+import app.presence.launcher.mms.MmsSendResult
 import app.presence.launcher.messages.MessagesViewModel
 import app.presence.launcher.messages.Speaker
 import app.presence.launcher.messages.StoredMessage
@@ -48,6 +51,8 @@ import app.presence.launcher.ui.LocalThemeConfig
 import app.presence.launcher.ui.MessageScreen
 import app.presence.launcher.ui.MessagesScreen
 import app.presence.launcher.ui.PermissionRationaleScreen
+import app.presence.launcher.ui.PhotoChoiceScreen
+import app.presence.launcher.ui.PhotoConfirmScreen
 import app.presence.launcher.ui.PickContactScreen
 import app.presence.launcher.ui.ReplyConfirmScreen
 import app.presence.launcher.ui.SmsRoleScreen
@@ -56,7 +61,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
-    private enum class Screen { HOME, RATIONALE, DENIED, CALL, SMS_ROLE, MESSAGES, PICK_RECIPIENT, MESSAGE, REPLY }
+    private enum class Screen { HOME, RATIONALE, DENIED, CALL, SMS_ROLE, MESSAGES, PICK_RECIPIENT, MESSAGE, REPLY, PHOTO_CHOICE, PHOTO_CONFIRM }
 
     private val contactsVm: ContactsViewModel by viewModels()
     private val messagesVm: MessagesViewModel by viewModels()
@@ -80,6 +85,28 @@ class MainActivity : ComponentActivity() {
 
     /** "Plus tard" on the SMS-role screen lasts until the app is restarted; only a "no" in Android's own dialog is remembered. */
     private var smsRoleLater = false
+
+    /** The picture about to be sent (camera or picker), shown for confirmation. */
+    private var photoToSend by mutableStateOf<Uri?>(null)
+    private var cameraTarget: Uri? = null
+
+    private val takePicture = registerForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
+        val target = cameraTarget
+        cameraTarget = null
+        if (taken && target != null) {
+            photoToSend = target
+            notice = null
+            screen = Screen.PHOTO_CONFIRM
+        }
+    }
+
+    private val pickPicture = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) {
+            photoToSend = uri
+            notice = null
+            screen = Screen.PHOTO_CONFIRM
+        }
+    }
 
     /** The picture shown full screen, if any (path of a private file). */
     private var viewingImage by mutableStateOf<String?>(null)
@@ -188,8 +215,39 @@ class MainActivity : ComponentActivity() {
                                 onListen = { listen(thread) },
                                 onReply = { dictate() },
                                 onBack = { closeConversation() },
-                                onRetry = { failed -> if (failed.mms && !failed.outgoing) retryMms(failed.id) else sendReply(open, failed.text) },
+                                onRetry = { failed -> if (failed.mms) retryMms(failed) else sendReply(open, failed.text) },
                                 onImage = { viewingImage = it },
+                                onSendPhoto = if (open.canReply && SmsRole.isHeld(this)) ({ notice = null; screen = Screen.PHOTO_CHOICE }) else null,
+                            )
+                        }
+                    }
+                    Screen.PHOTO_CHOICE -> {
+                        BackHandler { screen = Screen.MESSAGE }
+                        if (open == null) {
+                            LaunchedEffect(Unit) { closeConversation() }
+                        } else {
+                            PhotoChoiceScreen(
+                                name = open.message.from,
+                                canTakePhoto = packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY),
+                                onTake = { takePhoto() },
+                                onPick = { pickPhoto() },
+                                onBack = { screen = Screen.MESSAGE },
+                            )
+                        }
+                    }
+                    Screen.PHOTO_CONFIRM -> {
+                        BackHandler { screen = Screen.PHOTO_CHOICE }
+                        val photo = photoToSend
+                        if (open == null || photo == null) {
+                            LaunchedEffect(Unit) { closeConversation() }
+                        } else {
+                            PhotoConfirmScreen(
+                                name = open.message.from,
+                                photo = photo,
+                                notice = notice?.let { stringResource(it) },
+                                onSend = { sendPhoto(open, photo) },
+                                onChange = { screen = Screen.PHOTO_CHOICE },
+                                onCancel = { photoToSend = null; screen = Screen.MESSAGE },
                             )
                         }
                     }
@@ -226,7 +284,10 @@ class MainActivity : ComponentActivity() {
         }
         // A picture message whose download never finished becomes "not received", with a retry, instead of waiting forever.
         lifecycleScope.launch(Dispatchers.IO) {
-            MessageStore.get(this@MainActivity).expireStaleDownloads(System.currentTimeMillis() - STALE_DOWNLOAD_MS)
+            MessageStore.get(this@MainActivity).apply {
+                expireStaleDownloads(System.currentTimeMillis() - STALE_DOWNLOAD_MS)
+                expireStaleSends(System.currentTimeMillis() - STALE_DOWNLOAD_MS)
+            }
         }
     }
 
@@ -347,6 +408,7 @@ class MainActivity : ComponentActivity() {
         openThreadKey?.let { messagesVm.markThreadRead(it) }
         openThreadKey = null
         composeItem = null
+        photoToSend = null
         messagesVm.select(null)
     }
 
@@ -433,8 +495,45 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun retryMms(messageId: String) {
-        lifecycleScope.launch(Dispatchers.IO) { MmsComponents.inbox(this@MainActivity).retry(messageId) }
+    /** A picture we could not receive is downloaded again; one we could not send is sent again from the copy we kept. */
+    private fun retryMms(message: StoredMessage) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            if (message.outgoing) MmsComponents.sender(this@MainActivity).retry(message.id) else MmsComponents.inbox(this@MainActivity).retry(message.id)
+        }
+    }
+
+    private fun takePhoto() {
+        val files = MmsFiles(this)
+        val target = files.uriFor(files.newTransferFile()) // a short-lived private file: the picture never lands in the gallery
+        cameraTarget = target
+        try {
+            takePicture.launch(target)
+        } catch (e: ActivityNotFoundException) {
+            cameraTarget = null
+            notice = R.string.app_missing
+        }
+    }
+
+    private fun pickPhoto() {
+        try {
+            pickPicture.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+        } catch (e: ActivityNotFoundException) {
+            notice = R.string.app_missing
+        }
+    }
+
+    private fun sendPhoto(item: MessageItem, photo: Uri) {
+        val number = item.replyNumber ?: return
+        notice = null
+        lifecycleScope.launch {
+            val result = withContext(Dispatchers.IO) { MmsComponents.sender(this@MainActivity).send(number, item.message.from, photo) }
+            if (result is MmsSendResult.Started) {
+                photoToSend = null
+                screen = Screen.MESSAGE // the picture appears in the conversation, "Envoi en cours…"
+            } else {
+                notice = R.string.photo_send_failed // stay on the confirmation: the person can choose another picture
+            }
+        }
     }
 
     private fun openCallScreen() {

@@ -11,6 +11,7 @@ import android.provider.Telephony
 import android.telephony.TelephonyManager
 import app.presence.launcher.mms.MmsComponents
 import app.presence.launcher.mms.MmsInbox
+import app.presence.launcher.mms.MmsSender
 import kotlin.concurrent.thread
 
 /** Delivered by the system only to the default SMS app. */
@@ -90,6 +91,25 @@ class MmsDownloadedReceiver : BroadcastReceiver() {
                 MmsComponents.inbox(context).onDownloaded(id, file, ok)
             } catch (e: RuntimeException) {
                 // The message stays "being received" and is marked "not received" after a while, with a retry.
+            } finally {
+                pending?.finish()
+            }
+        }
+    }
+}
+
+/** The platform answered about an outgoing MMS. Not exported: only our own PendingIntent reaches it. */
+class MmsSentReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val id = intent.getStringExtra(MmsSender.EXTRA_ID) ?: return
+        val file = intent.getStringExtra(MmsSender.EXTRA_FILE) ?: return
+        val ok = resultCode == Activity.RESULT_OK
+        val pending: PendingResult? = goAsync()
+        thread(name = "mms-sent") {
+            try {
+                MmsComponents.sender(context).onSent(id, file, ok)
+            } catch (e: RuntimeException) {
+                // The message stays "being sent" and is shown as not sent after a while.
             } finally {
                 pending?.finish()
             }
