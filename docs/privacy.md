@@ -46,6 +46,9 @@ La personne choisit **une** photo, explicitement, à chaque envoi : l'appareil p
 
 **Photo prise avec l'appareil photo** : l'appareil photo du système écrit la photo **d'origine** (pleine résolution, avec sa position GPS) dans un fichier temporaire privé de Présence, jamais dans la galerie. Ce fichier est **supprimé dès que la photo est envoyée, refusée (« Pas cette photo ») ou abandonnée**, et tout fichier temporaire de plus de 20 minutes est supprimé au démarrage ; entre-temps, ce fichier est servi par le fournisseur de fichiers exporté (voir plus haut) : l'application appareil photo qui l'a écrit pourrait le relire pendant ce court délai.
 
+## Répondre à WhatsApp
+Le texte que la personne dicte est confirmé à l'écran, puis remis à WhatsApp **par la notification WhatsApp** (action « Répondre ») : Présence ne se connecte pas à WhatsApp, n'a pas de compte, ne lit rien d'autre que les notifications autorisées. L'action de réponse n'est conservée qu'en mémoire, tant que la notification existe. La réponse envoyée est gardée dans l'historique local (comme les messages reçus).
+
 ## Limites connues des messages
 - La base de messages **n'est pas chiffrée** (elle est protégée par le stockage privé d'Android) : un téléphone « rooté » pourrait la lire. Chiffrement Keystore possible plus tard.
 - Les codes de sécurité reçus par SMS sont **conservés en clair** dans cette base (masqués à l'écran, jamais lus à voix haute ni envoyés à l'écran maison).

@@ -12,6 +12,12 @@
         <intent><action android:name="android.speech.action.RECOGNIZE_SPEECH" /></intent>
     </queries>
 
+    <!-- To open WhatsApp when its notification (our way to answer) is gone. -->
+    <queries>
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
+    </queries>
+
     <application
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"

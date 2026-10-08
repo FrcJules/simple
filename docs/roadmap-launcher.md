@@ -47,6 +47,13 @@
 | Déplacer le rôle SMS dans le manifeste de release | Après essai réel des MMS sur un téléphone |
 | Formulaire Play « SMS » + vidéo | À faire après les MMS |
 
+## WhatsApp
+| Fonction | État |
+|---|---|
+| Lire les messages (notifications) | Vérifié par tests du décodeur ; pas de WhatsApp sur l'émulateur |
+| Répondre (dictée → action « Répondre » de la notification) | **Codé, testé** (vraies notifications et `RemoteInput` simulés) ; **à vérifier avec WhatsApp sur un vrai téléphone** |
+| Sans notification : ouvrir WhatsApp | Codé, testé |
+
 ## Plan
 - **Phase 1 : photos des proches.** Choisir une photo pour un proche depuis « Réglages famille » (stockée sur le téléphone, sans permission supplémentaire).
 - **Phase 2 : messages.** Historique local illimité (base SQLite), écran Messages, détail avec lecture à voix haute, pastille « nouveaux » sur l'accueil.
