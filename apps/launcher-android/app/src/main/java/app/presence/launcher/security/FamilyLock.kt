@@ -13,12 +13,12 @@ import javax.crypto.spec.PBEKeySpec
  * hash (PBKDF2) is kept, never the code. After repeated mistakes the screen locks for longer and longer, so the code cannot
  * be tried exhaustively on the phone. There is no recovery: forgetting it means clearing the app's data in Android settings.
  *
- * The lock is measured with the phone's monotonic clock (not changed by moving the date) and, after a restart, with the date,
- * capped at [MAX_LOCK_SECONDS]: moving the date forward neither lifts a lock nor can lock the family out for years.
+ * The lock is measured with the phone's monotonic clock only, never with the date (which anyone can change). A restart cannot be
+ * timed by that clock, so it starts the lock again for its whole length: restarting the phone never shortens a wait, and the wait
+ * never exceeds [MAX_LOCK_SECONDS].
  */
 class FamilyLock(
     context: Context,
-    private val wallClock: () -> Long = System::currentTimeMillis,
     private val elapsed: () -> Long = SystemClock::elapsedRealtime,
     private val bootCount: () -> Int = { Settings.Global.getInt(context.contentResolver, Settings.Global.BOOT_COUNT, 0) },
 ) {
@@ -39,12 +39,19 @@ class FamilyLock(
     fun lockedSeconds(): Int {
         val lockMs = prefs.getLong("lock_ms", 0)
         if (lockMs <= 0) return 0
-        val remaining = if (prefs.getInt("lock_boot", -1) == bootCount()) {
-            lockMs - (elapsed() - prefs.getLong("lock_elapsed", 0)) // same boot: immune to date changes
-        } else {
-            lockMs - (wallClock() - prefs.getLong("lock_wall", 0)) // after a restart the monotonic clock restarted: use the date
+        val now = elapsed()
+        val sameBoot = prefs.getInt("lock_boot", -1) == bootCount() && now >= prefs.getLong("lock_elapsed", 0)
+        if (!sameBoot) {
+            // The phone restarted since the mistake (a clock that went backwards says so even where the boot counter is unavailable):
+            // the time already waited is unknown, so the whole wait starts again from now.
+            prefs.edit().putInt("lock_boot", bootCount()).putLong("lock_elapsed", now).commit()
         }
-        return if (remaining <= 0) 0 else ((minOf(remaining, MAX_LOCK_SECONDS * 1000L) + 999) / 1000).toInt()
+        val remaining = lockMs - (now - prefs.getLong("lock_elapsed", 0))
+        if (remaining <= 0) {
+            prefs.edit().putLong("lock_ms", 0).commit() // served: a later restart must not start it again
+            return 0
+        }
+        return ((minOf(remaining, MAX_LOCK_SECONDS * 1000L) + 999) / 1000).toInt()
     }
 
     /** Why [code] is not acceptable (null if it is): 4 to 8 digits, and not an obvious one. */
@@ -85,7 +92,7 @@ class FamilyLock(
         if (failures % FREE_TRIES == 0) {
             // 30 s, 60 s, 2 min, ... up to 15 minutes
             val seconds = minOf(30L shl (failures / FREE_TRIES - 1).coerceAtMost(5), MAX_LOCK_SECONDS.toLong())
-            edit.putLong("lock_ms", seconds * 1000).putLong("lock_elapsed", elapsed()).putLong("lock_wall", wallClock()).putInt("lock_boot", bootCount())
+            edit.putLong("lock_ms", seconds * 1000).putLong("lock_elapsed", elapsed()).putInt("lock_boot", bootCount())
             edit.commit() // written now: a crash right after a mistake must not forget it
             return Result.Locked(seconds.toInt())
         }
