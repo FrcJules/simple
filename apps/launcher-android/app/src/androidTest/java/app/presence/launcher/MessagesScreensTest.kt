@@ -17,6 +17,8 @@ import app.presence.launcher.ui.HomeScreen
 import app.presence.launcher.messages.Attachment
 import app.presence.launcher.ui.ConversationScreen
 import app.presence.launcher.ui.ImageViewerScreen
+import app.presence.launcher.ui.PhotoChoiceScreen
+import app.presence.launcher.ui.PhotoConfirmScreen
 import app.presence.launcher.ui.PickContactScreen
 import app.presence.launcher.ui.SmsRoleScreen
 import app.presence.launcher.ui.MessagesScreen
@@ -256,5 +258,80 @@ class MessagesScreensTest {
         shotAfterPicturesLoaded("31_image_viewer")
         rule.onNodeWithText("Retour").performClick()
         assertTrue(back)
+    }
+
+    @Test
+    fun theConversationOffersToSendAPhotoOnlyWhenAllowed() {
+        var asked = false
+        rule.setContent { ConversationScreen(items[0], listOf(items[0].message), now, canDictate = true, notice = null, onListen = {}, onReply = {}, onBack = {}, onSendPhoto = { asked = true }) }
+        rule.onNodeWithText("Envoyer une photo").performClick()
+        assertTrue(asked)
+    }
+
+    @Test
+    fun noPhotoButtonWithoutPermissionToSend() {
+        rule.setContent { ConversationScreen(items[0], listOf(items[0].message), now, canDictate = true, notice = null, onListen = {}, onReply = {}, onBack = {}) }
+        assertEquals(0, rule.onAllNodesWithText("Envoyer une photo").fetchSemanticsNodes().size)
+    }
+
+    @Test
+    fun photoChoiceShowsWhoReceivesAndOffersCameraAndLibrary() {
+        var taken = false
+        var picked = false
+        rule.setContent { PhotoChoiceScreen(marie, known = true, canTakePhoto = true, notice = null, onTake = { taken = true }, onPick = { picked = true }, onBack = {}) }
+        rule.onNodeWithText("Envoyer une photo à :").assertIsDisplayed()
+        rule.onNodeWithText("Marie").assertIsDisplayed()
+        shot("32_photo_choice")
+        rule.onNodeWithText("Prendre une photo maintenant").performClick()
+        rule.onNodeWithText("Une photo de mon téléphone").performClick()
+        assertTrue(taken && picked)
+    }
+
+    @Test
+    fun photoChoiceWithoutACameraOnlyOffersTheLibraryAndShowsLaunchFailures() {
+        rule.setContent { PhotoChoiceScreen(marie, known = true, canTakePhoto = false, notice = "Cette fonction n'est pas disponible sur ce téléphone.", onTake = {}, onPick = {}, onBack = {}) }
+        assertEquals(0, rule.onAllNodesWithText("Prendre une photo maintenant").fetchSemanticsNodes().size)
+        rule.onNodeWithText("Une photo de mon téléphone").assertIsDisplayed()
+        rule.onNodeWithText("Cette fonction n'est pas disponible sur ce téléphone.").assertIsDisplayed()
+    }
+
+    @Test
+    fun anUnknownRecipientIsShownWithAWarning() {
+        val stranger = Contact(-1, "0611223344", "", null)
+        rule.setContent { PhotoChoiceScreen(stranger, known = false, canTakePhoto = true, notice = null, onTake = {}, onPick = {}, onBack = {}) }
+        rule.onNodeWithText("0611223344").assertIsDisplayed()
+        rule.onNodeWithText("Ce numéro n'est pas dans vos contacts.").assertIsDisplayed()
+    }
+
+    @Test
+    fun photoConfirmShowsThePictureAndTheRecipientAndCanBeRefused() {
+        var sent = false
+        var refused = false
+        val uri = android.net.Uri.fromFile(java.io.File(pictureFile()))
+        rule.setContent { PhotoConfirmScreen(marie, known = true, photo = uri, notice = null, sending = false, onSend = { sent = true }, onNotThisOne = { refused = true }) }
+        rule.onNodeWithText("Envoyer cette photo ?").assertIsDisplayed()
+        rule.onNodeWithText("Marie").assertIsDisplayed()
+        shotAfterPicturesLoaded("33_photo_confirm")
+        rule.onNodeWithText("Pas cette photo").performClick()
+        assertTrue(refused)
+        assertEquals(false, sent)
+    }
+
+    @Test
+    fun whileSendingTheButtonsAreDisabledSoNothingIsSentTwice() {
+        var sent = 0
+        val uri = android.net.Uri.fromFile(java.io.File(pictureFile()))
+        rule.setContent { PhotoConfirmScreen(marie, known = true, photo = uri, notice = null, sending = true, onSend = { sent++ }, onNotThisOne = {}) }
+        rule.onNodeWithText("Envoi en cours…").assertIsDisplayed()
+        rule.onNodeWithText("Envoi en cours…").performClick()
+        assertEquals(0, sent)
+    }
+
+    @Test
+    fun aFailureIsShownWithAnIconWordsAndStillOffersToSendAgain() {
+        val uri = android.net.Uri.fromFile(java.io.File(pictureFile()))
+        rule.setContent { PhotoConfirmScreen(marie, known = true, photo = uri, notice = "La photo n'a pas pu partir. Touchez « Envoyer » pour réessayer, ou choisissez une autre photo.", sending = false, onSend = {}, onNotThisOne = {}) }
+        rule.onNodeWithText("La photo n'a pas pu partir. Touchez « Envoyer » pour réessayer, ou choisissez une autre photo.").assertIsDisplayed()
+        rule.onNodeWithText("Envoyer").assertIsDisplayed()
     }
 }

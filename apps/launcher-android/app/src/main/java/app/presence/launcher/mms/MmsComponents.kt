@@ -9,6 +9,18 @@ import app.presence.launcher.sms.MessageNotifier
 
 /** Wires the MMS pieces to the real system (receivers have no dependency injection). */
 object MmsComponents {
+    fun sender(context: Context): MmsSender {
+        val app = context.applicationContext
+        return MmsSender(
+            context = app,
+            store = MessageStore.get(app),
+            files = MmsFiles(app),
+            transport = SmsManagerMmsTransport(app),
+            compress = { uri -> PhotoCompressor.compress(app, uri) },
+            isDefaultApp = { app.packageName == android.provider.Telephony.Sms.getDefaultSmsPackage(app) },
+        )
+    }
+
     fun inbox(context: Context): MmsInbox {
         val app = context.applicationContext
         val contacts = ContactsRepository(app.contentResolver)
