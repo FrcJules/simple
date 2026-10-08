@@ -334,4 +334,24 @@ class MessagesScreensTest {
         rule.onNodeWithText("La photo n'a pas pu partir. Touchez « Envoyer » pour réessayer, ou choisissez une autre photo.").assertIsDisplayed()
         rule.onNodeWithText("Envoyer").assertIsDisplayed()
     }
+
+    @Test
+    fun aWhatsAppConversationWithoutItsNotificationOffersToOpenWhatsApp() {
+        var opened = false
+        val wa = MessageItem(StoredMessage("w", "Marie", Channel.WHATSAPP, "Salut", now - 60_000), marie, unread = 1)
+        rule.setContent { ConversationScreen(wa, listOf(wa.message), now, canDictate = true, notice = null, onListen = {}, onReply = {}, onBack = {}, onOpenWhatsApp = { opened = true }) }
+        rule.onNodeWithText("La réponse ne peut pas partir d'ici. Pour répondre, il faut passer par WhatsApp. Pour revenir ici, touchez la maison.").assertIsDisplayed()
+        assertEquals(0, rule.onAllNodesWithText("Répondre").fetchSemanticsNodes().size) // no reply button: it could not be delivered
+        shot("34_whatsapp_open")
+        rule.onNodeWithText("Ouvrir WhatsApp").performClick()
+        assertTrue(opened)
+    }
+
+    @Test
+    fun anAnswerableWhatsAppConversationOffersToReplyLikeAnSms() {
+        val wa = MessageItem(StoredMessage("w", "Marie", Channel.WHATSAPP, "Salut", now - 60_000), marie, unread = 1, whatsappReplyAvailable = true)
+        rule.setContent { ConversationScreen(wa, listOf(wa.message), now, canDictate = true, notice = null, onListen = {}, onReply = {}, onBack = {}) }
+        rule.onNodeWithText("Répondre").assertIsDisplayed()
+        assertEquals(0, rule.onAllNodesWithText("Ouvrir WhatsApp").fetchSemanticsNodes().size)
+    }
 }

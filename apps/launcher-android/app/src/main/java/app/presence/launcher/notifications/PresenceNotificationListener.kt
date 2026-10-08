@@ -5,6 +5,7 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import app.presence.launcher.messages.MessageStore
 import app.presence.launcher.messages.StoredMessage
+import app.presence.launcher.messages.ThreadKey
 import app.presence.launcher.sms.SmsRole
 import java.util.UUID
 
@@ -23,6 +24,12 @@ class PresenceNotificationListener : NotificationListenerService() {
         val incoming = NotificationParser.parse(raw) ?: return
         // When we are the SMS app we receive SMS directly (SmsDeliverReceiver); a copy via another app's notification would double it.
         if (incoming is Incoming.Message && incoming.channel == Channel.SMS && SmsRole.isHeld(applicationContext)) return
+        // Registered before the duplicate filter: WhatsApp often re-posts a notification with a fresh PendingIntent.
+        if (incoming is Incoming.Message && incoming.channel == Channel.WHATSAPP && !isGroupConversation(extras)) {
+            ReplyRegistry.findReplyAction(sbn.notification)?.let { (action, inputs) ->
+                ReplyRegistry.put(sbn.key, ThreadKey.of(Channel.WHATSAPP, null, incoming.from), sbn.packageName, sbn.notification.shortcutId, action, inputs)
+            }
+        }
         if (duplicates.isDuplicate(sbn.key, "${raw.title}|${raw.text}", System.currentTimeMillis())) return
         if (incoming is Incoming.Message) {
             // Kept on the phone so the launcher can show it; independent of the home display being paired.
@@ -31,6 +38,18 @@ class PresenceNotificationListener : NotificationListenerService() {
             )
         }
         HubForwarder.forward(applicationContext, incoming, sbn.postTime)
+    }
+
+    /** An answer from here could go to a whole group: only one-to-one chats are ever answered. */
+    private fun isGroupConversation(extras: android.os.Bundle) =
+        extras.getBoolean("android.isGroupConversation", false) || extras.getCharSequence("android.conversationTitle") != null
+
+    override fun onNotificationRemoved(sbn: StatusBarNotification) {
+        if (NotificationParser.isWatched(sbn.packageName)) ReplyRegistry.removeNotification(sbn.key)
+    }
+
+    override fun onListenerDisconnected() {
+        ReplyRegistry.clear() // the actions are only valid while we see the notifications
     }
 
     private companion object {

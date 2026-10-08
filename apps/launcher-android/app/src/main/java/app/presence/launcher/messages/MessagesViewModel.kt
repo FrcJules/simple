@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.presence.launcher.Contact
 import app.presence.launcher.ContactsRepository
+import app.presence.launcher.notifications.ReplyRegistry
 import app.presence.launcher.photos.ContactPhotoStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,18 +32,19 @@ class MessagesViewModel(app: Application) : AndroidViewModel(app) {
         .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
 
     init {
-        viewModelScope.launch { store.messages.collect { rebuild(it) } }
+        // Rebuilt when messages change and when a WhatsApp conversation becomes (or stops being) answerable.
+        viewModelScope.launch { combine(store.messages, ReplyRegistry.available) { list, replyable -> list to replyable }.collect { (l, r) -> rebuild(l, r) } }
     }
 
     /** Call after contacts or photos changed (permission granted, photo chosen). */
     fun refresh() {
         faces.clear()
-        rebuild(store.messages.value)
+        rebuild(store.messages.value, ReplyRegistry.available.value)
     }
 
-    private fun rebuild(list: List<StoredMessage>) {
+    private fun rebuild(list: List<StoredMessage>, replyable: Set<String>) {
         viewModelScope.launch {
-            _items.value = withContext(Dispatchers.IO) { groupConversations(list, ::face) }
+            _items.value = withContext(Dispatchers.IO) { groupConversations(list, replyable, ::face) }
         }
     }
 

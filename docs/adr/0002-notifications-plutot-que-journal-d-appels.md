@@ -22,6 +22,9 @@ Garde-fous :
 − L'accès aux notifications est sensible : revue Play probable, justification claire dans la fiche.
 − Les appels manqués donnent un nom ou un numéro tel qu'affiché par la notification ; la photo vient du contact Android correspondant.
 
+## Mise à jour : répondre à WhatsApp (2026-10-08)
+Pour répondre à un message WhatsApp, Présence utilise l'action « Répondre » de la notification WhatsApp (le mécanisme de la réponse rapide d'Android, `RemoteInput`) : le texte dicté est confirmé à l'écran puis remis à WhatsApp, qui l'envoie. L'action n'existe **que tant que la notification existe** ; elle est gardée **en mémoire seulement** (jamais enregistrée) et oubliée dès que la notification disparaît ou que l'accès aux notifications est coupé. Sans notification, l'écran propose d'ouvrir WhatsApp. Présence ne sait pas si WhatsApp a réussi : la réponse est marquée « Envoyé » dès qu'elle lui est remise. Fragile par nature (dépend de WhatsApp) : à vérifier sur un vrai téléphone.
+
 ## Alternatives
 - `READ_CALL_LOG` / `READ_SMS` : refusé par la politique Play pour un launcher.
 - Devenir application SMS/Téléphone par défaut : trop lourd, risque de casser des fonctions vitales (urgences).

@@ -24,6 +24,7 @@ Avec un **autre téléphone** (ou un proche) :
 - [ ] Mettez le téléphone en **mode avion**, faites envoyer une photo, remettez le réseau : la photo doit arriver ou apparaître « Cette photo n'est pas arrivée » avec **Recevoir à nouveau**.
 - [ ] Vous **envoyez une photo** : *Envoyer une photo* → prendre / choisir → aperçu → *Envoyer* : elle arrive sur l'autre téléphone.
 - [ ] La même photo envoyée **n'apparaît pas deux fois** chez vous (l'opérateur ne renvoie pas la notification).
+- [ ] **WhatsApp** : un proche vous écrit sur WhatsApp (notification **non balayée**) : le message apparaît dans Présence ; vous **répondez** en dictant ; il reçoit la réponse sur WhatsApp. Balayez ensuite la notification : le bouton « Répondre » est remplacé par « Ouvrir WhatsApp ».
 - [ ] Un **code de sécurité** reçu par SMS (banque, site) est masqué (« Message de sécurité ») et n'est pas lu à voix haute.
 - [ ] Vous recevez un message d'un **numéro inconnu** : il s'affiche par son numéro, rien n'apparaît sur l'écran maison.
 

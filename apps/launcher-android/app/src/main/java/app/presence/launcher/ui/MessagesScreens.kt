@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.BrokenImage
 import androidx.compose.material.icons.filled.Close
@@ -149,6 +150,7 @@ fun ConversationScreen(
     onRetry: (StoredMessage) -> Unit = {},
     onImage: (String) -> Unit = {},
     onSendPhoto: (() -> Unit)? = null,
+    onOpenWhatsApp: (() -> Unit)? = null,
 ) {
     PresenceTheme {
         Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -161,6 +163,16 @@ fun ConversationScreen(
                 items(messages.asReversed(), key = { it.id }) { Bubble(it, item.message.from, nowMs, onRetry, onImage) }
             }
             if (notice != null) Text(notice, fontSize = 24.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+            if (onOpenWhatsApp != null) {
+                // The WhatsApp notification (our only way in) is gone: say so, and offer the one thing that works.
+                Text(stringResource(R.string.whatsapp_open_hint), fontSize = 24.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                // The only action that works here: a filled button, with an "opens another app" icon (not an SMS icon).
+                Button(onClick = onOpenWhatsApp, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
+                    Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null)
+                    Spacer(Modifier.width(12.dp))
+                    Text(stringResource(R.string.whatsapp_open), fontSize = 24.sp)
+                }
+            }
             val canListen = messages.any { !it.outgoing && !it.sensitive && it.text.isNotBlank() } // a picture alone has nothing to read
             val canWrite = item.canReply && canDictate
             var heard by remember { mutableStateOf(false) }
@@ -254,6 +266,7 @@ private fun statusText(status: MessageStatus): String? = when (status) {
     MessageStatus.SENDING -> stringResource(R.string.status_sending)
     MessageStatus.SENT -> stringResource(R.string.status_sent)
     MessageStatus.DELIVERED -> stringResource(R.string.status_delivered)
+    MessageStatus.HANDED_OFF -> stringResource(R.string.status_handed_off)
     MessageStatus.FAILED -> stringResource(R.string.status_failed)
     MessageStatus.NONE -> null
 }
@@ -296,6 +309,8 @@ fun ReplyConfirmScreen(
     directSend: Boolean = false,
     isNew: Boolean = false,
     notice: String? = null,
+    whatsapp: Boolean = false,
+    onOpenWhatsApp: (() -> Unit)? = null,
 ) {
     PresenceTheme {
         // The whole screen scrolls: on a small screen or with a large font the text to check must never be squeezed out.
@@ -305,14 +320,21 @@ fun ReplyConfirmScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Avatar(item.displayContact, Modifier.fillMaxWidth(0.28f).aspectRatio(1f))
-            Text(stringResource(if (isNew) R.string.write_to else R.string.reply_to, item.message.from), fontSize = 28.sp, textAlign = TextAlign.Center)
+            Text(stringResource(if (whatsapp) R.string.reply_to_whatsapp else if (isNew) R.string.write_to else R.string.reply_to, item.message.from), fontSize = 28.sp, textAlign = TextAlign.Center)
             Text(text, fontSize = 30.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp))
             if (notice != null) Text(notice, fontSize = 24.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-            Text(stringResource(if (directSend) R.string.reply_hint_direct else R.string.reply_hint), fontSize = 24.sp, textAlign = TextAlign.Center)
+            Text(stringResource(if (whatsapp) R.string.reply_hint_whatsapp else if (directSend) R.string.reply_hint_direct else R.string.reply_hint), fontSize = 24.sp, textAlign = TextAlign.Center)
+            if (onOpenWhatsApp != null) {
+                Button(onClick = onOpenWhatsApp, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
+                    Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null)
+                    Spacer(Modifier.width(12.dp))
+                    Text(stringResource(R.string.whatsapp_open), fontSize = 28.sp)
+                }
+            }
             Button(onClick = onSend, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
                 Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null)
                 Spacer(Modifier.width(12.dp))
-                Text(stringResource(if (directSend) R.string.reply_send_direct else R.string.reply_send), fontSize = 28.sp)
+                Text(stringResource(if (whatsapp) R.string.reply_send_whatsapp else if (directSend) R.string.reply_send_direct else R.string.reply_send), fontSize = 28.sp)
             }
             OutlinedButton(onClick = onListen, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
                 Icon(Icons.Filled.VolumeUp, contentDescription = null)
