@@ -16,6 +16,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material3.Switch
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -278,6 +283,51 @@ class SetupActivity : ComponentActivity() {
                     if (erased) Text(stringResource(R.string.setup_erased))
 
                     val contacts by contactsVm.contacts.collectAsStateWithLifecycle()
+                    val all by contactsVm.allContacts.collectAsStateWithLifecycle()
+                    val chosen by contactsVm.chosen.collectAsStateWithLifecycle()
+                    var query by remember { mutableStateOf("") }
+                    var granted by remember {
+                        mutableStateOf(ContextCompat.checkSelfPermission(this@SetupActivity, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED)
+                    }
+                    val askContacts = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+                        granted = ok
+                        if (ok) { contactsVm.refresh(); contactsVm.loadAll() }
+                    }
+                    androidx.compose.runtime.LaunchedEffect(granted) { if (granted) contactsVm.loadAll() }
+
+                    Text(stringResource(R.string.setup_favorites), fontSize = 28.sp)
+                    Text(stringResource(R.string.setup_favorites_help), fontSize = 24.sp)
+                    if (!granted) {
+                        Button(onClick = { askContacts.launch(Manifest.permission.READ_CONTACTS) }, modifier = Modifier.heightIn(min = 64.dp)) {
+                            Text(stringResource(R.string.setup_contacts_allow), fontSize = 24.sp)
+                        }
+                    } else {
+                        OutlinedTextField(
+                            value = query,
+                            onValueChange = { query = it },
+                            label = { Text(stringResource(R.string.setup_favorites_search), fontSize = 24.sp) },
+                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 24.sp),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp),
+                        )
+                        ContactPickerRows.rows(all, chosen, query).forEach { c ->
+                            val on = c.id in chosen
+                            Row(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 64.dp)
+                                    .toggleable(value = on, role = Role.Switch, onValueChange = { contactsVm.toggle(c.id) }),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Switch(checked = on, onCheckedChange = null)
+                                Text(c.name, fontSize = 24.sp, modifier = Modifier.weight(1f))
+                                Text(stringResource(if (on) R.string.setup_favorites_on else R.string.setup_favorites_off), fontSize = 24.sp)
+                            }
+                        }
+                        if (all.size > ContactPickerRows.LIMIT && query.isBlank()) Text(stringResource(R.string.setup_favorites_more), fontSize = 24.sp)
+                    }
+
                     Text(stringResource(R.string.setup_people), fontSize = 28.sp)
                     if (contacts.isEmpty()) Text(stringResource(R.string.setup_people_empty))
                     if (photoFailed) Text(stringResource(R.string.setup_photo_failed))

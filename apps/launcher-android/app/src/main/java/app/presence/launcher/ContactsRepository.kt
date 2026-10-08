@@ -46,20 +46,25 @@ class ContactsRepository(private val resolver: ContentResolver) {
         }
     }
 
-    fun starred(): List<Contact> {
+    fun starred(): List<Contact> = query("${Contacts.STARRED} = 1")
+
+    /** Every contact with a phone number, once each (first number), sorted by name: the pool the family picks from. */
+    fun all(): List<Contact> = query(null)
+
+    /** The contacts with these ids, sorted by name. */
+    fun byIds(ids: Set<Long>): List<Contact> {
+        if (ids.isEmpty()) return emptyList()
+        return query("${Phone.CONTACT_ID} IN (${ids.joinToString(",")})") // ids are numbers from our own store, never free text
+    }
+
+    private fun query(selection: String?): List<Contact> {
         val projection = arrayOf(Phone.CONTACT_ID, Phone.DISPLAY_NAME, Phone.NUMBER, Phone.PHOTO_URI)
         val seen = LinkedHashMap<Long, Contact>()
-        resolver.query(
-            Phone.CONTENT_URI,
-            projection,
-            "${Contacts.STARRED} = 1",
-            null,
-            "${Phone.DISPLAY_NAME} COLLATE LOCALIZED ASC",
-        )?.use { c ->
+        resolver.query(Phone.CONTENT_URI, projection, selection, null, "${Phone.DISPLAY_NAME} COLLATE LOCALIZED ASC")?.use { c ->
             while (c.moveToNext()) {
                 val id = c.getLong(0)
                 if (id !in seen) {
-                    seen[id] = Contact(id, c.getString(1).orEmpty(), c.getString(2).orEmpty(), c.getString(3)?.takeIf { it.startsWith("content://") }) // never a network URL
+                    seen[id] = Contact(id, c.getString(1).orEmpty(), c.getString(2).orEmpty(), c.getString(3)?.takeIf { it.startsWith("content://") })
                 }
             }
         }
