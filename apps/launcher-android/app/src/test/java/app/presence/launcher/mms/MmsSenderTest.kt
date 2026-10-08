@@ -148,6 +148,27 @@ class MmsSenderTest {
         val box = sender()
         box.retry("nope") // unknown id: nothing happens
         assertEquals(0, posts.size)
+        val id = (box.send("0611223344", "Marie", photo) as MmsSendResult.Started).messageId
+        box.retry(id) // still being sent: not sent a second time
+        assertEquals(1, posts.size)
+        box.onSent(id, files.writeTransfer(byteArrayOf(1))!!.name, ok = true)
+        box.retry(id) // already sent: not sent again
+        assertEquals(1, posts.size)
+    }
+
+    @Test
+    fun theRecipientNumberIsNormalisedForTheOperator() {
+        sender().send("+33 (6) 11-22.33.44", "Marie", photo)
+        val req = PduParser(posts.single().bytes, true).parse() as SendReq
+        assertEquals("+33611223344", req.to.single().string)
+    }
+
+    @Test
+    fun anyUnexpectedPlatformFailureIsAVisibleFailureAndLeavesNoPduOnDisk() {
+        refuse = IllegalStateException("telephony service died")
+        val id = (sender().send("0611223344", "Marie", photo) as MmsSendResult.Started).messageId
+        assertEquals(MessageStatus.FAILED, store.get(id)!!.status)
+        assertEquals(0, File(context.cacheDir, "mms-transfer").listFiles().orEmpty().size)
     }
 
     @Test
