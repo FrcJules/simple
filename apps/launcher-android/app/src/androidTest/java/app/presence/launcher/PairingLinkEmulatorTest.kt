@@ -51,19 +51,22 @@ class PairingLinkEmulatorTest {
 
     @Test
     fun aValidLinkAsksForTheCodeThenFillsInTheFieldsWithoutSavingAnything() {
-        open("presence://pair?u=https%3A%2F%2F192.168.1.66%3A8788&t=0123456789abcdef0123&f=$fp")
+        open("presence://pair?u=https%3A%2F%2F192.168.1.66%3A8788&s=claim-0123456789abcdef&f=$fp")
         rule.onNodeWithText("Réglages famille : entrez le code").assertIsDisplayed() // nothing before the code
         unlock()
-        rule.onNodeWithText("Appairage reçu du QR code : https://192.168.1.66:8788. Vérifiez l'adresse, puis touchez « Enregistrer ».").assertIsDisplayed()
+        rule.onNodeWithText("Appairer avec cet écran maison ?").assertIsDisplayed()
         rule.onNodeWithText("https://192.168.1.66:8788").assertIsDisplayed()
+        rule.onNodeWithText("88A2 899B 9DF0 0490 B76854FB11FF4F1019470BA0D5FB7CD68BC700E4B4B7B68F".chunked(4).joinToString(" ").let { "88A2 899B 9DF0 0490 B768 54FB 11FF 4F10 1947 0BA0 D5FB 7CD6 8BC7 00E4 B4B7 B68F" }).assertIsDisplayed()
         assertNull("nothing is saved until the family confirms", PairingStore(context).load())
+        rule.onNodeWithText("Annuler").performClick()
+        rule.onNodeWithText("Appairer avec cet écran maison ?").assertDoesNotExist()
     }
 
     @Test
     fun anInvalidLinkIsRefusedWithAnExplanationAndFillsNothing() {
-        open("presence://pair?u=https%3A%2F%2Fexample.com%3A8788&t=0123456789abcdef0123&f=$fp")
+        open("presence://pair?u=https%3A%2F%2Fexample.com%3A8788&s=claim-0123456789abcdef&f=$fp")
         unlock()
-        rule.onNodeWithText("Ce lien d'appairage n'est pas valable (adresse hors de la maison, code trop court ou empreinte incorrecte).").assertIsDisplayed()
+        rule.onNodeWithText("Ce lien d'appairage n'est pas valable (adresse hors de la maison, secret absent ou incorrect, empreinte incorrecte).").assertIsDisplayed()
         assertNull(PairingStore(context).load())
     }
 }

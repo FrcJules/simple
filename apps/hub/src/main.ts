@@ -1,5 +1,6 @@
 import { createServer } from "node:https";
 import { buildApp } from "./app";
+import { DeviceRegistry } from "./devices";
 import { lanAddress } from "./pairing";
 import { loadOrCreateTls } from "./tls";
 
@@ -16,6 +17,7 @@ const app = buildApp({
   pairingToken: required("PRESENCE_PAIRING_TOKEN", "min 16 chars"),
   displayToken: required("PRESENCE_DISPLAY_TOKEN", "min 16 chars, different from the pairing token"),
   displayOrigin: process.env.PRESENCE_DISPLAY_ORIGIN,
+  devices: new DeviceRegistry(process.env.PRESENCE_DATA_DIR ?? "./data"),
 });
 
 // The display runs on the same device: plain HTTP, loopback only.

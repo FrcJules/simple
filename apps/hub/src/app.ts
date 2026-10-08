@@ -2,6 +2,7 @@ import cors from "@fastify/cors";
 import { presenceEvent, type PresenceEvent } from "@presence/contracts";
 import Fastify, { type FastifyInstance } from "fastify";
 import { timingSafeEqual } from "node:crypto";
+import { DeviceRegistry } from "./devices";
 
 export interface HubOptions {
   /** Pairing token the phone must present as `Authorization: Bearer <token>`. */
@@ -14,6 +15,8 @@ export interface HubOptions {
   maxEvents?: number;
   /** Max simultaneous SSE clients. */
   maxStreams?: number;
+  /** Paired phones (one-time claim → device token). Without it, only [pairingToken] writes and /pair is off. */
+  devices?: DeviceRegistry;
 }
 
 function tokenMatches(expected: string, given: string): boolean {
@@ -42,8 +45,26 @@ export function buildApp(opts: HubOptions): FastifyInstance {
 
   app.get("/health", async () => ({ ok: true }));
 
+  const canWrite = (bearerToken: string) => tokenMatches(opts.pairingToken, bearerToken) || (opts.devices?.isDeviceToken(bearerToken) ?? false);
+
+  // Pairing: a phone redeems the one-time secret of the QR code for its own token. At most 10 tries a minute in total, so a
+  // flood cannot even be used to guess (the secret has 144 bits anyway).
+  const pairTries: number[] = [];
+  app.post("/pair", async (req, reply) => {
+    if (!opts.devices) return reply.code(404).send({ error: "not_found" });
+    const now = Date.now();
+    while (pairTries.length > 0 && now - (pairTries[0] ?? 0) > 60_000) pairTries.shift();
+    if (pairTries.length >= 10) return reply.code(429).send({ error: "too_many_attempts" });
+    pairTries.push(now);
+    const claim = (req.body as { claim?: unknown } | null)?.claim;
+    if (typeof claim !== "string" || claim.length < 16 || claim.length > 200) return reply.code(400).send({ error: "invalid_claim" });
+    const deviceToken = opts.devices.redeemClaim(claim);
+    if (!deviceToken) return reply.code(403).send({ error: "claim_refused" });
+    return reply.code(200).send({ token: deviceToken });
+  });
+
   app.post("/events", async (req, reply) => {
-    if (!tokenMatches(opts.pairingToken, bearer(req.headers.authorization))) {
+    if (!canWrite(bearer(req.headers.authorization))) {
       return reply.code(401).send({ error: "unauthorized" });
     }
     const parsed = presenceEvent.safeParse(req.body);
