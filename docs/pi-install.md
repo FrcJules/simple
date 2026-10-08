@@ -1,0 +1,79 @@
+# Installer l'écran maison (Raspberry Pi)
+
+Pas à pas pour un Raspberry Pi 4 ou 5 relié à un écran. Tout reste dans la maison : aucun service en ligne n'est nécessaire. À faire une fois, par la personne de la famille qui installe.
+
+## 1. Système
+
+1. Avec *Raspberry Pi Imager*, installez **Raspberry Pi OS (64 bits) avec bureau**. Dans les réglages avancés : nom `presence`, Wi-Fi de la maison, SSH activé avec une clé, utilisateur de votre choix (par exemple `famille`), **ouverture de session automatique** sur le bureau.
+2. Donnez au Pi une **adresse fixe** (réservation DHCP dans la box) : le QR code d'appairage contient cette adresse.
+3. Mises à jour de sécurité automatiques :
+   ```sh
+   sudo apt update && sudo apt full-upgrade -y
+   sudo apt install -y unattended-upgrades git curl openssl python3 ufw
+   sudo dpkg-reconfigure -plow unattended-upgrades
+   ```
+4. Node 22 ou plus récent (voir <https://nodejs.org/> ou le dépôt NodeSource), puis `node --version` doit afficher `v22` au moins.
+
+## 2. Pare-feu
+
+Seul le port HTTPS des téléphones est ouvert, et seulement sur le réseau de la maison (adaptez `192.168.1.0/24`) :
+```sh
+sudo ufw default deny incoming
+sudo ufw allow from 192.168.1.0/24 to any port 22 proto tcp
+sudo ufw allow from 192.168.1.0/24 to any port 8788 proto tcp
+sudo ufw enable
+```
+Le hub (8787) et l'écran (5173) n'écoutent que sur `127.0.0.1`.
+
+## 3. Installer Présence
+
+```sh
+sudo useradd --system --create-home --home-dir /var/lib/presence --shell /usr/sbin/nologin presence
+sudo git clone https://github.com/FrcJules/presence.git /opt/presence
+sudo chown -R presence:presence /opt/presence
+sudo install -d -m 0750 -o root -g presence /etc/presence
+sudo install -m 0640 -o root -g presence /opt/presence/deploy/pi/hub.env.example /etc/presence/hub.env
+```
+Éditez `/etc/presence/hub.env` : mettez dans `PRESENCE_DISPLAY_TOKEN` **et** `VITE_DISPLAY_TOKEN` la même valeur, obtenue avec `openssl rand -hex 24`, et le prénom dans `VITE_SENIOR_NAME`.
+
+Construisez puis démarrez (la mise à jour fait la même chose, voir plus bas) :
+```sh
+sudo cp /opt/presence/deploy/pi/presence-*.service /etc/systemd/system/
+sudo /opt/presence/deploy/pi/update.sh
+sudo systemctl enable --now presence-hub presence-display
+```
+Au premier démarrage le hub crée son certificat dans `/var/lib/presence/tls` et affiche son **empreinte** : `sudo journalctl -u presence-hub -n 20`.
+
+## 4. Kiosque
+
+Chromium plein écran, verrouillé sur l'écran maison (aucune autre page ne peut s'ouvrir) :
+```sh
+sudo install -d /etc/chromium/policies/managed
+sudo cp /opt/presence/deploy/pi/chromium-policy.json /etc/chromium/policies/managed/presence.json
+mkdir -p ~/.config/autostart
+cat > ~/.config/autostart/presence-kiosk.desktop <<'DESK'
+[Desktop Entry]
+Type=Application
+Name=Présence
+Exec=/opt/presence/deploy/pi/kiosk.sh
+DESK
+```
+Désactivez aussi la mise en veille de l'écran (*Préférences ▸ Raspberry Pi Configuration ▸ Affichage ▸ Screen Blanking : désactivé*), puis redémarrez : l'heure et la date s'affichent.
+
+## 5. Appairer un téléphone
+
+Sur l'écran maison, touchez **5 fois de suite l'heure** : un QR code s'affiche avec l'empreinte du hub. Scannez-le avec l'appareil photo du téléphone, entrez le code famille, **comparez l'empreinte** puis « Appairer » (voir `docs/real-phone-test.md`). Autre voie, depuis un terminal : `cd /opt/presence && sudo -u presence PRESENCE_DATA_DIR=/var/lib/presence PRESENCE_TLS_DIR=/var/lib/presence/tls npm run pair -w @presence/hub -- "Téléphone de Marie"`.
+
+Liste et retrait des téléphones : mêmes variables, `npm run devices -w @presence/hub` et `npm run revoke -w @presence/hub -- <identifiant>`. Pour changer de certificat (carte SD perdue) : arrêtez le hub, `npm run rotate-cert -w @presence/hub`, redémarrez, appairez de nouveau.
+
+## 6. Mises à jour
+
+- **Système** : automatiques (étape 1).
+- **Présence** : `sudo /opt/presence/deploy/pi/update.sh` (dernière version) ou `sudo /opt/presence/deploy/pi/update.sh v0.2.0` (version précise, pour revenir en arrière aussi). Les téléphones appairés, le certificat et les réglages sont conservés.
+- Vérification : `systemctl status presence-hub presence-display`, `journalctl -u presence-hub -f`.
+
+## 7. Sauvegarde et sécurité
+
+- Sauvegardez `/var/lib/presence` (appareils appairés, certificat) et `/etc/presence/hub.env` ailleurs que sur la carte SD. Le dossier contient des empreintes et le nom des téléphones : gardez la sauvegarde privée.
+- Ne mettez **pas de proxy inverse** devant le hub et n'exposez jamais le port 8787 ou 5173 (voir `docs/privacy.md`).
+- Le jeton d'affichage est dans les fichiers de `apps/display/dist` : c'est pourquoi Chromium est verrouillé et le dossier appartient à l'utilisateur `presence`.

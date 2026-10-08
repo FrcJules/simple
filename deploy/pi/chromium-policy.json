@@ -1,0 +1,13 @@
+{
+  "_comment": "Installé dans /etc/chromium/policies/managed/presence.json : le kiosque ne peut ouvrir que l'écran maison et le hub local.",
+  "URLBlocklist": ["*"],
+  "URLAllowlist": ["http://127.0.0.1:5173", "http://localhost:5173", "http://127.0.0.1:8787", "http://localhost:8787"],
+  "DeveloperToolsAvailability": 2,
+  "IncognitoModeAvailability": 1,
+  "BrowserSignin": 0,
+  "PasswordManagerEnabled": false,
+  "TranslateEnabled": false,
+  "MetricsReportingEnabled": false,
+  "SafeBrowsingProtectionLevel": 0,
+  "BackgroundModeEnabled": false
+}
