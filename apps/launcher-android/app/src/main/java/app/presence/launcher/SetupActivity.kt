@@ -49,6 +49,7 @@ import app.presence.launcher.config.UiConfigStore
 import app.presence.launcher.messages.MessageStore
 import app.presence.launcher.security.FamilyLock
 import app.presence.launcher.ui.EnterFamilyCodeScreen
+import app.presence.launcher.ui.FamilyCodeNotSetScreen
 import app.presence.launcher.ui.SetFamilyCodeScreen
 import app.presence.launcher.photos.ContactPhotoStore
 import app.presence.launcher.ui.Avatar
@@ -106,6 +107,9 @@ class SetupActivity : ComponentActivity() {
     /** Set just before this screen deliberately opens another one (photo or file picker, Android's notification settings). */
     private var openingChild = false
 
+    /** Opened by the hidden gesture of the home screen (not from the app list, nor by a QR code): see [FamilyCodeNotSetScreen]. */
+    private var fromHome = false
+
     /** Leaving the settings locks them again; opening a picker or Android settings from here does not. */
     override fun onStop() {
         super.onStop()
@@ -113,10 +117,16 @@ class SetupActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        fromHome = savedInstanceState?.getBoolean(STATE_FROM_HOME) ?: intent.getBooleanExtra(EXTRA_FROM_HOME, false)
         // The settings show the pairing address and the names of the family: keep them out of screenshots and the recent-apps view.
         window.setFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE, android.view.WindowManager.LayoutParams.FLAG_SECURE)
         super.onCreate(savedInstanceState)
         onCreateContent()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(STATE_FROM_HOME, fromHome)
     }
 
     override fun onResume() {
@@ -134,7 +144,9 @@ class SetupActivity : ComponentActivity() {
                 if (!unlocked) {
                     var gateError by remember { mutableStateOf<String?>(null) }
                     var lockedSeconds by remember { mutableStateOf(lock.lockedSeconds()) }
-                    if (!lock.isSet()) {
+                    if (!lock.isSet() && fromHome) {
+                        FamilyCodeNotSetScreen(onBack = { finish() }) // never lets the home screen choose the family's code
+                    } else if (!lock.isSet()) {
                         SetFamilyCodeScreen(gateError, onEdit = { gateError = null }, onBack = { finish() }, onSubmit = { code, again ->
                             // The two fields are compared first: a typing slip is the likeliest mistake.
                             gateError = when {
@@ -294,6 +306,12 @@ class SetupActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    companion object {
+        /** Set by the home screen's hidden gesture. */
+        const val EXTRA_FROM_HOME = "from_home"
+        private const val STATE_FROM_HOME = "from_home"
     }
 
     private fun hasNotificationAccess() = NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName)

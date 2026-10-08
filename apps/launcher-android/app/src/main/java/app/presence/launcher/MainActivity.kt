@@ -195,7 +195,7 @@ class MainActivity : ComponentActivity() {
                         unreadMessages = unread,
                         config = uiConfig,
                         status = rememberHomeStatus(),
-                        onSecretTap = { startActivity(Intent(this, SetupActivity::class.java)) },
+                        onSecretTap = { startActivity(Intent(this, SetupActivity::class.java).putExtra(SetupActivity.EXTRA_FROM_HOME, true)) },
                         onTile = ::onTile,
                     )
                     Screen.RATIONALE -> {

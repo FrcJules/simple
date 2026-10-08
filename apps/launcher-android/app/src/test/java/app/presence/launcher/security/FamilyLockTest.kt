@@ -22,7 +22,7 @@ class FamilyLockTest {
 
     @Before fun fresh() { context.getSharedPreferences("family_lock", Context.MODE_PRIVATE).edit().clear().commit() }
 
-    private fun lock() = FamilyLock(context, wallClock = { now }, elapsed = { mono }, bootCount = { boot })
+    private fun lock() = FamilyLock(context, elapsed = { mono }, bootCount = { boot })
     private fun pass(ms: Long) { now += ms; mono += ms }
 
     @Test
@@ -125,27 +125,49 @@ class FamilyLockTest {
     }
 
     @Test
-    fun aDateSetFarAheadAndBackNeverLocksForMoreThanFifteenMinutes() {
-        val l = lock()
-        l.set("2580")
-        now += 50L * 365 * 24 * 3600 * 1000
-        repeat(5) { l.verify("9999") } // locked "from the year 2076"
-        now -= 50L * 365 * 24 * 3600 * 1000 // the date goes back to normal
-        boot += 1 // after a restart only the date can be used
-        assertTrue(l.lockedSeconds() <= FamilyLock.MAX_LOCK_SECONDS)
-    }
-
-    @Test
-    fun afterARestartTheLockStillHoldsUsingTheDate() {
+    fun restartingThePhoneAndMovingTheDateNeverShortensTheWait() {
         val l = lock()
         l.set("2580")
         repeat(5) { l.verify("9999") }
         boot += 1
         mono = 10L // the monotonic clock restarted
-        now += 5_000
-        assertEquals(25, l.lockedSeconds())
-        now += 26_000
+        now += 365L * 24 * 3600 * 1000 // and the date was moved a year ahead
+        assertEquals(30, l.lockedSeconds()) // the whole wait starts again
+        assertTrue(l.verify("2580") is FamilyLock.Result.Locked)
+        now -= 2L * 365 * 24 * 3600 * 1000 // or two years back: no effect either
+        mono += 10_000
+        assertEquals(20, l.lockedSeconds())
+        mono += 21_000
         assertEquals(0, l.lockedSeconds())
+    }
+
+    @Test
+    fun aClockThatWentBackwardsCountsAsARestartEvenIfTheBootCounterIsUnavailable() {
+        val l = lock()
+        l.set("2580")
+        repeat(5) { l.verify("9999") }
+        mono = 1L // restarted, but bootCount() still says the same value
+        assertEquals(30, l.lockedSeconds())
+    }
+
+    @Test
+    fun aWaitThatWasServedIsNotStartedAgainByALaterRestart() {
+        val l = lock()
+        l.set("2580")
+        repeat(5) { l.verify("9999") }
+        pass(31_000)
+        assertEquals(0, l.lockedSeconds())
+        boot += 1
+        mono = 10L
+        assertEquals(0, l.lockedSeconds())
+    }
+
+    @Test
+    fun theWaitNeverExceedsFifteenMinutes() {
+        val l = lock()
+        l.set("2580")
+        repeat(40) { if (l.lockedSeconds() > 0) pass(l.lockedSeconds() * 1000L + 1); l.verify("9999") }
+        assertTrue(l.lockedSeconds() <= FamilyLock.MAX_LOCK_SECONDS)
     }
 
     @Test
