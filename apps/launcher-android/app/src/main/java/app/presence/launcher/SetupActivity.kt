@@ -50,13 +50,18 @@ import app.presence.launcher.messages.MessageStore
 import app.presence.launcher.security.FamilyLock
 import app.presence.launcher.ui.EnterFamilyCodeScreen
 import app.presence.launcher.ui.FamilyCodeNotSetScreen
+import app.presence.launcher.ui.PairingOfferCard
 import app.presence.launcher.ui.SetFamilyCodeScreen
 import app.presence.launcher.photos.ContactPhotoStore
 import app.presence.launcher.ui.Avatar
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import app.presence.launcher.notifications.PairingConfig
+import app.presence.launcher.notifications.PairingClient
+import app.presence.launcher.notifications.PairingLink
+import app.presence.launcher.notifications.PairingOffer
 import app.presence.launcher.notifications.PairingStore
 
 /** Family-only settings (hub address, token, notification access). Not reachable from Jean-Pierre's home screen. */
@@ -113,7 +118,8 @@ class SetupActivity : ComponentActivity() {
     /** Leaving the settings locks them again; opening a picker or Android settings from here does not. */
     override fun onStop() {
         super.onStop()
-        if (openingChild) openingChild = false else unlocked = false
+        // An unused offer does not wait behind a locked screen; a request already sent is left to finish (and save its token): only "Annuler" stops it.
+        if (openingChild) openingChild = false else { unlocked = false; if (attempt == null) forgetOffer() }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -121,7 +127,8 @@ class SetupActivity : ComponentActivity() {
         // The settings show the pairing address and the names of the family: keep them out of screenshots and the recent-apps view.
         window.setFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE, android.view.WindowManager.LayoutParams.FLAG_SECURE)
         super.onCreate(savedInstanceState)
-        onCreateContent()
+        // Only a fresh launch reads the link: a recreated activity (rotation, process death) must not offer it a second time.
+        onCreateContent(readLink = savedInstanceState == null)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -136,7 +143,40 @@ class SetupActivity : ComponentActivity() {
         }
     }
 
-    private fun onCreateContent() {
+    /**
+     * A pairing offer opened from a QR code. It is only *shown* (after the family code) for the family to verify; nothing is saved
+     * until "Appairer" is touched. It is read once, at the first launch, and kept only in memory: it is forgotten when it is used,
+     * when the settings lock again, and a recreated activity does not read the link again. The system may still keep the original
+     * link with the task, but its secret is valid for two minutes and once, so it is worthless afterwards.
+     */
+    private var offer by mutableStateOf<PairingOffer?>(null)
+    private var offerRefused by mutableStateOf(false)
+    private var pairingStatus by mutableStateOf<Int?>(null)
+    private var pairing by mutableStateOf(false)
+
+    /** One request to the hub. Whoever settles it first wins: either the answer is saved, or the family cancelled and nothing is. */
+    private class Attempt {
+        val settled = java.util.concurrent.atomic.AtomicBoolean(false)
+        var job: Job? = null
+    }
+    private var attempt: Attempt? = null
+
+    private fun forgetOffer() {
+        attempt?.let { if (it.settled.compareAndSet(false, true)) it.job?.cancel() } // too late to cancel if it was already saved
+        attempt = null
+        offer = null
+        offerRefused = false
+        pairingStatus = null
+        pairing = false
+    }
+
+    private fun onCreateContent(readLink: Boolean) {
+        if (readLink && intent?.data != null) {
+            val data = intent.data.toString()
+            setIntent(Intent()) // the link (and the claim in it) is not kept in this activity
+            offer = PairingLink.parse(data)
+            offerRefused = offer == null
+        }
         val store = PairingStore(this)
         val profile = ProfileStore(this)
         setContent {
@@ -168,14 +208,59 @@ class SetupActivity : ComponentActivity() {
                     return@PresenceTheme
                 }
                 var url by remember { mutableStateOf(store.load()?.baseUrl ?: "https://") }
-                var token by remember { mutableStateOf("") } // never re-display the stored token
+                var token by remember { mutableStateOf("") } // a stored token is never shown again
                 var pin by remember { mutableStateOf(store.load()?.certSha256.orEmpty()) }
                 var name by remember { mutableStateOf(profile.name()) }
                 var saved by remember { mutableStateOf<Boolean?>(null) }
                 var access by remember { mutableStateOf(hasNotificationAccess()) }
                 Column(Modifier.padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(stringResource(R.string.setup_title), fontSize = 28.sp)
+                    offer?.let { o ->
+                        PairingOfferCard(
+                            offer = o,
+                            replacing = store.load(),
+                            busy = pairing,
+                            status = pairingStatus?.let { stringResource(it) },
+                            onPair = {
+                                pairing = true
+                                pairingStatus = null
+                                val mine = Attempt()
+                                attempt = mine
+                                mine.job = lifecycleScope.launch {
+                                    val outcome = withContext(Dispatchers.IO) {
+                                        val r = PairingClient().redeem(o)
+                                        // Saved in the same step as the answer, even if the screen has gone meanwhile: the hub has
+                                        // already burnt the QR code, so a token that was received must not be lost.
+                                        if (r is PairingClient.Outcome.Paired && mine.settled.compareAndSet(false, true)) store.save(r.config)
+                                        r
+                                    }
+                                    pairing = false
+                                    attempt = null
+                                    when (outcome) {
+                                        is PairingClient.Outcome.Paired -> {
+                                            url = outcome.config.baseUrl
+                                            pin = outcome.config.certSha256
+                                            offer = null
+                                            pairingStatus = R.string.setup_paired
+                                        }
+                                        PairingClient.Outcome.Refused -> pairingStatus = R.string.setup_pair_refused
+                                        PairingClient.Outcome.TooManyAttempts -> pairingStatus = R.string.setup_pair_too_many
+                                        PairingClient.Outcome.Unreachable -> pairingStatus = R.string.setup_pair_unreachable
+                                        PairingClient.Outcome.Invalid -> pairingStatus = R.string.setup_pair_invalid
+                                    }
+                                }
+                            },
+                            onCancel = {
+                                val inFlight = pairing
+                                forgetOffer()
+                                if (inFlight) pairingStatus = R.string.setup_pair_cancelled
+                            },
+                        )
+                    }
+                    if (offer == null) pairingStatus?.let { Text(stringResource(it), fontSize = 24.sp, fontWeight = FontWeight.Bold) }
+                    if (offerRefused) Text(stringResource(R.string.setup_link_refused), fontSize = 24.sp, fontWeight = FontWeight.Bold)
                     OutlinedTextField(name, { name = it }, label = { Text(stringResource(R.string.setup_name)) }, modifier = Modifier.fillMaxWidth())
+                    if (offer == null) Text(stringResource(R.string.setup_scan_hint), fontSize = 24.sp)
                     OutlinedTextField(url, { url = it }, label = { Text(stringResource(R.string.setup_hub_url)) }, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(
                         token, { token = it }, label = { Text(stringResource(R.string.setup_token)) },
@@ -193,7 +278,7 @@ class SetupActivity : ComponentActivity() {
                         val config = PairingConfig.parse(url, token, pin)
                         if (config != null) store.save(config)
                         saved = config != null
-                    }) { Text(stringResource(R.string.setup_save)) }
+                    }, modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)) { Text(stringResource(R.string.setup_save), fontSize = 24.sp) }
                     when (saved) {
                         true -> Text(stringResource(R.string.setup_saved))
                         false -> Text(stringResource(R.string.setup_invalid))

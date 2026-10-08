@@ -47,4 +47,27 @@ class PairingConfigTest {
         val spaced = pin.chunked(2).joinToString(":").lowercase()
         assertEquals(pin, PairingConfig.parse("https://192.168.1.2", token, spaced)?.certSha256)
     }
+
+    @Test
+    fun theStoredAddressIsRebuiltFromTheRealHost() {
+        assertEquals("https://192.168.1.20:8787", PairingConfig.parse(" https://192.168.1.20:8787/ ", token, pin)?.baseUrl)
+        assertEquals("https://presence.local", PairingConfig.parse("HTTPS://Presence.LOCAL", token, pin)?.baseUrl)
+    }
+
+    @Test
+    fun refusesCredentialsPathsQueriesAndFragmentsThatCanHideTheRealHost() {
+        listOf(
+            "https://192.168.1.20:8787@10.9.9.9", "https://user:pw@192.168.1.20", "https://192.168.1.20/admin",
+            "https://192.168.1.20/?next=evil", "https://192.168.1.20/#x", "https://192.168.1.20:70000",
+        ).forEach { assertNull("$it must be refused", PairingConfig.parse(it, token, pin)) }
+    }
+
+    @Test
+    fun refusesLeadingZerosInAddressesAndOddLocalNames() {
+        assertNull(PairingConfig.parse("https://010.0.0.1", token, pin)) // read as octal (8.0.0.1) by some resolvers
+        assertNull(PairingConfig.parse("https://172.016.0.1", token, pin))
+        assertNull(PairingConfig.parse("https://-bad-.local", token, pin))
+        assertNull(PairingConfig.parse("https://a..local", token, pin))
+        assertEquals("https://my-hub.local", PairingConfig.parse("https://my-hub.local", token, pin)?.baseUrl)
+    }
 }
