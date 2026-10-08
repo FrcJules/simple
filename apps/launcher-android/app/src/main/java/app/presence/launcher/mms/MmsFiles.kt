@@ -48,10 +48,22 @@ class MmsFiles(context: Context) {
     fun savePicture(messageId: String, index: Int, image: ReceivedImage): File? =
         try {
             val dir = File(pictureDir, hash(messageId)).apply { mkdirs() }
-            File(dir, "$index.${extension(image.mime)}").also { f -> FileOutputStream(f).use { it.write(image.bytes) } }
+            val target = File(dir, "$index.${extension(image.mime)}")
+            // Written under a temporary name, then renamed: a crash never leaves half a picture that looks complete.
+            val tmp = File(dir, "$index.tmp")
+            FileOutputStream(tmp).use { it.write(image.bytes) }
+            if (!tmp.renameTo(target)) {
+                tmp.delete()
+                null
+            } else target
         } catch (e: IOException) {
             null
         }
+
+    /** Removes every picture of one message (a message that could not be completed). */
+    fun deletePictures(messageId: String) {
+        File(pictureDir, hash(messageId)).deleteRecursively()
+    }
 
     fun deleteQuietly(file: File?) {
         runCatching { file?.delete() }
@@ -76,6 +88,6 @@ class MmsFiles(context: Context) {
         fun authority(context: Context) = "${context.packageName}.mms"
 
         internal fun hash(s: String): String =
-            MessageDigest.getInstance("SHA-256").digest(s.toByteArray()).joinToString("") { "%02x".format(it) }.take(32)
+            MessageDigest.getInstance("SHA-256").digest(s.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }.take(32)
     }
 }

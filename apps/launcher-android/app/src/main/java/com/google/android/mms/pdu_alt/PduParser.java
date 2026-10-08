@@ -846,17 +846,30 @@ public class PduParser {
      * @param pduDataStream pdu data input stream
      * @return parts in PduBody structure
      */
+    private static final int MAX_PARTS = 64;
+    private static final int MAX_ALTERNATIVE_DEPTH = 4;
+    private int mAlternativeDepth = 0;
+
     protected PduBody parseParts(ByteArrayInputStream pduDataStream) {
         if (pduDataStream == null) {
             return null;
         }
 
         int count = parseUnsignedInt(pduDataStream); // get the number of parts
+        // presence: a hostile message must not make us loop or allocate by an announced number.
+        if (count < 0 || count > MAX_PARTS) {
+            return null;
+        }
         PduBody body = new PduBody();
 
         for (int i = 0 ; i < count ; i++) {
             int headerLength = parseUnsignedInt(pduDataStream);
             int dataLength = parseUnsignedInt(pduDataStream);
+            // presence: never trust a length that is larger than what is left in the message.
+            if (headerLength < 0 || dataLength < 0 || headerLength > pduDataStream.available()
+                    || dataLength > pduDataStream.available()) {
+                return null;
+            }
             PduPart part = new PduPart();
             int startPos = pduDataStream.available();
             if (startPos <= 0) {
@@ -916,7 +929,20 @@ public class PduParser {
                 pduDataStream.read(partData, 0, dataLength);
                 if (partContentType.equalsIgnoreCase(ContentType.MULTIPART_ALTERNATIVE)) {
                     // parse "multipart/vnd.wap.multipart.alternative".
-                    PduBody childBody = parseParts(new ByteArrayInputStream(partData));
+                    // presence: bounded nesting, a hostile message must not exhaust the stack.
+                    if (mAlternativeDepth >= MAX_ALTERNATIVE_DEPTH) {
+                        return null;
+                    }
+                    mAlternativeDepth++;
+                    PduBody childBody;
+                    try {
+                        childBody = parseParts(new ByteArrayInputStream(partData));
+                    } finally {
+                        mAlternativeDepth--;
+                    }
+                    if (childBody == null || childBody.getPartsNum() == 0) {
+                        return null;
+                    }
                     // take the first part of children.
                     part = childBody.getPart(0);
                 } else {
@@ -1334,6 +1360,10 @@ public class PduParser {
      */
     protected static int skipWapValue(ByteArrayInputStream pduDataStream, int length) {
         assert(null != pduDataStream);
+        // presence: the length comes from the message; refuse one larger than what is left.
+        if (length < 0 || length > pduDataStream.available()) {
+            return -1;
+        }
         byte[] area = new byte[length];
         int readLen = pduDataStream.read(area, 0, length);
         if (readLen < length) { //The actually read length is lower than the length
@@ -1712,6 +1742,9 @@ public class PduParser {
                                 thisEndPos = pduDataStream.available();
                                 if (thisStartPos - thisEndPos < len) {
                                     int last = len - (thisStartPos - thisEndPos);
+                                    if (last > pduDataStream.available()) {
+                                        last = pduDataStream.available(); // presence: never allocate more than is left
+                                    }
                                     byte[] temp = new byte[last];
                                     pduDataStream.read(temp, 0, last);
                                 }

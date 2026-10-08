@@ -887,7 +887,6 @@ public class PduComposer {
         }
         catch (ArrayIndexOutOfBoundsException e){
             Log.e(TAG, "logging error", e);
-            e.printStackTrace();
         }
 
         int ctLength = ctStart.getLength();
