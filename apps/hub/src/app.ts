@@ -1,12 +1,14 @@
 import cors from "@fastify/cors";
 import { presenceEvent, type PresenceEvent } from "@presence/contracts";
-import Fastify, { type FastifyInstance } from "fastify";
+import Fastify, { type FastifyInstance, type FastifyReply } from "fastify";
 import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { DeviceRegistry } from "./devices";
+import { FailureLimiter } from "./limiter";
 
 const pairBody = z.object({ claim: z.string().min(16).max(200) }).strict();
-const MAX_FAILURES_PER_MINUTE = 5;
+const MAX_PAIR_FAILURES_PER_MINUTE = 5;
+const MAX_AUTH_FAILURES_PER_MINUTE = 10;
 
 export interface HubOptions {
   /** Optional shared token a phone can present as `Authorization: Bearer <token>`; paired devices (see `devices`) do not need it. */
@@ -55,25 +57,15 @@ export function buildApp(opts: HubOptions): FastifyInstance {
   // Pairing: a phone redeems the one-time secret of the QR code for its own token. The hub only answers while a QR code is active
   // (otherwise /pair does not exist: nothing to flood, nothing to learn), and counts *failures* per address, so an attacker on the
   // network locks only itself out, never the family's phone.
-  const failures = new Map<string, number[]>();
-  const recentFailures = (ip: string, now: number) => {
-    const recent = (failures.get(ip) ?? []).filter((t) => now - t < 60_000);
-    if (recent.length > 0) failures.set(ip, recent);
-    else failures.delete(ip);
-    return recent;
-  };
+  const pairFailures = new FailureLimiter(MAX_PAIR_FAILURES_PER_MINUTE);
   app.post("/pair", { bodyLimit: 1024 }, async (req, reply) => {
     const devices = opts.devices;
     if (!devices) return reply.code(404).send({ error: "not_found" });
-    const now = Date.now();
-    const recent = recentFailures(req.ip, now);
     // Blocked addresses are refused before any disk access.
-    if (recent.length >= MAX_FAILURES_PER_MINUTE) return reply.code(429).send({ error: "too_many_attempts" });
+    if (pairFailures.blocked(req.ip)) return reply.code(429).send({ error: "too_many_attempts" });
     if (!devices.hasActiveClaim()) return reply.code(404).send({ error: "not_found" });
     const fail = (code: number, error: string) => {
-      failures.delete(req.ip); // re-inserted last: the map keeps the oldest addresses first
-      if (failures.size >= 1_000) failures.delete(failures.keys().next().value as string); // the oldest goes, nobody else is forgiven
-      failures.set(req.ip, [...recent, now]);
+      pairFailures.record(req.ip);
       return reply.code(code).send({ error });
     };
     const body = pairBody.safeParse(req.body);
@@ -83,10 +75,18 @@ export function buildApp(opts: HubOptions): FastifyInstance {
     return reply.code(200).send({ token: deviceToken });
   });
 
+  // Wrong tokens on the other routes are counted too: the display token or a static pairing token chosen by a human cannot be
+  // guessed at network speed. A blocked address gets 429 even with the right token until its minute is over.
+  const authFailures = new FailureLimiter(MAX_AUTH_FAILURES_PER_MINUTE);
+  const unauthorized = (ip: string, reply: FastifyReply) => {
+    authFailures.record(ip);
+    return reply.code(401).send({ error: "unauthorized" });
+  };
+  const tooMany = (reply: FastifyReply) => reply.code(429).send({ error: "too_many_attempts" });
+
   app.post("/events", async (req, reply) => {
-    if (!canWrite(bearer(req.headers.authorization))) {
-      return reply.code(401).send({ error: "unauthorized" });
-    }
+    if (authFailures.blocked(req.ip)) return tooMany(reply);
+    if (!canWrite(bearer(req.headers.authorization))) return unauthorized(req.ip, reply);
     const parsed = presenceEvent.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: "invalid_event" });
     events.push(parsed.data);
@@ -97,12 +97,14 @@ export function buildApp(opts: HubOptions): FastifyInstance {
 
   // Message bodies are sensitive: reading requires the display token, writing requires the pairing token.
   app.get("/events", async (req, reply) => {
-    if (!canRead(req)) return reply.code(401).send({ error: "unauthorized" });
+    if (authFailures.blocked(req.ip)) return tooMany(reply);
+    if (!canRead(req)) return unauthorized(req.ip, reply);
     return { events };
   });
 
   app.get("/events/stream", (req, reply) => {
-    if (!canRead(req)) return reply.code(401).send({ error: "unauthorized" });
+    if (authFailures.blocked(req.ip)) return tooMany(reply);
+    if (!canRead(req)) return unauthorized(req.ip, reply);
     if (listeners.size >= maxStreams) return reply.code(503).send({ error: "too_many_streams" });
     reply.raw.writeHead(200, {
       "Content-Type": "text/event-stream",

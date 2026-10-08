@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { X509Certificate } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
 export interface TlsMaterial {
@@ -26,6 +26,16 @@ export function loadOrCreateTls(dir: string): TlsMaterial {
   const key = readFileSync(keyPath, "utf8");
   const cert = readFileSync(certPath, "utf8");
   return { key, cert, fingerprint: fingerprintOf(cert) };
+}
+
+/**
+ * A new key and certificate. Phones pin the old fingerprint, so none of them can reach the hub afterwards: the caller must forget the
+ * paired devices (they pair again with a new QR code).
+ */
+export function rotateTls(dir: string): TlsMaterial {
+  rmSync(join(dir, "hub-key.pem"), { force: true });
+  rmSync(join(dir, "hub-cert.pem"), { force: true });
+  return loadOrCreateTls(dir);
 }
 
 export function fingerprintOf(certPem: string): string {
