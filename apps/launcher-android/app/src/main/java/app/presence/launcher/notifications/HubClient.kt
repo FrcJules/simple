@@ -1,6 +1,7 @@
 package app.presence.launcher.notifications
 
 import java.net.InetAddress
+import java.net.Proxy
 import java.net.URL
 import javax.net.ssl.HttpsURLConnection
 
@@ -8,11 +9,13 @@ import javax.net.ssl.HttpsURLConnection
 class HubClient(private val config: PairingConfig) {
     fun send(json: String): Boolean =
         try {
-            val url = URL("${config.baseUrl}/events")
-            // A ".local" or other name could resolve to a public address: check what we would really connect to.
-            if (!InetAddress.getAllByName(url.host).all { it.isSiteLocalAddress }) {
+            val base = URL(config.baseUrl)
+            // A ".local" or other name could resolve to a public address: check what we would really connect to, and connect to
+            // exactly that address (resolved once, so it cannot change in between), never through a proxy.
+            val addresses = InetAddress.getAllByName(base.host)
+            if (addresses.isEmpty() || !addresses.all { it.isSiteLocalAddress }) {
                 false
-            } else post(url, json)
+            } else post(URL("https", addresses.first().hostAddress, base.port, "/events"), json)
         } catch (e: java.io.IOException) {
             false
         } catch (e: RuntimeException) {
@@ -20,7 +23,7 @@ class HubClient(private val config: PairingConfig) {
         }
 
     private fun post(url: URL, json: String): Boolean {
-        val conn = url.openConnection() as HttpsURLConnection
+        val conn = url.openConnection(Proxy.NO_PROXY) as HttpsURLConnection
         return try {
             conn.apply {
                 sslSocketFactory = CertificatePin.sslContext(config.certSha256).socketFactory

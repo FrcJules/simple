@@ -4,6 +4,7 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.io.IOException
 import java.net.InetAddress
+import java.net.Proxy
 import java.net.URL
 import javax.net.ssl.HttpsURLConnection
 
@@ -18,12 +19,15 @@ class TransportResponse(val status: Int, val body: String)
 class HttpsPairingTransport : PairingTransport {
     override fun redeem(baseUrl: String, certSha256: String, claim: String): TransportResponse? =
         try {
-            val url = URL("$baseUrl/pair")
-            // The same rules as for events: only a home-network address, whatever the name resolves to, no redirect.
-            if (!InetAddress.getAllByName(url.host).all { it.isSiteLocalAddress }) {
+            val base = URL(baseUrl)
+            // The same rules as for events: only a home-network address, whatever the name resolves to, no redirect. The name is
+            // resolved once and the connection goes to *that* address, so it cannot be changed between the check and the connection.
+            val addresses = InetAddress.getAllByName(base.host)
+            if (addresses.isEmpty() || !addresses.all { it.isSiteLocalAddress }) {
                 null
             } else {
-                val conn = url.openConnection() as HttpsURLConnection
+                val url = URL("https", addresses.first().hostAddress, base.port, "/pair")
+                val conn = url.openConnection(Proxy.NO_PROXY) as HttpsURLConnection // never through a proxy configured on the phone
                 try {
                     conn.sslSocketFactory = CertificatePin.sslContext(certSha256).socketFactory
                     conn.setHostnameVerifier { _, _ -> true } // the pinned certificate replaces hostname verification
@@ -73,12 +77,16 @@ class PairingClient(private val transport: PairingTransport = HttpsPairingTransp
         /** No answer: wrong network, hub off, or the certificate is not the one in the link. */
         data object Unreachable : Outcome
 
+        /** The hub refuses to answer for a while: too many wrong tries from this phone's address. */
+        data object TooManyAttempts : Outcome
+
         /** An answer we cannot use. */
         data object Invalid : Outcome
     }
 
     fun redeem(offer: PairingOffer): Outcome {
         val r = transport.redeem(offer.baseUrl, offer.certSha256, offer.claim) ?: return Outcome.Unreachable
+        if (r.status == 429) return Outcome.TooManyAttempts
         if (r.status in 400..499) return Outcome.Refused
         if (r.status != 200) return Outcome.Invalid
         val token = try { JSONObject(r.body).optString("token") } catch (e: JSONException) { return Outcome.Invalid }

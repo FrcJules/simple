@@ -35,7 +35,7 @@ class PairingClientTest {
     @Test
     fun aRefusalIsNotTheSameAsNoAnswer() {
         assertEquals(PairingClient.Outcome.Refused, outcome(TransportResponse(403, """{"error":"claim_refused"}""")))
-        assertEquals(PairingClient.Outcome.Refused, outcome(TransportResponse(429, "")))
+        assertEquals(PairingClient.Outcome.TooManyAttempts, outcome(TransportResponse(429, """{"error":"too_many_attempts"}""")))
         assertEquals(PairingClient.Outcome.Unreachable, outcome(null))
     }
 

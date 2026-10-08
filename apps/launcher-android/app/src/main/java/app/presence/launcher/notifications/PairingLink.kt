@@ -10,6 +10,13 @@ data class PairingOffer(val baseUrl: String, val claim: String, val certSha256: 
 
     /** The fingerprint in groups of four, to compare by eye with the one the hub prints. */
     fun groupedFingerprint(): String = certSha256.chunked(4).joinToString(" ")
+
+    /** The same, on eight lines of two groups: large text must not break a group in the middle. */
+    fun fingerprintLines(): List<String> = fingerprintLines(certSha256)
+
+    companion object {
+        fun fingerprintLines(sha256: String): List<String> = sha256.chunked(4).chunked(2).map { it.joinToString(" ") }
+    }
 }
 
 /**

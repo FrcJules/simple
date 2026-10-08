@@ -7,9 +7,11 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
-import androidx.test.core.app.ActivityScenario
+import android.app.Activity
 import androidx.test.platform.app.InstrumentationRegistry
+import app.presence.launcher.notifications.PairingOffer
 import app.presence.launcher.notifications.PairingStore
 import app.presence.launcher.security.FamilyLock
 import org.junit.After
@@ -22,7 +24,7 @@ import org.junit.Test
 class PairingLinkEmulatorTest {
     private val context: Context get() = InstrumentationRegistry.getInstrumentation().targetContext
     @get:Rule val rule = createEmptyComposeRule()
-    private var scenario: ActivityScenario<SetupActivity>? = null
+    private var activity: Activity? = null
 
     private val fp = "88A2899B9DF00490B76854FB11FF4F1019470BA0D5FB7CD68BC700E4B4B7B68F"
 
@@ -35,12 +37,14 @@ class PairingLinkEmulatorTest {
 
     @After
     fun close() {
-        scenario?.close()
+        activity?.let { a -> InstrumentationRegistry.getInstrumentation().runOnMainSync { a.finish() } }
         context.getSharedPreferences("family_lock", Context.MODE_PRIVATE).edit().clear().commit()
     }
 
     private fun open(link: String) {
-        scenario = ActivityScenario.launch(Intent(Intent.ACTION_VIEW, Uri.parse(link)).setClass(context, SetupActivity::class.java))
+        // startActivitySync waits for the first resume of the activity itself; ActivityScenario never saw this one reach onCreate on the CI emulator.
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(link)).setClass(context, SetupActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        activity = InstrumentationRegistry.getInstrumentation().startActivitySync(intent)
     }
 
     private fun unlock() {
@@ -56,9 +60,9 @@ class PairingLinkEmulatorTest {
         unlock()
         rule.onNodeWithText("Appairer avec cet écran maison ?").assertIsDisplayed()
         rule.onNodeWithText("https://192.168.1.66:8788").assertIsDisplayed()
-        rule.onNodeWithText("88A2 899B 9DF0 0490 B76854FB11FF4F1019470BA0D5FB7CD68BC700E4B4B7B68F".chunked(4).joinToString(" ").let { "88A2 899B 9DF0 0490 B768 54FB 11FF 4F10 1947 0BA0 D5FB 7CD6 8BC7 00E4 B4B7 B68F" }).assertIsDisplayed()
+        PairingOffer.fingerprintLines(fp).forEach { rule.onNodeWithText(it).assertIsDisplayed() } // all 16 groups, never cut
         assertNull("nothing is saved until the family confirms", PairingStore(context).load())
-        rule.onNodeWithText("Annuler").performClick()
+        rule.onNodeWithText("Annuler").performScrollTo().performClick() // the card is taller than the screen at large text sizes
         rule.onNodeWithText("Appairer avec cet écran maison ?").assertDoesNotExist()
     }
 

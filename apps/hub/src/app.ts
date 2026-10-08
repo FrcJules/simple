@@ -2,11 +2,15 @@ import cors from "@fastify/cors";
 import { presenceEvent, type PresenceEvent } from "@presence/contracts";
 import Fastify, { type FastifyInstance } from "fastify";
 import { timingSafeEqual } from "node:crypto";
+import { z } from "zod";
 import { DeviceRegistry } from "./devices";
 
+const pairBody = z.object({ claim: z.string().min(16).max(200) }).strict();
+const MAX_FAILURES_PER_MINUTE = 5;
+
 export interface HubOptions {
-  /** Pairing token the phone must present as `Authorization: Bearer <token>`. */
-  pairingToken: string;
+  /** Optional shared token a phone can present as `Authorization: Bearer <token>`; paired devices (see `devices`) do not need it. */
+  pairingToken?: string;
   /** Token the display must present to read events (header or `?token=` for EventSource). Distinct from the pairing token. */
   displayToken: string;
   /** The only browser origin allowed to read events. */
@@ -26,7 +30,8 @@ function tokenMatches(expected: string, given: string): boolean {
 }
 
 export function buildApp(opts: HubOptions): FastifyInstance {
-  if (opts.pairingToken.length < 16) throw new Error("pairingToken must be at least 16 characters");
+  if (opts.pairingToken === undefined && !opts.devices) throw new Error("nothing could write events: set pairingToken or devices");
+  if (opts.pairingToken !== undefined && opts.pairingToken.length < 16) throw new Error("pairingToken must be at least 16 characters");
   if (opts.displayToken.length < 16) throw new Error("displayToken must be at least 16 characters");
   if (opts.displayToken === opts.pairingToken) throw new Error("displayToken must differ from pairingToken");
   const maxEvents = opts.maxEvents ?? 200;
@@ -45,21 +50,36 @@ export function buildApp(opts: HubOptions): FastifyInstance {
 
   app.get("/health", async () => ({ ok: true }));
 
-  const canWrite = (bearerToken: string) => tokenMatches(opts.pairingToken, bearerToken) || (opts.devices?.isDeviceToken(bearerToken) ?? false);
+  const canWrite = (bearerToken: string) => (opts.pairingToken !== undefined && tokenMatches(opts.pairingToken, bearerToken)) || (opts.devices?.isDeviceToken(bearerToken) ?? false);
 
-  // Pairing: a phone redeems the one-time secret of the QR code for its own token. At most 10 tries a minute in total, so a
-  // flood cannot even be used to guess (the secret has 144 bits anyway).
-  const pairTries: number[] = [];
-  app.post("/pair", async (req, reply) => {
-    if (!opts.devices) return reply.code(404).send({ error: "not_found" });
+  // Pairing: a phone redeems the one-time secret of the QR code for its own token. The hub only answers while a QR code is active
+  // (otherwise /pair does not exist: nothing to flood, nothing to learn), and counts *failures* per address, so an attacker on the
+  // network locks only itself out, never the family's phone.
+  const failures = new Map<string, number[]>();
+  const recentFailures = (ip: string, now: number) => {
+    const recent = (failures.get(ip) ?? []).filter((t) => now - t < 60_000);
+    if (recent.length > 0) failures.set(ip, recent);
+    else failures.delete(ip);
+    return recent;
+  };
+  app.post("/pair", { bodyLimit: 1024 }, async (req, reply) => {
+    const devices = opts.devices;
+    if (!devices) return reply.code(404).send({ error: "not_found" });
     const now = Date.now();
-    while (pairTries.length > 0 && now - (pairTries[0] ?? 0) > 60_000) pairTries.shift();
-    if (pairTries.length >= 10) return reply.code(429).send({ error: "too_many_attempts" });
-    pairTries.push(now);
-    const claim = (req.body as { claim?: unknown } | null)?.claim;
-    if (typeof claim !== "string" || claim.length < 16 || claim.length > 200) return reply.code(400).send({ error: "invalid_claim" });
-    const deviceToken = opts.devices.redeemClaim(claim);
-    if (!deviceToken) return reply.code(403).send({ error: "claim_refused" });
+    const recent = recentFailures(req.ip, now);
+    // Blocked addresses are refused before any disk access.
+    if (recent.length >= MAX_FAILURES_PER_MINUTE) return reply.code(429).send({ error: "too_many_attempts" });
+    if (!devices.hasActiveClaim()) return reply.code(404).send({ error: "not_found" });
+    const fail = (code: number, error: string) => {
+      failures.delete(req.ip); // re-inserted last: the map keeps the oldest addresses first
+      if (failures.size >= 1_000) failures.delete(failures.keys().next().value as string); // the oldest goes, nobody else is forgiven
+      failures.set(req.ip, [...recent, now]);
+      return reply.code(code).send({ error });
+    };
+    const body = pairBody.safeParse(req.body);
+    if (!body.success) return fail(400, "invalid_claim");
+    const deviceToken = devices.redeemClaim(body.data.claim);
+    if (!deviceToken) return fail(403, "claim_refused");
     return reply.code(200).send({ token: deviceToken });
   });
 
