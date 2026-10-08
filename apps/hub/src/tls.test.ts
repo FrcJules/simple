@@ -5,12 +5,24 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { buildApp } from "./app";
-import { loadOrCreateTls } from "./tls";
+import { loadOrCreateTls, rotateTls } from "./tls";
 
 const dir = mkdtempSync(join(tmpdir(), "presence-tls-"));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
 describe("tls", () => {
+  it("rotates to a different certificate", () => {
+    const rotDir = mkdtempSync(join(tmpdir(), "presence-rot-"));
+    try {
+      const before = loadOrCreateTls(rotDir);
+      const after = rotateTls(rotDir);
+      expect(after.fingerprint).not.toBe(before.fingerprint);
+      expect(loadOrCreateTls(rotDir).fingerprint).toBe(after.fingerprint); // and it is the one that is kept
+    } finally {
+      rmSync(rotDir, { recursive: true, force: true });
+    }
+  });
+
   it("creates a certificate once and reuses it", () => {
     const a = loadOrCreateTls(dir);
     const b = loadOrCreateTls(dir);
