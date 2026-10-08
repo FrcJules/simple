@@ -3,7 +3,10 @@ package app.presence.launcher.messages
 import app.presence.launcher.notifications.Channel
 
 enum class MessageStatus(val code: Int) {
-    NONE(0), SENDING(1), SENT(2), FAILED(3), DELIVERED(4);
+    NONE(0), SENDING(1), SENT(2), FAILED(3), DELIVERED(4),
+
+    /** Given to another app (WhatsApp) which does not tell us what happened next. */
+    HANDED_OFF(5);
 
     companion object {
         fun fromCode(code: Int) = entries.firstOrNull { it.code == code } ?: NONE

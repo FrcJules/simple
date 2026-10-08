@@ -17,16 +17,16 @@
 | Appareil photo et galerie | Ouvrent les applications du système, non vérifié |
 | Notifications SMS / appels manqués → écran maison, TLS épinglé | **Vérifié** de bout en bout |
 | Notifications WhatsApp | **Testé** (décodeur) seulement : pas de WhatsApp sur l'émulateur |
-| Réglages famille (prénom, hub, appairage, effacement) | **Vérifié** ; pas protégé par un code |
+| Réglages famille (prénom, hub, appairage, effacement) | **Vérifié** ; protégés par un code famille |
 
 ## Ce qui manque (par priorité)
-1. **Répondre à WhatsApp** (aujourd'hui seulement par SMS) et vérifier la dictée sur un vrai téléphone.
+1. **Vérifier sur un vrai téléphone** : la dictée, la réponse à WhatsApp, les MMS ([guide](real-phone-test.md)).
 2. Contrôles de lecture (« Arrêter »), état conservé à la rotation ou à la mort du processus.
-3. Protéger « Réglages famille » (code famille), QR code d'appairage.
+3. QR code d'appairage (le code famille est fait).
 4. Retour sonore / vocal (« J'appelle Marie »), double appui, grandes polices à 200 %.
 5. Appareil photo et galerie intégrés (pas d'application externe).
-6. Répondre à WhatsApp sans quitter le launcher.
-7. Jeton chiffré (Keystore), filtre des codes à usage unique.
+6. Réponse WhatsApp hors notification (impossible sans leur API).
+7. Clé du Keystore pour le code famille (limite connue).
 
 ## Contraintes Google Play (voir ADR 0002)
 - Pas de lecture de la boîte SMS (`READ_SMS`) ni d'envoi direct (`SEND_SMS`), réservés à l'application SMS par défaut. Les messages affichés viennent donc des **notifications**, et l'envoi passe par l'application Messages (texte pré-rempli) ou, plus tard, par l'action « répondre » de la notification.
@@ -47,8 +47,15 @@
 | Déplacer le rôle SMS dans le manifeste de release | Après essai réel des MMS sur un téléphone |
 | Formulaire Play « SMS » + vidéo | À faire après les MMS |
 
+## WhatsApp
+| Fonction | État |
+|---|---|
+| Lire les messages (notifications) | Vérifié par tests du décodeur ; pas de WhatsApp sur l'émulateur |
+| Répondre (dictée → action « Répondre » de la notification) | **Codé, testé** (vraies notifications et `RemoteInput` simulés) ; **à vérifier avec WhatsApp sur un vrai téléphone** |
+| Sans notification : ouvrir WhatsApp | Codé, testé |
+
 ## Plan
 - **Phase 1 : photos des proches.** Choisir une photo pour un proche depuis « Réglages famille » (stockée sur le téléphone, sans permission supplémentaire).
 - **Phase 2 : messages.** Historique local illimité (base SQLite), écran Messages, détail avec lecture à voix haute, pastille « nouveaux » sur l'accueil.
 - **Phase 3 : répondre.** Dictée vocale puis envoi par l'application Messages ; WhatsApp via l'action de réponse de la notification.
-- **Phase 4 : fiabilité.** Faux WhatsApp pour les tests d'émulateur, sons, code famille.
+- **Phase 4 : fiabilité.** Faux WhatsApp pour les tests d'émulateur, sons.
