@@ -2,10 +2,12 @@ import { DeviceRegistry } from "./devices";
 import { groupFingerprint } from "./pairing";
 import { rotateTls } from "./tls";
 
-// `npm run rotate-cert -w @presence/hub`: new certificate (e.g. after the Pi's SD card was lost or copied). The phones pinned the old
+// ARRÊTEZ D'ABORD LE HUB. `npm run rotate-cert -w @presence/hub`: new certificate (e.g. after the Pi's SD card was lost or copied). The phones pinned the old
 // one, so every paired phone is forgotten at the same time and must pair again; restart the hub afterwards.
-const tls = rotateTls(process.env.PRESENCE_TLS_DIR ?? "./data/tls");
+// Stop the hub first (a running hub keeps serving the old certificate until it restarts). Phones are forgotten *before* the rotation, so a
+// failure half-way leaves no phone trusting a certificate that is about to disappear.
 new DeviceRegistry(process.env.PRESENCE_DATA_DIR ?? "./data").revokeAll();
+const tls = rotateTls(process.env.PRESENCE_TLS_DIR ?? "./data/tls");
 console.log("Nouveau certificat créé. Tous les téléphones sont oubliés : ils doivent être appairés de nouveau.");
 console.log(`Nouvelle EMPREINTE :\n  ${groupFingerprint(tls.fingerprint)}\n`);
 console.log("Redémarrez le hub, puis lancez « npm run pair -w @presence/hub » pour chaque téléphone.");
