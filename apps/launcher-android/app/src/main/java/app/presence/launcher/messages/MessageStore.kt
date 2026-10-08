@@ -41,7 +41,8 @@ class MessageStore(
                     at INTEGER NOT NULL,
                     read INTEGER NOT NULL DEFAULT 0,
                     status INTEGER NOT NULL DEFAULT 0,
-                    sensitive INTEGER NOT NULL DEFAULT 0
+                    sensitive INTEGER NOT NULL DEFAULT 0,
+                    mms INTEGER NOT NULL DEFAULT 0
                 )""",
             )
             db.execSQL("CREATE INDEX messages_at ON messages(at)")
@@ -56,6 +57,7 @@ class MessageStore(
                 )""",
             )
             db.execSQL("CREATE INDEX attachments_message ON attachments(message_id)")
+            createPending(db)
         }
 
         override fun onConfigure(db: SQLiteDatabase) {
@@ -64,10 +66,29 @@ class MessageStore(
 
         override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
             if (oldVersion < 2) db.execSQL("ALTER TABLE messages ADD COLUMN sensitive INTEGER NOT NULL DEFAULT 0")
+            if (oldVersion < 3) {
+                db.execSQL("ALTER TABLE messages ADD COLUMN mms INTEGER NOT NULL DEFAULT 0")
+                createPending(db)
+            }
+        }
+
+        /** MMS announced by the operator and not (yet) downloaded: what is needed to try again. */
+        private fun createPending(db: SQLiteDatabase) {
+            db.execSQL(
+                """CREATE TABLE mms_pending (
+                    message_id TEXT PRIMARY KEY,
+                    transaction_id TEXT NOT NULL,
+                    location TEXT NOT NULL,
+                    subscription INTEGER NOT NULL,
+                    tries INTEGER NOT NULL DEFAULT 0,
+                    since INTEGER NOT NULL
+                )""",
+            )
         }
     }
 
-    private val helper = Helper(context.applicationContext, dbName)
+    private val appContext = context.applicationContext
+    private val helper = Helper(appContext, dbName)
     private val _messages = MutableStateFlow<List<StoredMessage>>(emptyList())
     val messages: StateFlow<List<StoredMessage>> = _messages.asStateFlow()
 
@@ -102,6 +123,88 @@ class MessageStore(
         publish()
     }
 
+    /** Fills in a received MMS (text and pictures) once downloaded, replacing the "being received" placeholder. */
+    @Synchronized
+    fun completeMms(
+        id: String, text: String, atMs: Long, attachments: List<Attachment>, sensitive: Boolean,
+        sender: String? = null, senderAddress: String? = null,
+    ) {
+        val db = helper.writableDatabase
+        db.beginTransaction()
+        try {
+            db.update(
+                "messages",
+                ContentValues().apply {
+                    put("body", text); put("at", atMs); put("status", MessageStatus.NONE.code); put("sensitive", if (sensitive) 1 else 0)
+                    // The sender written in the downloaded message wins over the one of the (forgeable) announcement.
+                    if (senderAddress != null) {
+                        put("address", senderAddress)
+                        put("who", sender ?: senderAddress)
+                        put("thread", ThreadKey.of(Channel.SMS, senderAddress, sender ?: senderAddress))
+                    }
+                },
+                "id = ?", arrayOf(id),
+            )
+            db.delete("attachments", "message_id = ?", arrayOf(id))
+            attachments.forEach {
+                db.insert("attachments", null, ContentValues().apply { put("message_id", id); put("mime", it.mime); put("path", it.path) })
+            }
+            db.delete("mms_pending", "message_id = ?", arrayOf(id))
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+        publish()
+    }
+
+    data class PendingMms(val messageId: String, val transactionId: String, val location: String, val subscription: Int, val tries: Int, val sinceMs: Long)
+
+    @Synchronized
+    fun putPending(p: PendingMms) {
+        helper.writableDatabase.insertWithOnConflict(
+            "mms_pending", null,
+            ContentValues().apply {
+                put("message_id", p.messageId); put("transaction_id", p.transactionId); put("location", p.location)
+                put("subscription", p.subscription); put("tries", p.tries); put("since", p.sinceMs)
+            },
+            SQLiteDatabase.CONFLICT_REPLACE,
+        )
+    }
+
+    @Synchronized
+    fun pending(messageId: String): PendingMms? =
+        helper.readableDatabase.rawQuery(
+            "SELECT message_id, transaction_id, location, subscription, tries, since FROM mms_pending WHERE message_id = ?", arrayOf(messageId),
+        ).use { c -> if (c.moveToFirst()) PendingMms(c.getString(0), c.getString(1), c.getString(2), c.getInt(3), c.getInt(4), c.getLong(5)) else null }
+
+    @Synchronized
+    fun removePending(messageId: String) {
+        helper.writableDatabase.delete("mms_pending", "message_id = ?", arrayOf(messageId))
+    }
+
+    /** Downloads announced and not finished: bounded by [MmsInbox] so a flood of announcements cannot fill the phone. */
+    @Synchronized
+    fun pendingCount(): Int = helper.readableDatabase.rawQuery("SELECT COUNT(*) FROM mms_pending", null).use { it.moveToFirst(); it.getInt(0) }
+
+    @Synchronized
+    fun mmsReceivedSince(sinceMs: Long): Int =
+        helper.readableDatabase.rawQuery("SELECT COUNT(*) FROM messages WHERE mms = 1 AND outgoing = 0 AND at >= ?", arrayOf(sinceMs.toString()))
+            .use { it.moveToFirst(); it.getInt(0) }
+
+    @Synchronized
+    fun exists(id: String): Boolean =
+        helper.readableDatabase.rawQuery("SELECT 1 FROM messages WHERE id = ?", arrayOf(id)).use { it.moveToFirst() }
+
+    /** Downloads that never finished (the process died, no network): they become "not received" so the person can retry. */
+    @Synchronized
+    fun expireStaleDownloads(olderThanMs: Long) {
+        helper.writableDatabase.execSQL(
+            "UPDATE messages SET status = ? WHERE mms = 1 AND outgoing = 0 AND status = ? AND id IN (SELECT message_id FROM mms_pending WHERE since < ?)",
+            arrayOf<Any>(MessageStatus.FAILED.code, MessageStatus.SENDING.code, olderThanMs),
+        )
+        publish()
+    }
+
     /** Opening a conversation reads everything received in it. */
     @Synchronized
     fun markThreadRead(key: String) {
@@ -116,14 +219,22 @@ class MessageStore(
     }
 
     /**
-     * Erases the whole history of this app (the system SMS box is not touched). Freed pages are overwritten and the file is
-     * compacted, so deleted messages cannot be recovered from the database file.
+     * Erases the whole history of this app (the system SMS box is not touched), pictures included. Freed pages are overwritten
+     * and the file is compacted, so deleted messages cannot be recovered from the database file.
      */
     @Synchronized
     fun clear() {
         val db = helper.writableDatabase
+        val files = db.rawQuery("SELECT path FROM attachments", null).use { c -> buildList { while (c.moveToNext()) add(c.getString(0)) } }
         db.rawQuery("PRAGMA secure_delete = ON", null).use { it.moveToFirst() }
-        db.delete("messages", null, null)
+        db.delete("messages", null, null) // attachments and pending rows follow (ON DELETE CASCADE / cleared below)
+        db.delete("attachments", null, null)
+        db.delete("mms_pending", null, null)
+        files.forEach { runCatching { java.io.File(it).delete() } }
+        // Pictures never recorded in the database (a crash half way), empty folders that reveal how many messages there were,
+        // and any transfer file still in the cache: all of it goes.
+        runCatching { java.io.File(appContext.filesDir, "mms").deleteRecursively() }
+        runCatching { java.io.File(appContext.cacheDir, "mms-transfer").deleteRecursively() }
         db.execSQL("VACUUM")
         publish()
     }
@@ -157,6 +268,25 @@ class MessageStore(
     }
 
     private fun query(where: String?, args: Array<String>?, order: String, limit: String?): List<StoredMessage> =
+        withAttachments(rawQuery(where, args, order, limit))
+
+    /** One extra query for all the pictures of these messages (not one per message). */
+    private fun withAttachments(list: List<StoredMessage>): List<StoredMessage> {
+        val ids = list.filter { it.mms }.map { it.id }
+        if (ids.isEmpty()) return list
+        val byMessage = HashMap<String, MutableList<Attachment>>()
+        ids.chunked(500).forEach { chunk ->
+            helper.readableDatabase.rawQuery(
+                "SELECT message_id, mime, path FROM attachments WHERE message_id IN (${chunk.joinToString(",") { "?" }}) ORDER BY id",
+                chunk.toTypedArray(),
+            ).use { c ->
+                while (c.moveToNext()) byMessage.getOrPut(c.getString(0)) { mutableListOf() }.add(Attachment(c.getString(1), c.getString(2)))
+            }
+        }
+        return list.map { if (it.mms) it.copy(attachments = byMessage[it.id].orEmpty()) else it }
+    }
+
+    private fun rawQuery(where: String?, args: Array<String>?, order: String, limit: String?): List<StoredMessage> =
         helper.readableDatabase.query("messages", COLUMNS, where, args, null, null, order, limit).use { c ->
             buildList {
                 while (c.moveToNext()) {
@@ -165,7 +295,7 @@ class MessageStore(
                         StoredMessage(
                             id = c.getString(0), from = c.getString(1), address = c.getString(2), channel = channel,
                             outgoing = c.getInt(4) != 0, text = c.getString(5), receivedAtMs = c.getLong(6),
-                            read = c.getInt(7) != 0, status = MessageStatus.fromCode(c.getInt(8)), sensitive = c.getInt(9) != 0,
+                            read = c.getInt(7) != 0, status = MessageStatus.fromCode(c.getInt(8)), sensitive = c.getInt(9) != 0, mms = c.getInt(10) != 0,
                         ),
                     )
                 }
@@ -176,7 +306,7 @@ class MessageStore(
         put("id", m.id); put("who", m.from); put("address", m.address); put("channel", m.channel.wire)
         put("thread", ThreadKey.of(m.channel, m.address, m.from))
         put("outgoing", if (m.outgoing) 1 else 0); put("body", m.text); put("at", m.receivedAtMs)
-        put("read", if (m.read) 1 else 0); put("status", m.status.code); put("sensitive", if (m.sensitive) 1 else 0)
+        put("read", if (m.read) 1 else 0); put("status", m.status.code); put("sensitive", if (m.sensitive) 1 else 0); put("mms", if (m.mms) 1 else 0)
     }
 
     /** One-time import of the former bounded JSON file, then the file is deleted. */
@@ -204,8 +334,8 @@ class MessageStore(
     companion object {
         const val RECENT = 500
         private const val DB_NAME = "messages.db"
-        private const val VERSION = 2
-        private val COLUMNS = arrayOf("id", "who", "address", "channel", "outgoing", "body", "at", "read", "status", "sensitive")
+        private const val VERSION = 3
+        private val COLUMNS = arrayOf("id", "who", "address", "channel", "outgoing", "body", "at", "read", "status", "sensitive", "mms")
 
         @Volatile private var instance: MessageStore? = null
 

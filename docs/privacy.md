@@ -31,11 +31,20 @@ Choix **facultatif** de la famille ([ADR 0005](adr/0005-sms-par-defaut-et-histor
 - Les codes à usage unique et alertes bancaires sont conservés mais **masqués** dans l'application, jamais lus à voix haute ni envoyés à l'écran maison.
 - Seuls le nom de l'expéditeur et le texte (500 caractères au plus) des messages **ordinaires** sont envoyés à l'écran maison appairé, chiffrés, sur le réseau local.
 - Aucune donnée ne quitte le téléphone ni le foyer. Si le rôle est retiré, l'historique reste, mais Présence ne reçoit plus de SMS.
-- **Pas encore géré : les MMS** (messages avec image). Ne pas activer le rôle sur le téléphone utilisé au quotidien tant que ce n'est pas indiqué ici.
+- **MMS** : la réception est codée et testée mais **pas encore essayée avec un vrai opérateur** ; l'envoi d'un MMS n'existe pas. Ne pas activer le rôle sur le téléphone utilisé au quotidien tant que ce n'est pas indiqué ici.
+
+## MMS (photos reçues par SMS)
+Si Présence est l'application de messages, les photos reçues par MMS sont téléchargées par Android (réseau mobile de l'opérateur) puis gardées dans des **fichiers privés de l'application**, jamais dans la galerie ni dans les photos du téléphone ; elles sont exclues des sauvegardes. « Effacer les messages » supprime l'historique, **toutes les photos, les dossiers et les fichiers de transfert** (suppression simple, sans écrasement des fichiers ; seule la base de données est écrasée et compactée). Un accusé de réception est envoyé à l'opérateur, comme par toute application de messages. À l'écran maison, jamais d'image : seulement le **texte du message (500 caractères au plus) ou le mot « Photo »**, pour une personne connue et jamais pour un code de sécurité. Seules les images sont gardées (JPEG, PNG, GIF, WebP, vérifiées : octets du fichier conformes au type annoncé, dimensions plafonnées à 50 millions de pixels) ; les autres pièces jointes sont ignorées. Les MMS ne sont pas copiés dans la base MMS d'Android.
+
+**Risques connus des MMS**
+- **Annonce forgée** : n'importe qui capable d'envoyer un message WAP-push peut annoncer un MMS avec une adresse de son choix, que le système téléchargerait sur le réseau MMS de l'opérateur (l'adresse IP de l'opérateur du téléphone serait visible du serveur visé, certains opérateurs ajoutent le numéro de ligne). Nous refusons les adresses sans rapport avec un serveur MMS (identifiants dans l'URL, `localhost`, adresses locales, IPv6) et plafonnons le nombre de téléchargements (20 en attente, 60 par heure), mais nous **ne pouvons pas** comparer l'adresse au serveur MMS de l'opérateur (lecture réservée au système) : limite, pas garantie. Les adresses privées restent permises, certains opérateurs y hébergent leur serveur.
+- **Expéditeur usurpé** : comme pour les SMS, le numéro d'un MMS peut être falsifié. Pour un MMS, nous préférons l'expéditeur écrit dans le message téléchargé à celui de l'annonce.
+- **Fournisseur de fichiers** : il est visible des autres applications car le système doit pouvoir y écrire ; seuls des noms aléatoires de 128 bits, valables quelques minutes, y sont servis. Compromis assumé : le restreindre risquerait de casser le téléchargement sur certains téléphones.
 
 ## Limites connues des messages
 - La base de messages **n'est pas chiffrée** (elle est protégée par le stockage privé d'Android) : un téléphone « rooté » pourrait la lire. Chiffrement Keystore possible plus tard.
 - Les codes de sécurité reçus par SMS sont **conservés en clair** dans cette base (masqués à l'écran, jamais lus à voix haute ni envoyés à l'écran maison).
 - « Effacer les messages » supprime l'historique **de Présence** (avec écrasement et compactage de la base). La boîte SMS **du système** (celle d'Android, lue par les autres applications) n'est pas touchée, et elle survit à la désinstallation de Présence.
 - À l'écran maison, seuls les SMS de **personnes connues** (présentes dans les contacts) sont affichés ; ceux d'un numéro inconnu ou d'une entreprise restent sur le téléphone.
+- Le texte reçu est nettoyé des caractères de contrôle et d'inversion de sens (qui peuvent faire lire un texte autrement que ce qu'il dit).
 - Un expéditeur de SMS peut se faire passer pour quelqu'un : un faux SMS « de Marie » (même numéro falsifié) affichera sa photo. C'est inhérent au SMS.

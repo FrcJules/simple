@@ -29,6 +29,8 @@ import app.presence.launcher.config.TileConfig
 import app.presence.launcher.config.UiConfig
 import app.presence.launcher.config.UiConfigStore
 import app.presence.launcher.messages.MessageItem
+import app.presence.launcher.messages.MessageStore
+import app.presence.launcher.mms.MmsComponents
 import app.presence.launcher.messages.MessagesViewModel
 import app.presence.launcher.messages.Speaker
 import app.presence.launcher.messages.StoredMessage
@@ -41,6 +43,7 @@ import app.presence.launcher.ui.CallScreen
 import app.presence.launcher.ui.CallingScreen
 import app.presence.launcher.ui.ConversationScreen
 import app.presence.launcher.ui.HomeScreen
+import app.presence.launcher.ui.ImageViewerScreen
 import app.presence.launcher.ui.LocalThemeConfig
 import app.presence.launcher.ui.MessageScreen
 import app.presence.launcher.ui.MessagesScreen
@@ -77,6 +80,9 @@ class MainActivity : ComponentActivity() {
 
     /** "Plus tard" on the SMS-role screen lasts until the app is restarted; only a "no" in Android's own dialog is remembered. */
     private var smsRoleLater = false
+
+    /** The picture shown full screen, if any (path of a private file). */
+    private var viewingImage by mutableStateOf<String?>(null)
     private var importing by mutableStateOf(false)
 
     /** A short explanation shown on the conversation screen (e.g. nothing was heard), as text and not a fleeting toast. */
@@ -117,8 +123,12 @@ class MainActivity : ComponentActivity() {
             val open: MessageItem? = conversations.firstOrNull { it.threadKey == openThreadKey }
                 ?: composeItem?.takeIf { it.threadKey == openThreadKey }
             val c = calling
+            val image = viewingImage
             CompositionLocalProvider(LocalThemeConfig provides uiConfig.theme) {
-                if (c != null) {
+                if (image != null) {
+                    BackHandler { viewingImage = null }
+                    ImageViewerScreen(image, onBack = { viewingImage = null })
+                } else if (c != null) {
                     BackHandler { calling = null }
                     CallingScreen(
                         contact = c,
@@ -178,7 +188,8 @@ class MainActivity : ComponentActivity() {
                                 onListen = { listen(thread) },
                                 onReply = { dictate() },
                                 onBack = { closeConversation() },
-                                onRetry = { failed -> sendReply(open, failed.text) },
+                                onRetry = { failed -> if (failed.mms && !failed.outgoing) retryMms(failed.id) else sendReply(open, failed.text) },
+                                onImage = { viewingImage = it },
                             )
                         }
                     }
@@ -212,6 +223,10 @@ class MainActivity : ComponentActivity() {
         if (granted(Manifest.permission.READ_CONTACTS)) {
             contactsVm.refresh()
             messagesVm.refresh() // a photo may have been chosen in "Réglages famille"
+        }
+        // A picture message whose download never finished becomes "not received", with a retry, instead of waiting forever.
+        lifecycleScope.launch(Dispatchers.IO) {
+            MessageStore.get(this@MainActivity).expireStaleDownloads(System.currentTimeMillis() - STALE_DOWNLOAD_MS)
         }
     }
 
@@ -394,7 +409,7 @@ class MainActivity : ComponentActivity() {
 
     /** Reads the newest message received in the open conversation. Only ever from a button press: nothing is read aloud on its own. */
     private fun listen(thread: List<StoredMessage>) {
-        val last = thread.lastOrNull { !it.outgoing && !it.sensitive } ?: return
+        val last = thread.lastOrNull { !it.outgoing && !it.sensitive && it.text.isNotBlank() } ?: return
         speakText("${last.from}. ${last.text}")
     }
 
@@ -418,6 +433,10 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun retryMms(messageId: String) {
+        lifecycleScope.launch(Dispatchers.IO) { MmsComponents.inbox(this@MainActivity).retry(messageId) }
+    }
+
     private fun openCallScreen() {
         screen = when {
             granted(Manifest.permission.READ_CONTACTS) -> Screen.CALL
@@ -431,6 +450,7 @@ class MainActivity : ComponentActivity() {
         ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
 
     private companion object {
+        const val STALE_DOWNLOAD_MS = 10 * 60 * 1000L
         val SMS_SCHEMES = setOf("sms", "smsto") // mms:/mmsto: once MMS are handled
     }
 }

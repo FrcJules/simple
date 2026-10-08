@@ -39,6 +39,13 @@
     <string name="setup_erase_confirm">Toucher encore pour effacer pour de bon</string>
     <string name="setup_sms_offer">Proposer d\'utiliser Présence pour les SMS</string>
     <string name="setup_sms_offered">Ouvrez «&#160;Messages&#160;» sur l\'écran d\'accueil : la question sera posée.</string>
+    <string name="mms_unknown_sender">Numéro inconnu</string>
+    <string name="message_photo">Photo</string>
+    <string name="mms_receiving">Photo en cours de réception…</string>
+    <string name="mms_failed">Cette photo n\'est pas arrivée.</string>
+    <string name="mms_retry">Recevoir à nouveau</string>
+    <string name="photo_tap_to_enlarge">Touchez la photo pour l\'agrandir.</string>
+    <string name="message_photo_n">Photo %1$d sur %2$d</string>
     <string name="message_retry">Réessayer</string>
     <string name="message_dictate">Dire mon message</string>
     <string name="write_to">Écrire à %1$s</string>
