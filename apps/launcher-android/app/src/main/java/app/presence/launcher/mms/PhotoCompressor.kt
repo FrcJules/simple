@@ -38,7 +38,8 @@ object PhotoCompressor {
         val resolver = context.contentResolver
         return try {
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            resolver.openInputStream(source)?.use { BitmapFactory.decodeStream(it, null, bounds) } ?: return null
+            // With inJustDecodeBounds, decodeStream returns null *by design* and only fills in the dimensions: the result must not be tested.
+            (resolver.openInputStream(source) ?: return null).use { BitmapFactory.decodeStream(it, null, bounds) }
             if (bounds.outWidth <= 0 || bounds.outHeight <= 0 || bounds.outWidth.toLong() * bounds.outHeight > MAX_SOURCE_PIXELS) return null
             val longest = maxOf(bounds.outWidth, bounds.outHeight)
             // Decode already reduced (powers of two) so a 48 Mpx photo never sits whole in memory.
