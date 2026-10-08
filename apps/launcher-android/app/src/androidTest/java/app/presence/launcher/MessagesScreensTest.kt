@@ -340,7 +340,7 @@ class MessagesScreensTest {
         var opened = false
         val wa = MessageItem(StoredMessage("w", "Marie", Channel.WHATSAPP, "Salut", now - 60_000), marie, unread = 1)
         rule.setContent { ConversationScreen(wa, listOf(wa.message), now, canDictate = true, notice = null, onListen = {}, onReply = {}, onBack = {}, onOpenWhatsApp = { opened = true }) }
-        rule.onNodeWithText("Pour répondre à ce message, ouvrez WhatsApp.").assertIsDisplayed()
+        rule.onNodeWithText("La réponse ne peut pas partir d'ici. Pour répondre, il faut passer par WhatsApp. Pour revenir ici, touchez la maison.").assertIsDisplayed()
         assertEquals(0, rule.onAllNodesWithText("Répondre").fetchSemanticsNodes().size) // no reply button: it could not be delivered
         shot("34_whatsapp_open")
         rule.onNodeWithText("Ouvrir WhatsApp").performClick()
