@@ -17,7 +17,7 @@
 | Appareil photo et galerie | Ouvrent les applications du système, non vérifié |
 | Notifications SMS / appels manqués → écran maison, TLS épinglé | **Vérifié** de bout en bout |
 | Notifications WhatsApp | **Testé** (décodeur) seulement : pas de WhatsApp sur l'émulateur |
-| Réglages famille (prénom, hub, appairage, effacement) | **Vérifié** ; pas protégé par un code |
+| Réglages famille (prénom, hub, appairage, effacement) | **Vérifié** ; protégés par un code famille |
 
 ## Ce qui manque (par priorité)
 1. **Répondre à WhatsApp** (aujourd'hui seulement par SMS) et vérifier la dictée sur un vrai téléphone.

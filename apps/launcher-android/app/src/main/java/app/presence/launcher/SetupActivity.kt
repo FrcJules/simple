@@ -41,6 +41,9 @@ import app.presence.launcher.config.ParseResult
 import app.presence.launcher.config.UiConfigParser
 import app.presence.launcher.config.UiConfigStore
 import app.presence.launcher.messages.MessageStore
+import app.presence.launcher.security.FamilyLock
+import app.presence.launcher.ui.EnterFamilyCodeScreen
+import app.presence.launcher.ui.SetFamilyCodeScreen
 import app.presence.launcher.photos.ContactPhotoStore
 import app.presence.launcher.ui.Avatar
 import kotlinx.coroutines.Dispatchers
@@ -91,6 +94,15 @@ class SetupActivity : ComponentActivity() {
         }
     }
 
+    private val lock by lazy { FamilyLock(this) }
+    private var unlocked by mutableStateOf(false)
+
+    /** Leaving the settings locks them again. */
+    override fun onStop() {
+        super.onStop()
+        unlocked = false
+    }
+
     override fun onResume() {
         super.onResume()
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
@@ -104,6 +116,28 @@ class SetupActivity : ComponentActivity() {
         val profile = ProfileStore(this)
         setContent {
             PresenceTheme {
+                if (!unlocked) {
+                    var gateError by remember { mutableStateOf<String?>(null) }
+                    if (!lock.isSet()) {
+                        SetFamilyCodeScreen(gateError) { code, again ->
+                            gateError = when {
+                                lock.problemWith(code) == FamilyLock.Problem.LENGTH -> getString(R.string.family_code_length)
+                                lock.problemWith(code) == FamilyLock.Problem.OBVIOUS -> getString(R.string.family_code_obvious)
+                                code != again -> getString(R.string.family_code_mismatch)
+                                else -> { lock.set(code); unlocked = true; null }
+                            }
+                        }
+                    } else {
+                        EnterFamilyCodeScreen(gateError) { code ->
+                            gateError = when (val r = lock.verify(code)) {
+                                FamilyLock.Result.Ok -> { unlocked = true; null }
+                                is FamilyLock.Result.Wrong -> getString(R.string.family_code_wrong, r.triesLeft)
+                                is FamilyLock.Result.Locked -> getString(R.string.family_code_locked, r.seconds)
+                            }
+                        }
+                    }
+                    return@PresenceTheme
+                }
                 var url by remember { mutableStateOf(store.load()?.baseUrl ?: "https://") }
                 var token by remember { mutableStateOf("") } // never re-display the stored token
                 var pin by remember { mutableStateOf(store.load()?.certSha256.orEmpty()) }
