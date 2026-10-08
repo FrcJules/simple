@@ -5,6 +5,7 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import app.presence.launcher.messages.MessageStore
 import app.presence.launcher.messages.StoredMessage
+import app.presence.launcher.messages.ThreadKey
 import app.presence.launcher.sms.SmsRole
 import java.util.UUID
 
@@ -24,6 +25,11 @@ class PresenceNotificationListener : NotificationListenerService() {
         // When we are the SMS app we receive SMS directly (SmsDeliverReceiver); a copy via another app's notification would double it.
         if (incoming is Incoming.Message && incoming.channel == Channel.SMS && SmsRole.isHeld(applicationContext)) return
         if (duplicates.isDuplicate(sbn.key, "${raw.title}|${raw.text}", System.currentTimeMillis())) return
+        if (incoming is Incoming.Message && incoming.channel == Channel.WHATSAPP) {
+            ReplyRegistry.findReplyAction(sbn.notification)?.let { (action, inputs) ->
+                ReplyRegistry.put(sbn.key, ThreadKey.of(Channel.WHATSAPP, null, incoming.from), action, inputs)
+            }
+        }
         if (incoming is Incoming.Message) {
             // Kept on the phone so the launcher can show it; independent of the home display being paired.
             MessageStore.get(applicationContext).add(
@@ -31,6 +37,14 @@ class PresenceNotificationListener : NotificationListenerService() {
             )
         }
         HubForwarder.forward(applicationContext, incoming, sbn.postTime)
+    }
+
+    override fun onNotificationRemoved(sbn: StatusBarNotification) {
+        if (NotificationParser.isWatched(sbn.packageName)) ReplyRegistry.removeNotification(sbn.key)
+    }
+
+    override fun onListenerDisconnected() {
+        ReplyRegistry.clear() // the actions are only valid while we see the notifications
     }
 
     private companion object {

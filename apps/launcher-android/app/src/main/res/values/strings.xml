@@ -43,6 +43,9 @@
     <string name="message_photo">Photo</string>
     <string name="mms_receiving">Photo en cours de réception…</string>
     <string name="mms_failed">Cette photo n\'est pas arrivée.</string>
+    <string name="whatsapp_open">Ouvrir WhatsApp</string>
+    <string name="whatsapp_open_hint">Pour répondre à ce message, ouvrez WhatsApp.</string>
+    <string name="whatsapp_reply_failed">Le message n\'a pas pu partir. Ouvrez WhatsApp pour répondre.</string>
     <string name="photo_send">Envoyer une photo</string>
     <string name="photo_send_to">Envoyer une photo à :</string>
     <string name="photo_send_question">Envoyer cette photo ?</string>

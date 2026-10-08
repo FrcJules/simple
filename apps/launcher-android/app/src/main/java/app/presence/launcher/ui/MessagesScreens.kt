@@ -149,6 +149,7 @@ fun ConversationScreen(
     onRetry: (StoredMessage) -> Unit = {},
     onImage: (String) -> Unit = {},
     onSendPhoto: (() -> Unit)? = null,
+    onOpenWhatsApp: (() -> Unit)? = null,
 ) {
     PresenceTheme {
         Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -161,6 +162,15 @@ fun ConversationScreen(
                 items(messages.asReversed(), key = { it.id }) { Bubble(it, item.message.from, nowMs, onRetry, onImage) }
             }
             if (notice != null) Text(notice, fontSize = 24.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+            if (onOpenWhatsApp != null) {
+                // The WhatsApp notification (our only way in) is gone: say so, and offer the one thing that works.
+                Text(stringResource(R.string.whatsapp_open_hint), fontSize = 24.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                OutlinedButton(onClick = onOpenWhatsApp, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
+                    Icon(Icons.Filled.Sms, contentDescription = null)
+                    Spacer(Modifier.width(12.dp))
+                    Text(stringResource(R.string.whatsapp_open), fontSize = 24.sp)
+                }
+            }
             val canListen = messages.any { !it.outgoing && !it.sensitive && it.text.isNotBlank() } // a picture alone has nothing to read
             val canWrite = item.canReply && canDictate
             var heard by remember { mutableStateOf(false) }

@@ -30,6 +30,7 @@ import app.presence.launcher.config.TileConfig
 import app.presence.launcher.config.UiConfig
 import app.presence.launcher.config.UiConfigStore
 import app.presence.launcher.messages.MessageItem
+import app.presence.launcher.messages.MessageStatus
 import app.presence.launcher.messages.MessageStore
 import app.presence.launcher.mms.MmsComponents
 import app.presence.launcher.mms.MmsFiles
@@ -38,6 +39,7 @@ import app.presence.launcher.messages.MessagesViewModel
 import app.presence.launcher.messages.Speaker
 import app.presence.launcher.messages.StoredMessage
 import app.presence.launcher.notifications.Channel
+import app.presence.launcher.notifications.ReplyRegistry
 import app.presence.launcher.sms.MessageNotifier
 import app.presence.launcher.sms.SendResult
 import app.presence.launcher.sms.SmsComponents
@@ -232,7 +234,8 @@ class MainActivity : ComponentActivity() {
                                 onBack = { closeConversation() },
                                 onRetry = { failed -> if (failed.mms) retryMms(failed) else sendReply(open, failed.text) },
                                 onImage = { viewingImage = it },
-                                onSendPhoto = if (open.canReply && SmsRole.isHeld(this)) ({ notice = null; screen = Screen.PHOTO_CHOICE }) else null,
+                                onSendPhoto = if (open.message.channel == Channel.SMS && open.canReply && SmsRole.isHeld(this)) ({ notice = null; screen = Screen.PHOTO_CHOICE }) else null,
+                                onOpenWhatsApp = if (open.message.channel == Channel.WHATSAPP && !open.canReply) ({ openWhatsApp() }) else null,
                             )
                         }
                     }
@@ -277,7 +280,7 @@ class MainActivity : ComponentActivity() {
                             ReplyConfirmScreen(
                                 item = open,
                                 text = replyText,
-                                directSend = SmsRole.isHeld(this),
+                                directSend = SmsRole.isHeld(this) || open.message.channel == Channel.WHATSAPP,
                                 isNew = thread.isEmpty(),
                                 notice = notice?.let { stringResource(it) } ?: if (open.contact == null) stringResource(R.string.reply_unknown_number) else null,
                                 onListen = { speakText(replyText) },
@@ -464,7 +467,42 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** The answer goes through WhatsApp's own "Répondre" notification action: the message stays a WhatsApp message. */
+    private fun sendWhatsAppReply(item: MessageItem, text: String) {
+        if (!ReplyRegistry.reply(this, item.threadKey, text)) {
+            notice = R.string.whatsapp_reply_failed // stay on the confirmation, the text is still there
+            return
+        }
+        notice = null
+        screen = Screen.MESSAGE
+        lifecycleScope.launch(Dispatchers.IO) {
+            MessageStore.get(this@MainActivity).add(
+                StoredMessage(
+                    "wa-out-${java.util.UUID.randomUUID()}", item.message.from, Channel.WHATSAPP, text.trim(), System.currentTimeMillis(),
+                    read = true, outgoing = true, status = MessageStatus.SENT, // handed to WhatsApp: it does not report back to us
+                ),
+            )
+        }
+    }
+
+    private fun openWhatsApp() {
+        val intent = listOf("com.whatsapp", "com.whatsapp.w4b").firstNotNullOfOrNull { packageManager.getLaunchIntentForPackage(it) }
+        if (intent == null) {
+            notice = R.string.app_missing
+            return
+        }
+        try {
+            startActivity(intent)
+        } catch (e: ActivityNotFoundException) {
+            notice = R.string.app_missing
+        }
+    }
+
     private fun sendReply(item: MessageItem, text: String) {
+        if (item.message.channel == Channel.WHATSAPP) {
+            sendWhatsAppReply(item, text)
+            return
+        }
         val number = item.replyNumber
         if (number == null) {
             notice = R.string.number_invalid // stay on the confirmation, with the text still there

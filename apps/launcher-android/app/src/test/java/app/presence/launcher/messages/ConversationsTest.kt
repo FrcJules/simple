@@ -62,4 +62,13 @@ class ConversationsTest {
         assertFalse(whatsapp.canReply)
         assertNull(MessageItem(StoredMessage("4", "X", Channel.SMS, "x", 1, address = " "), null).replyNumber)
     }
+
+    @Test
+    fun aWhatsAppConversationCanBeAnsweredOnlyWhileItsNotificationLives() {
+        val wa = StoredMessage("w", "Marie", Channel.WHATSAPP, "salut", 2_000)
+        val key = ThreadKey.of(Channel.WHATSAPP, null, "Marie")
+        assertFalse(groupConversations(listOf(wa)) { null }.single().canReply)
+        assertTrue(groupConversations(listOf(wa), replyableWhatsApp = setOf(key)) { null }.single().canReply)
+        assertFalse(groupConversations(listOf(wa), replyableWhatsApp = setOf("whatsapp:name:paul")) { null }.single().canReply)
+    }
 }
