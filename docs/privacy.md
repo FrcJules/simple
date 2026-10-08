@@ -90,3 +90,5 @@ Ce qui protège un lien **piégé** (n'importe quelle application ou page web pe
 
 ### État conservé si Android ferme l'application
 Si Android ferme Présence pendant que l'appareil photo ou le micro est devant (mémoire faible), l'application revient à la même conversation et au même brouillon de réponse. Seuls l'écran, la clé de la conversation, le numéro d'une nouvelle conversation et le texte du brouillon sont gardés par Android pour cela, en mémoire du système (jamais sur disque par Présence, jamais de photo, jamais d'appel en cours).
+
+Le « J'appelle X » dit à voix haute et la lecture des messages utilisent le moteur de synthèse vocale du téléphone : selon le fabricant, ce moteur peut être en ligne (réglage Android « Sortie de synthèse vocale »). Choisissez un moteur hors ligne si vous ne voulez pas que le nom d'un proche soit envoyé à un service. Un brouillon de réponse WhatsApp retrouvé après une fermeture par Android n'est jamais envoyé tel quel : il faut le dicter de nouveau.

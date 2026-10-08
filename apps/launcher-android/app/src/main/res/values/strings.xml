@@ -171,7 +171,9 @@
     <string name="tile_new_count">%1$d nouveaux</string>
     <string name="tile_new_one">1 nouveau</string>
     <string name="tile_new_many">Plus de 9 nouveaux</string>
-    <string name="setup_feedback">Sons et vibrations (envoi, erreur, « J\'appelle… » à voix haute)</string>
+    <string name="setup_feedback">Sons, vibrations et voix « J\'appelle… » (envoi, erreur, appel)</string>
+    <string name="setup_yes">Oui</string>
+    <string name="setup_no">Non</string>
     <string name="setup_erase_messages">Effacer les messages conservés</string>
     <string name="setup_erase_photos">Effacer les photos des proches</string>
     <string name="setup_erased">C\'est effacé.</string>
