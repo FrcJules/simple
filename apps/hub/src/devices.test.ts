@@ -229,6 +229,17 @@ describe("hub pairing", () => {
     expect((await app.inject({ method: "GET", url: "/events", remoteAddress: "10.0.0.7", headers: { authorization: `Bearer ${DISPLAY}` } })).statusCode).toBe(200);
   });
 
+  it("a valid device token is never blocked, even from an address that failed a lot; and a bad body is refused before it is parsed", async () => {
+    const reg = registry();
+    const app = buildApp({ pairingToken: TOKEN, displayToken: DISPLAY, devices: reg });
+    const deviceToken = reg.redeemClaim(reg.createClaim())!;
+    for (let i = 0; i < 12; i++) await app.inject({ method: "POST", url: "/events", remoteAddress: "10.0.0.9", payload: event, headers: { authorization: "Bearer wrong-wrong-wrong-wrong" } });
+    expect((await app.inject({ method: "POST", url: "/events", remoteAddress: "10.0.0.9", payload: event, headers: { authorization: `Bearer ${deviceToken}` } })).statusCode).toBe(202);
+    expect((await app.inject({ method: "POST", url: "/events", remoteAddress: "10.0.0.9", payload: event, headers: { authorization: `Bearer ${TOKEN}` } })).statusCode).toBe(429);
+    const huge = { ...event, from: { name: "x".repeat(20_000) } };
+    expect((await app.inject({ method: "POST", url: "/events", remoteAddress: "10.0.0.10", payload: huge, headers: { authorization: `Bearer ${TOKEN}` } })).statusCode).toBe(413);
+  });
+
   it("there is no /pair without a device registry", async () => {
     registry().createClaim();
     const app = buildApp({ pairingToken: TOKEN, displayToken: DISPLAY });

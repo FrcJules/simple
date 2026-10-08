@@ -1,6 +1,6 @@
 import cors from "@fastify/cors";
 import { presenceEvent, type PresenceEvent } from "@presence/contracts";
-import Fastify, { type FastifyInstance, type FastifyReply } from "fastify";
+import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
 import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { DeviceRegistry } from "./devices";
@@ -84,9 +84,15 @@ export function buildApp(opts: HubOptions): FastifyInstance {
   };
   const tooMany = (reply: FastifyReply) => reply.code(429).send({ error: "too_many_attempts" });
 
-  app.post("/events", async (req, reply) => {
+  // Authenticated *before* the body is read (onRequest), and the body is small: an unauthenticated client cannot make the hub parse megabytes.
+  // A valid device token (192 bits, not guessable) is never blocked: phones behind the same NAT as a noisy neighbour keep working.
+  const authenticateWriter = async (req: FastifyRequest, reply: FastifyReply) => {
+    const given = bearer(req.headers.authorization);
+    if (opts.devices?.isDeviceToken(given)) return;
     if (authFailures.blocked(req.ip)) return tooMany(reply);
-    if (!canWrite(bearer(req.headers.authorization))) return unauthorized(req.ip, reply);
+    if (!canWrite(given)) return unauthorized(req.ip, reply);
+  };
+  app.post("/events", { bodyLimit: 16_384, onRequest: authenticateWriter }, async (req, reply) => {
     const parsed = presenceEvent.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: "invalid_event" });
     events.push(parsed.data);
