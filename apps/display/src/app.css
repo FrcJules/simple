@@ -9,6 +9,13 @@ h1 { font-size: 3rem; margin: 0; font-weight: 600; }
 .headline { font-size: 2.75rem; margin: .5rem 0; }
 .body { font-size: 2.5rem; margin: .5rem 0 1rem; max-width: 40ch; }
 .ago { font-size: 2rem; margin: 0; opacity: .85; }
-.pairing .qr { width: min(60vh, 90vw); height: min(60vh, 90vw); border-radius: 1rem; }
-.pairing .fingerprint { font-family: ui-monospace, monospace; font-size: 2rem; font-weight: 700; margin: 0; max-width: 40ch; word-spacing: .5rem; }
-.pairing .close { font-size: 2.5rem; min-height: 5rem; padding: 0 3rem; border-radius: 1.5rem; border: 0; background: #fff; color: #101418; font-weight: 700; }
+.time { touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+.pairing { gap: .75rem; padding: 1rem; box-sizing: border-box; }
+.pairing h1 { font-size: 2.25rem; }
+.pairing .reassure, .pairing .hint { font-size: 2rem; margin: 0; max-width: 45ch; }
+.pairing .qr { width: min(48vh, 90vw); height: min(48vh, 90vw); border-radius: 1rem; }
+.pairing .fingerprint { font-family: ui-monospace, monospace; font-size: 2rem; font-weight: 700; margin: 0; max-width: 28ch; overflow-wrap: anywhere; }
+.pairing .timer { width: min(30rem, 80vw); height: .75rem; border-radius: .5rem; background: #3a4654; overflow: hidden; }
+.pairing .timer div { height: 100%; background: #fff; transition: width 1s linear; }
+.pairing button { font-size: 2.5rem; min-height: 5rem; padding: 0 3rem; border-radius: 1.5rem; border: 0; background: #fff; color: #101418; font-weight: 700; }
+.pairing button:active, .pairing button:focus-visible { outline: .4rem solid #ffd24a; }

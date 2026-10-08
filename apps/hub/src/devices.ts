@@ -56,6 +56,11 @@ export class DeviceRegistry {
     return secret;
   }
 
+  /** Withdraws every pending QR code (the screen showing it was closed). */
+  cancelClaims(): void {
+    for (const name of this.names(this.claimsDir)) this.remove(join(this.claimsDir, name));
+  }
+
   /** True while a QR code can still be redeemed: the hub does not even answer `/pair` otherwise. */
   hasActiveClaim(): boolean {
     return this.names(this.claimsDir).some((name) => {

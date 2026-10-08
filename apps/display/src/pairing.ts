@@ -19,10 +19,20 @@ export async function startPairing(): Promise<PairingOffer | null> {
     const data: unknown = await res.json();
     if (typeof data !== "object" || data === null) return null;
     const { link, fingerprint, expiresInSeconds } = data as Record<string, unknown>;
-    if (typeof link !== "string" || !link.startsWith("presence://pair?") || typeof fingerprint !== "string" || typeof expiresInSeconds !== "number") return null;
+    if (typeof link !== "string" || !link.startsWith("presence://pair?") || typeof fingerprint !== "string") return null;
+    if (typeof expiresInSeconds !== "number" || !Number.isFinite(expiresInSeconds) || expiresInSeconds > 600) return null;
     return { link, fingerprint, expiresInSeconds };
   } catch {
     return null;
+  }
+}
+
+/** The screen was closed: the hub withdraws the QR code at once. Best effort. */
+export async function cancelPairing(): Promise<void> {
+  try {
+    await fetch(`${HUB}/pairing/cancel`, { method: "POST", headers: { Authorization: `Bearer ${TOKEN}` } });
+  } catch {
+    /* the code expires by itself in two minutes */
   }
 }
 
