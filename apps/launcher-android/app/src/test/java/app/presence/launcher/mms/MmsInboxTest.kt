@@ -45,7 +45,7 @@ class MmsInboxTest {
             refuse?.let { throw it }
             downloads += Download(location, target, subId)
         }
-        override fun post(pdu: Uri, subId: Int) { posts += pdu }
+        override fun post(pdu: Uri, subId: Int, sent: PendingIntent?) { posts += pdu }
     }
 
     @Before fun setUp() {

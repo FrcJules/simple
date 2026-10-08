@@ -65,6 +65,15 @@ class MmsFiles(context: Context) {
         File(pictureDir, hash(messageId)).deleteRecursively()
     }
 
+    /** A picture kept with a message (only paths inside our own picture folder are read). */
+    fun readPicture(path: String): ByteArray? =
+        try {
+            val f = File(path)
+            if (f.canonicalPath.startsWith(pictureDir.canonicalPath + File.separator) && f.length() <= MmsPdu.MAX_PART_BYTES) f.readBytes() else null
+        } catch (e: IOException) {
+            null
+        }
+
     fun deleteQuietly(file: File?) {
         runCatching { file?.delete() }
     }

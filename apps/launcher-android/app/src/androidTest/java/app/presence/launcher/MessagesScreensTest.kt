@@ -17,6 +17,8 @@ import app.presence.launcher.ui.HomeScreen
 import app.presence.launcher.messages.Attachment
 import app.presence.launcher.ui.ConversationScreen
 import app.presence.launcher.ui.ImageViewerScreen
+import app.presence.launcher.ui.PhotoChoiceScreen
+import app.presence.launcher.ui.PhotoConfirmScreen
 import app.presence.launcher.ui.PickContactScreen
 import app.presence.launcher.ui.SmsRoleScreen
 import app.presence.launcher.ui.MessagesScreen
@@ -256,5 +258,51 @@ class MessagesScreensTest {
         shotAfterPicturesLoaded("31_image_viewer")
         rule.onNodeWithText("Retour").performClick()
         assertTrue(back)
+    }
+
+    @Test
+    fun theConversationOffersToSendAPhotoOnlyWhenAllowed() {
+        var asked = false
+        rule.setContent { ConversationScreen(items[0], listOf(items[0].message), now, canDictate = true, notice = null, onListen = {}, onReply = {}, onBack = {}, onSendPhoto = { asked = true }) }
+        rule.onNodeWithText("Envoyer une photo").performClick()
+        assertTrue(asked)
+    }
+
+    @Test
+    fun noPhotoButtonWithoutPermissionToSend() {
+        rule.setContent { ConversationScreen(items[0], listOf(items[0].message), now, canDictate = true, notice = null, onListen = {}, onReply = {}, onBack = {}) }
+        assertEquals(0, rule.onAllNodesWithText("Envoyer une photo").fetchSemanticsNodes().size)
+    }
+
+    @Test
+    fun photoChoiceOffersCameraAndLibraryAndHidesTheCameraWhenThereIsNone() {
+        var taken = false
+        var picked = false
+        rule.setContent { PhotoChoiceScreen("Marie", canTakePhoto = true, onTake = { taken = true }, onPick = { picked = true }, onBack = {}) }
+        rule.onNodeWithText("Envoyer une photo à Marie").assertIsDisplayed()
+        shot("32_photo_choice")
+        rule.onNodeWithText("Prendre une photo").performClick()
+        rule.onNodeWithText("Choisir une photo").performClick()
+        assertTrue(taken && picked)
+    }
+
+    @Test
+    fun photoChoiceWithoutACameraOnlyOffersTheLibrary() {
+        rule.setContent { PhotoChoiceScreen("Marie", canTakePhoto = false, onTake = {}, onPick = {}, onBack = {}) }
+        assertEquals(0, rule.onAllNodesWithText("Prendre une photo").fetchSemanticsNodes().size)
+        rule.onNodeWithText("Choisir une photo").assertIsDisplayed()
+    }
+
+    @Test
+    fun photoConfirmShowsThePictureAndTheRecipientAndCanBeCancelled() {
+        var sent = false
+        var cancelled = false
+        val uri = android.net.Uri.fromFile(java.io.File(pictureFile()))
+        rule.setContent { PhotoConfirmScreen("Marie", uri, notice = null, onSend = { sent = true }, onChange = {}, onCancel = { cancelled = true }) }
+        rule.onNodeWithText("Envoyer cette photo à Marie ?").assertIsDisplayed()
+        shotAfterPicturesLoaded("33_photo_confirm")
+        rule.onNodeWithText("Ne pas envoyer").performClick()
+        assertTrue(cancelled)
+        assertEquals(false, sent)
     }
 }

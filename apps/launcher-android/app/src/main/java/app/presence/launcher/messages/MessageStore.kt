@@ -123,6 +123,27 @@ class MessageStore(
         publish()
     }
 
+    /** Adds an MMS with its pictures in one step (an outgoing picture message). */
+    @Synchronized
+    fun addMms(message: StoredMessage, attachments: List<Attachment>) {
+        val db = helper.writableDatabase
+        db.beginTransaction()
+        try {
+            db.insertWithOnConflict("messages", null, values(message), SQLiteDatabase.CONFLICT_REPLACE)
+            db.delete("attachments", "message_id = ?", arrayOf(message.id))
+            attachments.forEach {
+                db.insert("attachments", null, ContentValues().apply { put("message_id", message.id); put("mime", it.mime); put("path", it.path) })
+            }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+        publish()
+    }
+
+    @Synchronized
+    fun get(id: String): StoredMessage? = query("id = ?", arrayOf(id), "at ASC", "1").firstOrNull()
+
     /** Fills in a received MMS (text and pictures) once downloaded, replacing the "being received" placeholder. */
     @Synchronized
     fun completeMms(
@@ -200,6 +221,16 @@ class MessageStore(
     fun expireStaleDownloads(olderThanMs: Long) {
         helper.writableDatabase.execSQL(
             "UPDATE messages SET status = ? WHERE mms = 1 AND outgoing = 0 AND status = ? AND id IN (SELECT message_id FROM mms_pending WHERE since < ?)",
+            arrayOf<Any>(MessageStatus.FAILED.code, MessageStatus.SENDING.code, olderThanMs),
+        )
+        publish()
+    }
+
+    /** A picture message that never got an answer from the operator becomes "not sent", with a retry. */
+    @Synchronized
+    fun expireStaleSends(olderThanMs: Long) {
+        helper.writableDatabase.execSQL(
+            "UPDATE messages SET status = ? WHERE mms = 1 AND outgoing = 1 AND status = ? AND at < ?",
             arrayOf<Any>(MessageStatus.FAILED.code, MessageStatus.SENDING.code, olderThanMs),
         )
         publish()

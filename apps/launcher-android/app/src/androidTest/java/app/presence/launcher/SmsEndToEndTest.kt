@@ -8,6 +8,8 @@ import app.presence.launcher.messages.MessageStore
 import app.presence.launcher.notifications.Channel
 import app.presence.launcher.sms.SendResult
 import app.presence.launcher.sms.SmsComponents
+import app.presence.launcher.mms.MmsComponents
+import app.presence.launcher.mms.MmsSendResult
 import app.presence.launcher.sms.MmsDeliverReceiver
 import app.presence.launcher.sms.SmsDeliverReceiver
 import app.presence.launcher.sms.SmsRole
@@ -16,6 +18,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import java.io.File
 import org.junit.Test
 
 /**
@@ -99,5 +102,27 @@ class SmsEndToEndTest {
         // Whatever the platform answers, after a long wait the message is shown as not received (never stuck as "being received").
         store.expireStaleDownloads(olderThanMs = System.currentTimeMillis() + 1)
         assertEquals(MessageStatus.FAILED, store.status(m.id))
+    }
+
+    /**
+     * There is no operator on the emulator: the picture cannot really be delivered. What must hold is that the real platform
+     * accepts our PDU through the file provider, the app does not crash, and the message never stays "being sent" for ever.
+     */
+    @Test
+    fun aPictureMessageIsHandedToThePlatformAndNeverSilentlyLost() {
+        val photo = File(context.cacheDir, "to-send.jpg").also {
+            val bmp = android.graphics.Bitmap.createBitmap(1600, 1200, android.graphics.Bitmap.Config.ARGB_8888)
+            android.graphics.Canvas(bmp).drawColor(android.graphics.Color.rgb(30, 120, 200))
+            it.outputStream().use { o -> bmp.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, o) }
+        }
+        val result = MmsComponents.sender(context).send("5554", "Moi", android.net.Uri.fromFile(photo))
+        val id = (result as MmsSendResult.Started).messageId
+        val store = MessageStore.get(context)
+        val m = store.get(id)!!
+        assertTrue(m.mms && m.outgoing)
+        assertEquals(1, m.attachments.size)
+        assertTrue(m.status == MessageStatus.SENDING || m.status == MessageStatus.FAILED || m.status == MessageStatus.SENT)
+        store.expireStaleSends(olderThanMs = System.currentTimeMillis() + 1)
+        assertTrue(store.get(id)!!.status.let { it == MessageStatus.FAILED || it == MessageStatus.SENT })
     }
 }

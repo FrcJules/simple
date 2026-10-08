@@ -23,6 +23,7 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.BrokenImage
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material.icons.filled.VolumeUp
@@ -147,6 +148,7 @@ fun ConversationScreen(
     onBack: () -> Unit,
     onRetry: (StoredMessage) -> Unit = {},
     onImage: (String) -> Unit = {},
+    onSendPhoto: (() -> Unit)? = null,
 ) {
     PresenceTheme {
         Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -171,6 +173,13 @@ fun ConversationScreen(
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                     if (canListen) ListenButton({ heard = true; onListen() }, main = listenIsMain, modifier = Modifier.weight(1f))
                     if (canWrite) ReplyButton(onReply, main = !listenIsMain, isNew = messages.isEmpty(), modifier = Modifier.weight(1f))
+                }
+            }
+            if (onSendPhoto != null) {
+                OutlinedButton(onClick = onSendPhoto, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
+                    Icon(Icons.Filled.PhotoCamera, contentDescription = null)
+                    Spacer(Modifier.width(12.dp))
+                    Text(stringResource(R.string.photo_send), fontSize = 24.sp)
                 }
             }
             BackButton(onBack)
