@@ -19,7 +19,6 @@ Lecture des notifications (ADR 0002) : **livrée en v0.2, à valider sur apparei
 
 **Limites connues (à traiter avant publication sur le Play Store)**
 
-- « Réglages famille » est accessible depuis la liste des applications : prévoir un code famille.
 - Le filtre des codes à usage unique est volontairement large (faux positifs possibles) ; une option « ne pas afficher le texte » reste à faire.
 - La dictée vocale passe par le service du système et peut envoyer l'audio chez son éditeur (ADR 0004).
 - La saisie manuelle de l'empreinte est pénible : prévoir un QR code d'appairage affiché par le hub.
@@ -47,7 +46,12 @@ La personne choisit **une** photo, explicitement, à chaque envoi : l'appareil p
 **Photo prise avec l'appareil photo** : l'appareil photo du système écrit la photo **d'origine** (pleine résolution, avec sa position GPS) dans un fichier temporaire privé de Présence, jamais dans la galerie. Ce fichier est **supprimé dès que la photo est envoyée, refusée (« Pas cette photo ») ou abandonnée**, et tout fichier temporaire de plus de 20 minutes est supprimé au démarrage ; entre-temps, ce fichier est servi par le fournisseur de fichiers exporté (voir plus haut) : l'application appareil photo qui l'a écrit pourrait le relire pendant ce court délai.
 
 ## Répondre à WhatsApp
-Le texte que la personne dicte est confirmé à l'écran, puis remis à WhatsApp **par la notification WhatsApp** (action « Répondre ») : Présence ne se connecte pas à WhatsApp, n'a pas de compte, ne lit rien d'autre que les notifications autorisées. L'action de réponse n'est conservée qu'en mémoire, tant que la notification existe. La réponse envoyée est gardée dans l'historique local (comme les messages reçus).
+Le texte que la personne dicte est confirmé à l'écran (« Envoyer sur WhatsApp à Marie »), puis remis à WhatsApp **par la notification WhatsApp** (action « Répondre ») : Présence ne se connecte pas à WhatsApp, n'a pas de compte, ne lit rien d'autre que les notifications autorisées. L'action de réponse n'est conservée qu'en mémoire, tant que la notification existe. La réponse est gardée dans l'historique local avec le statut **« Remis à WhatsApp »** : WhatsApp ne dit pas à Présence ce qui se passe ensuite, donc un échec silencieux de WhatsApp n'est pas détectable.
+
+Garde-fous contre une réponse envoyée à la mauvaise personne (la conversation n'est reconnue que par le **nom** dans la notification, ce qui n'est pas une identité) :
+- **jamais pour un groupe** (seules les conversations à deux sont répondables) ;
+- si **deux conversations différentes portent le même nom** (autre application WhatsApp, autre discussion), ce nom n'est plus répondable : on propose d'ouvrir WhatsApp ;
+- la réponse part **uniquement par la notification qui était là au moment de la confirmation** : si un autre message est arrivé entre-temps, il faut recommencer.
 
 ## Limites connues des messages
 - La base de messages **n'est pas chiffrée** (elle est protégée par le stockage privé d'Android) : un téléphone « rooté » pourrait la lire. Chiffrement Keystore possible plus tard.
@@ -62,3 +66,8 @@ Le texte que la personne dicte est confirmé à l'écran, puis remis à WhatsApp
 - **Pas de récupération** : si le code est perdu, il faut effacer les données de l'application dans les réglages d'Android (ce qui efface aussi l'historique des messages).
 - Le **jeton d'appairage** de l'écran maison est chiffré avec une clé du **Keystore Android** (elle ne quitte pas la puce de sécurité du téléphone quand il en a une) : copier les fichiers de l'application ne suffit plus à le lire. Un jeton enregistré par une version précédente est chiffré à sa première lecture. Si le téléphone n'a pas de Keystore utilisable, le jeton reste stocké comme avant.
 - Limite : le code protège l'**interface** des réglages. Quelqu'un qui contrôle déjà le téléphone (accès « root ») peut contourner l'application.
+- Si le téléphone n'a pas de Keystore utilisable, le jeton reste en clair : les réglages l'indiquent (« non chiffré »). Un jeton enregistré en clair par une version précédente peut laisser des traces sur la mémoire flash du téléphone après son chiffrement : **régénérer le jeton côté écran maison après la mise à jour** est recommandé.
+- Les réglages sont **exclus des captures d'écran et de la vue des applications récentes** (adresse d'appairage, noms des proches).
+- Le **blocage** du code utilise l'horloge interne du téléphone (que le changement de date ne modifie pas), et, après un redémarrage, la date plafonnée à 15 minutes : changer la date ne le contourne pas et ne peut pas bloquer la famille plus de 15 minutes.
+- Le **premier** à ouvrir « Réglages famille » après l'installation choisit le code : l'écran le dit (« réservés à la famille ») et propose Retour.
+- Limite : sur un téléphone « rooté », l'empreinte du code (4 à 8 chiffres) peut être testée hors de l'application en quelques secondes ; protéger davantage demanderait une clé du Keystore (à envisager).

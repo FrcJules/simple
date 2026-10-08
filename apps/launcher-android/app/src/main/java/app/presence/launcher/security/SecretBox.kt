@@ -23,6 +23,8 @@ class SecretBox(private val key: () -> SecretKey) {
             Base64.encodeToString(out, Base64.NO_WRAP)
         } catch (e: GeneralSecurityException) {
             null
+        } catch (e: RuntimeException) {
+            null // e.g. ProviderException from a faulty Keystore: "cannot seal", never a crash of the notification service
         }
 
     /** The secret, or null if [sealed] was altered, was sealed with another key, or cannot be read. */
@@ -36,7 +38,7 @@ class SecretBox(private val key: () -> SecretKey) {
             }
         } catch (e: GeneralSecurityException) {
             null
-        } catch (e: IllegalArgumentException) {
+        } catch (e: RuntimeException) {
             null
         }
 
@@ -60,13 +62,19 @@ class SecretBox(private val key: () -> SecretKey) {
             return gen.generateKey()
         }
 
-        /** One probe per process: the Keystore is not asked again for every notification. */
-        val shared: SecretBox? by lazy { forKeystore() }
+        @Volatile private var cached: SecretBox? = null
+
+        /**
+         * The Keystore box, probed once it works. A probe that fails is not remembered: the Keystore can be briefly unavailable
+         * (right after boot, low memory), and a lasting "no Keystore" must not be decided by one bad moment.
+         */
+        fun shared(): SecretBox? = cached ?: forKeystore()?.also { cached = it }
 
         /** The Keystore-backed box, or null if this phone has no usable Keystore (the caller then keeps the old behaviour). */
         fun forKeystore(): SecretBox? =
             try {
-                SecretBox { keystoreKey() }.also { it.seal("probe") ?: return null }
+                val key = keystoreKey() // the key handle is kept: the Keystore is not queried again for every notification
+            SecretBox { key }.also { it.seal("probe") ?: return null }
             } catch (e: GeneralSecurityException) {
                 null
             } catch (e: RuntimeException) {

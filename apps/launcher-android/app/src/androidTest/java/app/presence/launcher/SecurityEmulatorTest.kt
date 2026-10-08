@@ -56,6 +56,7 @@ class SecurityEmulatorTest {
     fun theFamilySettingsAskForANewCodeThenForThatCode() {
         // first use: choose a code
         rule.onNodeWithText("Choisissez un code famille").assertIsDisplayed()
+        rule.onNodeWithText("Ces réglages sont réservés à la famille.").assertIsDisplayed()
         rule.onNodeWithText("Code famille").performTextInput("2580")
         rule.onNodeWithText("Répétez le code").performTextInput("2581")
         rule.onNodeWithText("Valider").performClick()

@@ -29,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -97,10 +98,20 @@ class SetupActivity : ComponentActivity() {
     private val lock by lazy { FamilyLock(this) }
     private var unlocked by mutableStateOf(false)
 
-    /** Leaving the settings locks them again. */
+    /** Set just before this screen deliberately opens another one (photo or file picker, Android's notification settings). */
+    private var openingChild = false
+
+    /** Leaving the settings locks them again; opening a picker or Android settings from here does not. */
     override fun onStop() {
         super.onStop()
-        unlocked = false
+        if (openingChild) openingChild = false else unlocked = false
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        // The settings show the pairing address and the names of the family: keep them out of screenshots and the recent-apps view.
+        window.setFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE, android.view.WindowManager.LayoutParams.FLAG_SECURE)
+        super.onCreate(savedInstanceState)
+        onCreateContent()
     }
 
     override fun onResume() {
@@ -110,31 +121,32 @@ class SetupActivity : ComponentActivity() {
         }
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+    private fun onCreateContent() {
         val store = PairingStore(this)
         val profile = ProfileStore(this)
         setContent {
             PresenceTheme {
                 if (!unlocked) {
                     var gateError by remember { mutableStateOf<String?>(null) }
+                    var lockedSeconds by remember { mutableStateOf(lock.lockedSeconds()) }
                     if (!lock.isSet()) {
-                        SetFamilyCodeScreen(gateError) { code, again ->
+                        SetFamilyCodeScreen(gateError, onEdit = { gateError = null }, onBack = { finish() }, onSubmit = { code, again ->
+                            // The two fields are compared first: a typing slip is the likeliest mistake.
                             gateError = when {
+                                code != again -> getString(R.string.family_code_mismatch)
                                 lock.problemWith(code) == FamilyLock.Problem.LENGTH -> getString(R.string.family_code_length)
                                 lock.problemWith(code) == FamilyLock.Problem.OBVIOUS -> getString(R.string.family_code_obvious)
-                                code != again -> getString(R.string.family_code_mismatch)
                                 else -> { lock.set(code); unlocked = true; null }
                             }
-                        }
+                        })
                     } else {
-                        EnterFamilyCodeScreen(gateError) { code ->
+                        EnterFamilyCodeScreen(gateError, lockedSeconds, onEdit = { gateError = null }, onBack = { finish() }, onSubmit = { code ->
                             gateError = when (val r = lock.verify(code)) {
                                 FamilyLock.Result.Ok -> { unlocked = true; null }
-                                is FamilyLock.Result.Wrong -> getString(R.string.family_code_wrong, r.triesLeft)
-                                is FamilyLock.Result.Locked -> getString(R.string.family_code_locked, r.seconds)
+                                is FamilyLock.Result.Wrong -> resources.getQuantityString(R.plurals.family_code_wrong, r.triesLeft, r.triesLeft)
+                                is FamilyLock.Result.Locked -> { lockedSeconds = r.seconds; null }
                             }
-                        }
+                        })
                     }
                     return@PresenceTheme
                 }
@@ -153,6 +165,12 @@ class SetupActivity : ComponentActivity() {
                         visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth(),
                     )
                     OutlinedTextField(pin, { pin = it }, label = { Text(stringResource(R.string.setup_fingerprint)) }, modifier = Modifier.fillMaxWidth())
+                    when (store.protectionState()) {
+                        PairingStore.Protection.ENCRYPTED -> Text(stringResource(R.string.setup_token_encrypted))
+                        PairingStore.Protection.PLAIN -> Text(stringResource(R.string.setup_token_plain), fontWeight = FontWeight.Bold)
+                        PairingStore.Protection.UNREADABLE -> Text(stringResource(R.string.setup_token_lost), fontWeight = FontWeight.Bold)
+                        PairingStore.Protection.NONE -> Unit
+                    }
                     Button(onClick = {
                         profile.saveName(name)
                         val config = PairingConfig.parse(url, token, pin)
@@ -166,13 +184,14 @@ class SetupActivity : ComponentActivity() {
                     }
                     Text(stringResource(if (access) R.string.setup_access_on else R.string.setup_access_off))
                     OutlinedButton(onClick = {
+                        openingChild = true
                         startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
                         access = hasNotificationAccess()
                     }) { Text(stringResource(R.string.setup_open_access)) }
                     OutlinedButton(onClick = { access = hasNotificationAccess() }) { Text(stringResource(R.string.setup_refresh)) }
 
                     Text(stringResource(R.string.setup_appearance_title), fontSize = 28.sp)
-                    OutlinedButton(onClick = { configPicker.launch(arrayOf("*/*")) }) { Text(stringResource(R.string.setup_appearance_import)) }
+                    OutlinedButton(onClick = { openingChild = true; configPicker.launch(arrayOf("*/*")) }) { Text(stringResource(R.string.setup_appearance_import)) }
                     OutlinedButton(onClick = {
                         uiStore.reset()
                         appearanceMessage = getString(R.string.setup_appearance_reset)
@@ -210,6 +229,7 @@ class SetupActivity : ComponentActivity() {
                                 Text(c.name, fontSize = 24.sp)
                                 OutlinedButton(onClick = {
                                     pickFor = c.id
+                                    openingChild = true
                                     picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                                 }) { Text(stringResource(R.string.setup_photo_choose)) }
                                 if (c.photoUri?.startsWith("file:") == true) {

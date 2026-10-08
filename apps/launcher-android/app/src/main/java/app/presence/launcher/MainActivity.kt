@@ -85,6 +85,10 @@ class MainActivity : ComponentActivity() {
     private var composeItem by mutableStateOf<MessageItem?>(null)
     private var replyText by mutableStateOf("")
 
+    /** The WhatsApp notification an answer will go through, noted when the confirmation opens and checked again at "Envoyer". */
+    private var replyTargetKey: String? = null
+    private var sendingReply = false
+
     /** "Plus tard" on the SMS-role screen lasts until the app is restarted; only a "no" in Android's own dialog is remembered. */
     private var smsRoleLater = false
 
@@ -137,6 +141,7 @@ class MainActivity : ComponentActivity() {
         if (spoken.isNotEmpty()) {
             replyText = spoken
             notice = null
+            replyTargetKey = openThreadKey?.let { ReplyRegistry.currentKey(it) }
             screen = Screen.REPLY
         } else {
             // Closing the microphone window is not "nothing heard": only say so when it really listened.
@@ -281,6 +286,8 @@ class MainActivity : ComponentActivity() {
                                 item = open,
                                 text = replyText,
                                 directSend = SmsRole.isHeld(this) || open.message.channel == Channel.WHATSAPP,
+                                whatsapp = open.message.channel == Channel.WHATSAPP,
+                                onOpenWhatsApp = if (open.message.channel == Channel.WHATSAPP && notice == R.string.whatsapp_reply_failed) ({ openWhatsApp() }) else null,
                                 isNew = thread.isEmpty(),
                                 notice = notice?.let { stringResource(it) } ?: if (open.contact == null) stringResource(R.string.reply_unknown_number) else null,
                                 onListen = { speakText(replyText) },
@@ -469,17 +476,25 @@ class MainActivity : ComponentActivity() {
 
     /** The answer goes through WhatsApp's own "Répondre" notification action: the message stays a WhatsApp message. */
     private fun sendWhatsAppReply(item: MessageItem, text: String) {
-        if (!ReplyRegistry.reply(this, item.threadKey, text)) {
-            notice = R.string.whatsapp_reply_failed // stay on the confirmation, the text is still there
-            return
+        if (sendingReply) return // a second touch must not send it twice
+        sendingReply = true
+        try {
+            if (!ReplyRegistry.reply(this, item.threadKey, text, expectedKey = replyTargetKey)) {
+                // Either the conversation changed since it was confirmed, or WhatsApp's notification is gone/refused: say which.
+                notice = if (ReplyRegistry.currentKey(item.threadKey) != replyTargetKey && ReplyRegistry.canReply(item.threadKey)) R.string.whatsapp_changed
+                else R.string.whatsapp_reply_failed
+                return
+            }
+        } finally {
+            sendingReply = false
         }
-        notice = null
+        notice = R.string.whatsapp_sent
         screen = Screen.MESSAGE
         lifecycleScope.launch(Dispatchers.IO) {
             MessageStore.get(this@MainActivity).add(
                 StoredMessage(
                     "wa-out-${java.util.UUID.randomUUID()}", item.message.from, Channel.WHATSAPP, text.trim(), System.currentTimeMillis(),
-                    read = true, outgoing = true, status = MessageStatus.SENT, // handed to WhatsApp: it does not report back to us
+                    read = true, outgoing = true, status = MessageStatus.HANDED_OFF, // given to WhatsApp, which does not report back
                 ),
             )
         }
@@ -488,13 +503,13 @@ class MainActivity : ComponentActivity() {
     private fun openWhatsApp() {
         val intent = listOf("com.whatsapp", "com.whatsapp.w4b").firstNotNullOfOrNull { packageManager.getLaunchIntentForPackage(it) }
         if (intent == null) {
-            notice = R.string.app_missing
+            notice = R.string.whatsapp_missing
             return
         }
         try {
             startActivity(intent)
         } catch (e: ActivityNotFoundException) {
-            notice = R.string.app_missing
+            notice = R.string.whatsapp_missing
         }
     }
 
