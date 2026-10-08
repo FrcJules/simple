@@ -14,8 +14,8 @@ function required(name: string, hint: string): string {
 }
 
 const app = buildApp({
-  pairingToken: required("PRESENCE_PAIRING_TOKEN", "min 16 chars"),
-  displayToken: required("PRESENCE_DISPLAY_TOKEN", "min 16 chars, different from the pairing token"),
+  pairingToken: process.env.PRESENCE_PAIRING_TOKEN || undefined, // optional: phones normally pair with the QR code
+  displayToken: required("PRESENCE_DISPLAY_TOKEN", "min 16 chars, different from the pairing token if any"),
   displayOrigin: process.env.PRESENCE_DISPLAY_ORIGIN,
   devices: new DeviceRegistry(process.env.PRESENCE_DATA_DIR ?? "./data"),
 });
