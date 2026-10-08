@@ -409,7 +409,7 @@ class MainActivity : ComponentActivity() {
 
     /** Reads the newest message received in the open conversation. Only ever from a button press: nothing is read aloud on its own. */
     private fun listen(thread: List<StoredMessage>) {
-        val last = thread.lastOrNull { !it.outgoing && !it.sensitive } ?: return
+        val last = thread.lastOrNull { !it.outgoing && !it.sensitive && it.text.isNotBlank() } ?: return
         speakText("${last.from}. ${last.text}")
     }
 

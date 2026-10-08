@@ -43,7 +43,9 @@
     <string name="message_photo">Photo</string>
     <string name="mms_receiving">Photo en cours de réception…</string>
     <string name="mms_failed">Cette photo n\'est pas arrivée.</string>
-    <string name="mms_other">Ce message contient autre chose qu\'une photo (non affiché).</string>
+    <string name="mms_retry">Recevoir à nouveau</string>
+    <string name="photo_tap_to_enlarge">Touchez la photo pour l\'agrandir.</string>
+    <string name="message_photo_n">Photo %1$d sur %2$d</string>
     <string name="message_retry">Réessayer</string>
     <string name="message_dictate">Dire mon message</string>
     <string name="write_to">Écrire à %1$s</string>

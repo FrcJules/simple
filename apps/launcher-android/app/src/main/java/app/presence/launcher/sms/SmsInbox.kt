@@ -1,6 +1,7 @@
 package app.presence.launcher.sms
 
 import app.presence.launcher.messages.StoredMessage
+import app.presence.launcher.messages.TextSafety
 import app.presence.launcher.notifications.Channel
 import app.presence.launcher.notifications.Incoming
 import app.presence.launcher.notifications.SensitiveText
@@ -22,8 +23,10 @@ class SmsInbox(
     private val clock: () -> Long = System::currentTimeMillis,
     private val newId: () -> String = { "sms-${UUID.randomUUID()}" },
 ) {
-    fun onReceived(address: String, body: String, dateSentMs: Long, subId: Int) {
+    fun onReceived(address: String, rawBody: String, dateSentMs: Long, subId: Int) {
         val now = clock()
+        // Control and bidirectional-override characters could make a text read differently from what it says.
+        val body = TextSafety.clean(rawBody)
         val sensitive = SensitiveText.looksSensitive(body)
         val contactName = nameFor(address)?.takeIf { it.isNotBlank() }
         val message = StoredMessage(newId(), contactName ?: address, Channel.SMS, body, now, address = address, sensitive = sensitive)

@@ -87,7 +87,8 @@ class MessageStore(
         }
     }
 
-    private val helper = Helper(context.applicationContext, dbName)
+    private val appContext = context.applicationContext
+    private val helper = Helper(appContext, dbName)
     private val _messages = MutableStateFlow<List<StoredMessage>>(emptyList())
     val messages: StateFlow<List<StoredMessage>> = _messages.asStateFlow()
 
@@ -124,7 +125,10 @@ class MessageStore(
 
     /** Fills in a received MMS (text and pictures) once downloaded, replacing the "being received" placeholder. */
     @Synchronized
-    fun completeMms(id: String, text: String, atMs: Long, attachments: List<Attachment>, sensitive: Boolean) {
+    fun completeMms(
+        id: String, text: String, atMs: Long, attachments: List<Attachment>, sensitive: Boolean,
+        sender: String? = null, senderAddress: String? = null,
+    ) {
         val db = helper.writableDatabase
         db.beginTransaction()
         try {
@@ -132,6 +136,12 @@ class MessageStore(
                 "messages",
                 ContentValues().apply {
                     put("body", text); put("at", atMs); put("status", MessageStatus.NONE.code); put("sensitive", if (sensitive) 1 else 0)
+                    // The sender written in the downloaded message wins over the one of the (forgeable) announcement.
+                    if (senderAddress != null) {
+                        put("address", senderAddress)
+                        put("who", sender ?: senderAddress)
+                        put("thread", ThreadKey.of(Channel.SMS, senderAddress, sender ?: senderAddress))
+                    }
                 },
                 "id = ?", arrayOf(id),
             )
@@ -171,6 +181,15 @@ class MessageStore(
     fun removePending(messageId: String) {
         helper.writableDatabase.delete("mms_pending", "message_id = ?", arrayOf(messageId))
     }
+
+    /** Downloads announced and not finished: bounded by [MmsInbox] so a flood of announcements cannot fill the phone. */
+    @Synchronized
+    fun pendingCount(): Int = helper.readableDatabase.rawQuery("SELECT COUNT(*) FROM mms_pending", null).use { it.moveToFirst(); it.getInt(0) }
+
+    @Synchronized
+    fun mmsReceivedSince(sinceMs: Long): Int =
+        helper.readableDatabase.rawQuery("SELECT COUNT(*) FROM messages WHERE mms = 1 AND outgoing = 0 AND at >= ?", arrayOf(sinceMs.toString()))
+            .use { it.moveToFirst(); it.getInt(0) }
 
     @Synchronized
     fun exists(id: String): Boolean =
@@ -212,6 +231,10 @@ class MessageStore(
         db.delete("attachments", null, null)
         db.delete("mms_pending", null, null)
         files.forEach { runCatching { java.io.File(it).delete() } }
+        // Pictures never recorded in the database (a crash half way), empty folders that reveal how many messages there were,
+        // and any transfer file still in the cache: all of it goes.
+        runCatching { java.io.File(appContext.filesDir, "mms").deleteRecursively() }
+        runCatching { java.io.File(appContext.cacheDir, "mms-transfer").deleteRecursively() }
         db.execSQL("VACUUM")
         publish()
     }

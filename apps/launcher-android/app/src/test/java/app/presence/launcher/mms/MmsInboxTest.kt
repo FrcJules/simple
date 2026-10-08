@@ -34,6 +34,7 @@ class MmsInboxTest {
     private val notified = mutableListOf<StoredMessage>()
     private var now = 1_800_000_000_000L
     private val jpeg = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 9, 8, 7, 0xFF.toByte(), 0xD9.toByte())
+    private var imageOk: (ReceivedImage) -> Boolean = { true }
 
     private class FakeMmsTransport : MmsTransport {
         class Download(val location: String, val target: Uri, val subId: Int)
@@ -57,7 +58,7 @@ class MmsInboxTest {
 
     private fun inbox(contacts: Map<String, String> = mapOf("+33611223344" to "Marie")) = MmsInbox(
         context, store, files, transport, contacts::get, forwarded::add, notified::add,
-        unknownSender = "Numéro inconnu", photoLabel = "Photo", clock = { now },
+        unknownSender = "Numéro inconnu", photoLabel = "Photo", imageOk = { imageOk(it) }, clock = { now },
     )
 
     private fun notification(tx: String = "tx1", from: String? = "+33611223344", size: Long = 40_000) =
@@ -219,5 +220,67 @@ class MmsInboxTest {
         store.clear()
         assertFalse(picture.exists())
         assertEquals(0, store.count())
+    }
+
+    @Test
+    fun aFloodOfAnnouncementsIsCapped() {
+        val box = inbox()
+        repeat(MmsInbox.MAX_PENDING + 15) { box.onNotification(notification("flood$it"), -1) }
+        assertEquals(MmsInbox.MAX_PENDING, store.count())
+        assertEquals(MmsInbox.MAX_PENDING, transport.downloads.size)
+    }
+
+    @Test
+    fun aPictureThatFailsTheDecodeCheckIsNotKept() {
+        imageOk = { false }
+        val box = inbox()
+        box.onNotification(notification(), -1)
+        box.onDownloaded(message().id, platformDownloads(retrieveWithPhoto), ok = true)
+        assertEquals("Regarde !", message().text) // the text still arrives
+        assertTrue(message().attachments.isEmpty())
+    }
+
+    @Test
+    fun theSenderWrittenInTheDownloadedMessageWinsOverTheForgeableAnnouncement() {
+        val box = inbox(contacts = mapOf("+33699999999" to "Paul"))
+        box.onNotification(notification(from = "+33611223344"), -1) // the announcement claims Marie's number
+        val name = platformDownloads(MmsTestPdus.retrieveConf(from = "+33699999999", parts = listOf(MmsTestPdus.textPart("Salut"))))
+        box.onDownloaded(message().id, name, ok = true)
+        assertEquals("+33699999999", message().address)
+        assertEquals("Paul", message().from)
+    }
+
+    @Test
+    fun aDownloadFinishingAfterTheHistoryWasErasedLeavesNothingBehind() {
+        val box = inbox()
+        box.onNotification(notification(), -1)
+        val id = message().id
+        store.clear() // "Effacer les messages" while the download was running
+        // The platform still finishes and drops the whole message into a transfer file.
+        val late = files.newTransferFile().also { it.writeBytes(retrieveWithPhoto) }
+        box.onDownloaded(id, late.name, ok = true)
+        assertEquals(0, store.count())
+        assertFalse(late.exists()) // the downloaded PDU (text, photos, numbers) is deleted, not left in the cache
+        assertEquals(0, transport.posts.size)
+    }
+
+    @Test
+    fun erasingTheHistoryRemovesPicturesFoldersAndTransferFiles() {
+        val box = inbox()
+        box.onNotification(notification(), -1)
+        box.onDownloaded(message().id, platformDownloads(retrieveWithPhoto), ok = true)
+        val stray = files.savePicture("never-recorded", 0, ReceivedImage("image/jpeg", jpeg))!! // a crash left it without a message
+        val leftover = files.newTransferFile()
+        store.clear()
+        assertFalse(stray.exists())
+        assertFalse(stray.parentFile!!.exists())
+        assertFalse(leftover.exists())
+    }
+
+    @Test
+    fun aPictureIsWrittenAtomically() {
+        val f = files.savePicture("m", 0, ReceivedImage("image/jpeg", jpeg))!!
+        assertEquals("0.jpg", f.name)
+        assertTrue(f.parentFile!!.listFiles()!!.none { it.name.endsWith(".tmp") })
     }
 }

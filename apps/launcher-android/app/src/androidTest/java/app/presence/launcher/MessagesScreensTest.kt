@@ -209,6 +209,7 @@ class MessagesScreensTest {
         rule.setContent { ConversationScreen(items[0], listOf(m), now, canDictate = true, notice = null, onListen = {}, onReply = {}, onBack = {}, onImage = { opened = it }) }
         rule.onNodeWithText("Regarde !").assertIsDisplayed()
         rule.onNodeWithContentDescription("Photo").assertIsDisplayed()
+        rule.onNodeWithText("Touchez la photo pour l'agrandir.").assertIsDisplayed()
         shot("29_conversation_photo")
         rule.onNodeWithContentDescription("Photo").performClick()
         assertEquals(path, opened)
@@ -229,7 +230,7 @@ class MessagesScreensTest {
         rule.setContent { ConversationScreen(items[0], listOf(failed), now, canDictate = true, notice = null, onListen = {}, onReply = {}, onBack = {}, onRetry = { retried = it.id }) }
         rule.onNodeWithText("Cette photo n'est pas arrivée.").assertIsDisplayed()
         shot("30_photo_failed")
-        rule.onNodeWithText("Réessayer").performClick()
+        rule.onNodeWithText("Recevoir à nouveau").performClick()
         assertEquals("m", retried)
     }
 

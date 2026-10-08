@@ -8,7 +8,7 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnage [Se
 - Application SMS par défaut (facultative) : réception, envoi, import de l'historique du téléphone, conversations par personne, statut d'envoi, codes de sécurité masqués, liens `sms:`. MMS à venir ; rôle non proposé en release.
 
 ### Ajouté (MMS)
-- Réception des MMS : photos affichées dans la conversation, « en cours de réception », « pas arrivée » avec réessai, visionneuse plein écran, accusé de réception à l'opérateur. Décodeur issu d'`android-smsmms` (Apache-2.0).
+- Réception des MMS (durcie après revue de sécurité : décodeur borné, adresse filtrée, annonces plafonnées, images vérifiées, effacement complet) : photos affichées dans la conversation, « en cours de réception », « pas arrivée » avec réessai, visionneuse plein écran, accusé de réception à l'opérateur. Décodeur issu d'`android-smsmms` (Apache-2.0).
 
 ### Modifié
 - Messages : historique **illimité** sur le téléphone (base SQLite, migration automatique de l'ancien fichier), à la place de 30 messages / 7 jours.

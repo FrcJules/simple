@@ -20,6 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.BrokenImage
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Refresh
@@ -28,6 +29,7 @@ import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
@@ -43,6 +45,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -156,7 +159,7 @@ fun ConversationScreen(
                 items(messages.asReversed(), key = { it.id }) { Bubble(it, item.message.from, nowMs, onRetry, onImage) }
             }
             if (notice != null) Text(notice, fontSize = 24.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-            val canListen = messages.any { !it.outgoing && !it.sensitive }
+            val canListen = messages.any { !it.outgoing && !it.sensitive && it.text.isNotBlank() } // a picture alone has nothing to read
             val canWrite = item.canReply && canDictate
             var heard by remember { mutableStateOf(false) }
             // Fixed places (Écouter left, Répondre right); only the emphasis moves: listen first while something new waits.
@@ -196,17 +199,28 @@ private fun Bubble(m: StoredMessage, otherName: String, nowMs: Long, onRetry: (S
                     masked -> stringResource(R.string.message_sensitive) + "\n" + stringResource(R.string.message_sensitive_tap)
                     else -> m.text
                 }
-                if (body.isNotBlank()) Text(body, fontSize = 28.sp)
+                if (receiving || notArrived) {
+                    // A picture is understood faster than a sentence: a spinner while it comes, a broken picture when it did not.
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        if (receiving) CircularProgressIndicator(Modifier.size(40.dp)) else Icon(Icons.Filled.BrokenImage, contentDescription = null, modifier = Modifier.size(40.dp))
+                        Text(body, fontSize = 28.sp)
+                    }
+                } else if (body.isNotBlank()) {
+                    Text(body, fontSize = 28.sp)
+                }
                 if (!receiving && !notArrived && !masked) {
-                    m.attachments.forEach { a ->
+                    val total = m.attachments.size
+                    m.attachments.forEachIndexed { i, a ->
                         AsyncImage(
                             model = File(a.path),
-                            contentDescription = stringResource(R.string.message_photo),
+                            contentDescription = if (total > 1) stringResource(R.string.message_photo_n, i + 1, total) else stringResource(R.string.message_photo),
                             contentScale = ContentScale.Fit,
-                            modifier = Modifier.fillMaxWidth().heightIn(max = 260.dp).padding(vertical = 4.dp)
+                            error = rememberVectorPainter(Icons.Filled.BrokenImage), // missing or unreadable file: never a blank hole
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp, max = 260.dp).padding(vertical = 4.dp)
                                 .clickable(role = Role.Button) { onImage(a.path) },
                         )
                     }
+                    if (total > 0) Text(stringResource(R.string.photo_tap_to_enlarge), fontSize = 24.sp)
                 }
                 Text(
                     listOfNotNull(agoText(m.receivedAtMs, nowMs), if (m.outgoing) statusText(m.status) else null).joinToString(" · "),
@@ -218,7 +232,7 @@ private fun Bubble(m: StoredMessage, otherName: String, nowMs: Long, onRetry: (S
                     Button(onClick = { onRetry(m) }, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
                         Icon(Icons.Filled.Refresh, contentDescription = null)
                         Spacer(Modifier.width(12.dp))
-                        Text(stringResource(R.string.message_retry), fontSize = 24.sp)
+                        Text(stringResource(if (notArrived) R.string.mms_retry else R.string.message_retry), fontSize = 24.sp)
                     }
                 }
             }

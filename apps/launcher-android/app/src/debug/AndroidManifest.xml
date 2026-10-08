@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  The default-SMS-app role (ADR 0005) is declared for DEBUG builds only, until MMS are handled: a release that declared
-  these components could be chosen as the phone's SMS app in Android settings and would silently lose every MMS.
-  When MMS exist, move this content back into src/main/AndroidManifest.xml and remove SMS_ROLE_OFFERED.
+  The default-SMS-app role (ADR 0005) is declared for DEBUG builds only. MMS reception is written and tested but has not been
+  tried with a real operator: until it has (on a real phone, with a SIM), a release that declared these components could be
+  chosen as the phone's SMS app in Android settings and might lose MMS.
+  After that real-phone check, move this content back into src/main/AndroidManifest.xml and remove SMS_ROLE_OFFERED.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 

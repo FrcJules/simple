@@ -48,6 +48,8 @@ class MmsInbox(
     private val notify: (StoredMessage) -> Unit,
     private val unknownSender: String,
     private val photoLabel: String,
+    /** Last check before a picture is kept: it must decode and not be absurdly large (the system decoders are the attack surface). */
+    private val imageOk: (ReceivedImage) -> Boolean = { true },
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
     fun onNotification(pdu: ByteArray, subId: Int) {
@@ -55,6 +57,10 @@ class MmsInbox(
         val id = "mms-" + MmsFiles.hash("${n.transactionId}|${n.location}")
         if (store.exists(id)) return // the operator repeats its notification until it is acknowledged
         val now = clock()
+        files.cleanOldTransfers(now - OLD_TRANSFER_MS)
+        // Anyone able to send a WAP push could flood us with announcements, each one a download on the mobile plan:
+        // beyond these limits new ones are ignored (the operator will announce them again later).
+        if (store.pendingCount() >= MAX_PENDING || store.mmsReceivedSince(now - HOUR_MS) >= MAX_PER_HOUR) return
         val name = n.from?.let { nameFor(it) ?: it } ?: unknownSender
         store.add(StoredMessage(id, name, Channel.SMS, "", now, address = n.from, status = MessageStatus.SENDING, mms = true))
         val pending = MessageStore.PendingMms(id, n.transactionId, n.location, subId, tries = 0, sinceMs = now)
@@ -74,9 +80,9 @@ class MmsInbox(
     }
 
     fun onDownloaded(messageId: String, transferName: String, ok: Boolean) {
-        val p = store.pending(messageId) ?: return // already handled
         val file = files.transferFile(transferName)
         try {
+            val p = store.pending(messageId) ?: return // already handled (or the history was erased meanwhile): nothing is kept
             if (!ok || file == null) {
                 fail(messageId)
                 return
@@ -96,10 +102,18 @@ class MmsInbox(
 
     private fun complete(id: String, p: MessageStore.PendingMms, mms: ReceivedMms) {
         val now = clock()
-        val pictures = mms.images.mapIndexedNotNull { i, img -> files.savePicture(id, i, img)?.let { Attachment(img.mime, it.path) } }
+        val pictures = mms.images.filter(imageOk).mapIndexedNotNull { i, img -> files.savePicture(id, i, img)?.let { Attachment(img.mime, it.path) } }
         val sensitive = SensitiveText.looksSensitive(mms.text)
         val at = minOf(mms.dateMs ?: now, now) // never in the future
-        store.completeMms(id, mms.text, at, pictures, sensitive)
+        // The announcement can be forged by anyone; the sender written in the downloaded message is the better evidence.
+        val sender = mms.from
+        try {
+            store.completeMms(id, mms.text, at, pictures, sensitive, sender = sender?.let { nameFor(it) }, senderAddress = sender)
+        } catch (e: RuntimeException) {
+            files.deletePictures(id) // do not leave pictures that no message points to
+            fail(id)
+            return
+        }
         acknowledge(p)
         val message = store.messages.value.firstOrNull { it.id == id } ?: return
         // The home display is visible from the whole room: known people only, never a picture, never a security code.
@@ -150,5 +164,8 @@ class MmsInbox(
         const val EXTRA_ID = "message_id"
         const val EXTRA_FILE = "transfer_file"
         private const val OLD_TRANSFER_MS = 60 * 60 * 1000L
+        private const val HOUR_MS = 60 * 60 * 1000L
+        const val MAX_PENDING = 20
+        const val MAX_PER_HOUR = 60
     }
 }
