@@ -112,7 +112,7 @@ class MainActivity : ComponentActivity() {
             screen = Screen.PHOTO_CONFIRM
         } else {
             discardTransferPhoto(target) // cancelled (or the process was restarted): never leave the camera's file behind
-            if (target == null) notice = R.string.photo_send_failed
+            if (target == null) failure(R.string.photo_send_failed)
         }
     }
 
@@ -171,7 +171,6 @@ class MainActivity : ComponentActivity() {
         openThreadKey?.let { outState.putString(STATE_THREAD, it) }
         composeItem?.let {
             outState.putString(STATE_COMPOSE_NUMBER, it.message.address)
-            outState.putString(STATE_COMPOSE_NAME, it.message.from)
         }
         if (replyText.isNotEmpty()) outState.putString(STATE_REPLY_TEXT, replyText)
     }
@@ -192,15 +191,11 @@ class MainActivity : ComponentActivity() {
             val open: MessageItem? = conversations.firstOrNull { it.threadKey == openThreadKey }
                 ?: composeItem?.takeIf { it.threadKey == openThreadKey }
             val loaded by messagesVm.loaded.collectAsStateWithLifecycle()
-            // Sounds follow what the screen says: handed over, or failed. The words on screen are always there too.
-            LaunchedEffect(notice) {
-                when (notice) {
-                    R.string.whatsapp_sent, R.string.photo_on_the_way -> feedback.sent()
-                    R.string.send_failed, R.string.photo_send_failed, R.string.number_invalid -> feedback.failed()
-                }
-            }
             // "J'appelle Marie" is also said aloud, once, when the call screen opens.
-            LaunchedEffect(calling) { calling?.let { if (profile.feedbackEnabled()) speakText(getString(R.string.calling, it.name)) } }
+            LaunchedEffect(calling) {
+                // Quiet if the voice is missing: this one is not asked for, and the screen already says it.
+                calling?.let { if (profile.feedbackEnabled()) speaker().speak(getString(R.string.calling, it.name)) {} }
+            }
             val c = calling
             val image = viewingImage
             CompositionLocalProvider(LocalThemeConfig provides uiConfig.theme) {
@@ -208,10 +203,10 @@ class MainActivity : ComponentActivity() {
                     BackHandler { viewingImage = null }
                     ImageViewerScreen(image, onBack = { viewingImage = null })
                 } else if (c != null) {
-                    BackHandler { calling = null }
+                    BackHandler { cancelCall() }
                     CallingScreen(
                         contact = c,
-                        onCancel = { calling = null },
+                        onCancel = { cancelCall() },
                         onLaunch = {
                             calling = null
                             screen = Screen.HOME
@@ -341,14 +336,26 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** Shows [message] as the notice and tells the person with a vibration and a tone, once per failure (even if the same one repeats). */
+    private fun failure(message: Int) {
+        notice = message
+        feedback.failed()
+    }
+
+    /** Leaving the call screen also silences "J'appelle X": nothing is said after "Annuler". */
+    private fun cancelCall() {
+        calling = null
+        speakerInstance?.stop()
+    }
+
     /** Back to where the person was after the process was killed. Nothing here starts a call, a photo or a message. */
     private fun restore(state: Bundle) {
         val saved = state.getString(STATE_SCREEN)?.let { name -> Screen.entries.firstOrNull { it.name == name } } ?: return
         val key = state.getString(STATE_THREAD)
         val number = state.getString(STATE_COMPOSE_NUMBER)
-        if (number != null) {
+        if (number != null && NUMBER_FORMAT.matches(number)) {
             val contact = try { ContactsRepository(contentResolver).byNumber(number) } catch (e: SecurityException) { null }
-            val first = StoredMessage("new", state.getString(STATE_COMPOSE_NAME) ?: number, Channel.SMS, "", System.currentTimeMillis(), address = number)
+            val first = StoredMessage("new", contact?.name ?: number, Channel.SMS, "", System.currentTimeMillis(), address = number)
             composeItem = MessageItem(first, contact)
         }
         replyText = state.getString(STATE_REPLY_TEXT).orEmpty()
@@ -356,10 +363,11 @@ class MainActivity : ComponentActivity() {
             openThreadKey = key
             messagesVm.select(key)
         }
-        if (saved == Screen.REPLY) replyTargetKey = key?.let { ReplyRegistry.currentKey(it) } // noted again, as when the confirmation opens
+        // A WhatsApp answer was confirmed against one particular notification, which did not survive: it is dictated again, never sent from here.
+        val whatsapp = key?.startsWith("${Channel.WHATSAPP.wire}:") == true
         screen = when {
             saved in NEEDS_CONVERSATIONS && key == null -> Screen.MESSAGES
-            saved == Screen.REPLY && replyText.isBlank() -> Screen.MESSAGE
+            saved == Screen.REPLY && (replyText.isBlank() || whatsapp) -> Screen.MESSAGE
             else -> saved
         }
     }
@@ -497,6 +505,7 @@ class MainActivity : ComponentActivity() {
     /** Leaves the open conversation, reading what was received in it. */
     private fun leaveConversation() {
         openThreadKey?.let { messagesVm.markThreadRead(it) }
+        replyText = "" // a draft does not outlive its conversation (nor the state Android keeps for us)
         openThreadKey = null
         composeItem = null
         discardTransferPhoto(photoToSend)
@@ -552,6 +561,7 @@ class MainActivity : ComponentActivity() {
             sendingReply = false
         }
         notice = R.string.whatsapp_sent
+        feedback.sent()
         screen = Screen.MESSAGE
         lifecycleScope.launch(Dispatchers.IO) {
             MessageStore.get(this@MainActivity).add(
@@ -583,7 +593,7 @@ class MainActivity : ComponentActivity() {
         }
         val number = item.replyNumber
         if (number == null) {
-            notice = R.string.number_invalid // stay on the confirmation, with the text still there
+            failure(R.string.number_invalid) // stay on the confirmation, with the text still there
             return
         }
         if (!SmsRole.isHeld(this)) {
@@ -600,7 +610,7 @@ class MainActivity : ComponentActivity() {
             if (result !is SendResult.Started) {
                 // Nothing was stored: go back to the confirmation with the text, instead of losing what was dictated.
                 replyText = text
-                notice = R.string.send_failed
+                failure(R.string.send_failed)
                 screen = Screen.REPLY
             }
         }
@@ -644,7 +654,7 @@ class MainActivity : ComponentActivity() {
         val file = try {
             files.newTransferFile() // a short-lived private file: the picture never lands in the gallery
         } catch (e: java.io.IOException) {
-            notice = R.string.photo_send_failed
+            failure(R.string.photo_send_failed)
             return
         }
         val target = files.uriFor(file)
@@ -699,9 +709,10 @@ class MainActivity : ComponentActivity() {
                 discardTransferPhoto(photo)
                 photoToSend = null
                 notice = R.string.photo_on_the_way
+                feedback.sent()
                 screen = Screen.MESSAGE // the picture appears in the conversation, "Envoi en cours…"
             } else {
-                notice = R.string.photo_send_failed // stay on the confirmation: send again, or choose another picture
+                failure(R.string.photo_send_failed) // stay on the confirmation: send again, or choose another picture
             }
         }
     }
@@ -723,7 +734,7 @@ class MainActivity : ComponentActivity() {
         const val STATE_SCREEN = "screen"
         const val STATE_THREAD = "thread_key"
         const val STATE_COMPOSE_NUMBER = "compose_number"
-        const val STATE_COMPOSE_NAME = "compose_name"
+        private val NUMBER_FORMAT = Regex("[0-9+ ()./-]{1,30}")
         const val STATE_REPLY_TEXT = "reply_text"
         private val NEEDS_CONVERSATIONS = setOf(Screen.MESSAGE, Screen.REPLY, Screen.PHOTO_CHOICE, Screen.PHOTO_CONFIRM)
         const val STALE_TRANSFER_MS = 20 * 60 * 1000L
