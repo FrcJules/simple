@@ -7,7 +7,7 @@ Statut : accepté (2026-10-07). **Implémenté** : historique illimité, SMS (r�
 2. **Historique** : les messages sont conservés **indéfiniment, sur le téléphone seulement**. Cela remplace la limite « 30 messages / 7 jours » de l'ADR 0004.
 3. **Envoi** : l'application devient l'**application SMS par défaut** (rôle `ROLE_SMS`) pour recevoir et envoyer des SMS. Cela remplace « pas d'envoi de SMS » (ADR 0004) et le rejet du rôle SMS (ADR 0002 / 0004). Option qui avait été déconseillée pendant la discussion, choisie en connaissance de cause.
 4. **Interface modifiable** : thème et tuiles décrits par un fichier JSON validé ([customization.md](../customization.md)) — **livré**.
-5. **WhatsApp** : toujours lu via les notifications ; la réponse passerait par l'action « Répondre » de la notification.
+5. **WhatsApp** : toujours lu via les notifications ; la réponse passe par l'action « Répondre » de la notification (voir [ADR 0002](0002-notifications-plutot-que-journal-d-appels.md), mise à jour du 8 octobre 2026).
 
 ## Conséquences à traiter avant d'implémenter 2 et 3
 - Un historique illimité exige un stockage fiable (base SQLite/Room, voire chiffrement Keystore) à la place du fichier actuel, une purge manuelle (« Réglages famille »), et la mise à jour de [privacy.md](../privacy.md), de la politique de confidentialité et de la section « Sécurité des données ».

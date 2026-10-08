@@ -21,7 +21,7 @@ Le launcher doit montrer à Jean-Pierre les messages reçus (photo de l'expédit
 ## Dictée et lecture à voix haute
 - **Lecture** : uniquement sur appui du bouton « Écouter », jamais automatique. Elle utilise le moteur de synthèse vocale du téléphone, choisi par le système : il peut, selon la voix installée, passer par le réseau (hors de notre contrôle).
 - **Dictée** : l'application demande la reconnaissance vocale du système (`RecognizerIntent`, avec la préférence « hors ligne »). Sur la plupart des téléphones, c'est le service de Google, **qui peut envoyer l'audio à ses serveurs** : c'est une exception au principe « rien ne quitte le foyer », assumée parce que l'utilisateur la déclenche lui-même, mais **hors de notre contrôle**. L'application ne reçoit que le texte, qu'elle remet à l'application Messages.
-- **Erreurs d'identité** : un nom dans une notification n'est pas une identité. La photo et le numéro d'un proche ne sont associés que si **un seul** contact porte ce nom, et « Répondre » n'est proposé que pour les SMS, jamais pour WhatsApp (la réponse changerait de canal).
+- **Erreurs d'identité** : un nom dans une notification n'est pas une identité. La photo et le numéro d'un proche ne sont associés que si **un seul** contact porte ce nom, et « Répondre » reste dans le canal du message : par SMS pour un SMS, **par la notification WhatsApp pour WhatsApp** (voir [ADR 0002](0002-notifications-plutot-que-journal-d-appels.md)), jamais d'un canal à l'autre.
 - **Données sensibles** : les messages qui ressemblent à un code à usage unique ou à une alerte bancaire sont **écartés** avant tout stockage, lecture ou envoi à l'écran maison.
 - **Effacement** : « Réglages famille » permet d'effacer les messages conservés et les photos des proches.
 

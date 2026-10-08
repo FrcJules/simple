@@ -45,3 +45,6 @@ C'est un choix facultatif, fait dans l'application. Présence reçoit alors vos 
 
 ## Ce qui reste après une désinstallation ou un effacement
 « Effacer les messages » supprime l'historique de Présence. Les SMS enregistrés dans la boîte de réception d'Android (si Présence était votre application de messages) **restent** dans Android, comme avec toute application de messages, y compris après la désinstallation de Présence.
+
+## Répondre à WhatsApp et protection des réglages
+Si vous répondez à un message WhatsApp avec Présence, votre texte est remis à WhatsApp par sa notification ; Présence ne se connecte pas à WhatsApp et ne partage rien d'autre. Les réglages de la famille sont protégés par un code et les données d'appairage sont chiffrées avec le coffre de clés d'Android.
