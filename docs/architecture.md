@@ -19,6 +19,9 @@
 
 Décisions : [adr/](adr/).
 
+## Appairage
+`npm run pair -w @presence/hub` → QR code du lien `presence://pair?u=<adresse>&t=<jeton>&f=<empreinte>` → l'appareil photo du téléphone l'ouvre dans « Réglages famille » (derrière le code famille) → champs préremplis → « Enregistrer ». Le jeton est ensuite chiffré par le Keystore ; le certificat du hub est épinglé par son empreinte ([ADR 0003](adr/0003-tls-epingle.md)).
+
 ## Transport
 Écran → hub : HTTP loopback (même appareil). Téléphone → hub : HTTPS, certificat auto-signé épinglé par empreinte ([ADR 0003](adr/0003-tls-epingle.md)).
 

@@ -43,6 +43,9 @@
     <string name="message_photo">Photo</string>
     <string name="mms_receiving">Photo en cours de réception…</string>
     <string name="mms_failed">Cette photo n\'est pas arrivée.</string>
+    <string name="setup_link_received">Appairage reçu du QR code : %1$s. Vérifiez l\'adresse, puis touchez «&#160;Enregistrer&#160;».</string>
+    <string name="setup_link_refused">Ce lien d\'appairage n\'est pas valable (adresse hors de la maison, code trop court ou empreinte incorrecte).</string>
+    <string name="setup_scan_hint">Astuce : sur l\'écran maison, lancez « npm run pair » et scannez le QR code avec l\'appareil photo.</string>
     <string name="setup_token_encrypted">Code d\'appairage protégé par le Keystore d\'Android.</string>
     <string name="setup_token_plain">Attention : ce téléphone n\'a pas de Keystore utilisable, le code d\'appairage n\'est pas chiffré.</string>
     <string name="setup_token_lost">L\'appairage doit être refait : la clé qui protégeait le code a été perdue.</string>

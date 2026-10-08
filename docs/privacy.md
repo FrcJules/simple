@@ -53,6 +53,9 @@ Garde-fous contre une réponse envoyée à la mauvaise personne (la conversation
 - si **deux conversations différentes portent le même nom** (autre application WhatsApp, autre discussion), ce nom n'est plus répondable : on propose d'ouvrir WhatsApp ;
 - la réponse part **uniquement par la notification qui était là au moment de la confirmation** : si un autre message est arrivé entre-temps, il faut recommencer.
 
+## Appairage par QR code
+Sur l'écran maison, `npm run pair -w @presence/hub` (à la demande, jamais au démarrage, pour que le code ne soit pas écrit dans les journaux) affiche un QR code qui contient le lien `presence://pair?…` : adresse du hub, **code d'appairage** et empreinte du certificat. L'appareil photo du téléphone l'ouvre dans Présence. Garde-fous : le lien **ne fait que remplir** les champs de « Réglages famille » (derrière le code famille) ; rien n'est enregistré sans « Enregistrer » ; il est vérifié comme une saisie à la main (https, adresse du réseau local, code d'au moins 16 caractères, empreinte à 64 chiffres hexadécimaux) ; un lien d'ailleurs (adresse publique) est refusé avec une explication. Comme n'importe quelle application ou page web peut ouvrir un lien `presence://`, c'est le code famille et la vérification de l'adresse affichée qui protègent. **Le QR code contient le code d'appairage : ne pas le photographier ni le partager.**
+
 ## Limites connues des messages
 - La base de messages **n'est pas chiffrée** (elle est protégée par le stockage privé d'Android) : un téléphone « rooté » pourrait la lire. Chiffrement Keystore possible plus tard.
 - Les codes de sécurité reçus par SMS sont **conservés en clair** dans cette base (masqués à l'écran, jamais lus à voix haute ni envoyés à l'écran maison).

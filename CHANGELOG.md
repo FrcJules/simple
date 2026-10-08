@@ -7,6 +7,9 @@ Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnage [Se
 ### Ajouté (SMS)
 - Application SMS par défaut (facultative) : réception, envoi, import de l'historique du téléphone, conversations par personne, statut d'envoi, codes de sécurité masqués, liens `sms:`. MMS à venir ; rôle non proposé en release.
 
+### Ajouté (appairage)
+- Appairage par QR code : `npm run pair -w @presence/hub` affiche un lien `presence://pair` que l'appareil photo du téléphone ouvre dans « Réglages famille » (champs préremplis, rien d'enregistré sans confirmation).
+
 ### Ajouté (sécurité)
 - « Réglages famille » protégés par un code famille (empreinte PBKDF2, blocage progressif) ; jeton d'appairage chiffré par le Keystore Android.
 
