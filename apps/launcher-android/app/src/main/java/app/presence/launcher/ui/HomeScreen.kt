@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material.icons.Icons
@@ -109,7 +110,7 @@ private fun StatusBar(status: HomeStatus, onSecretTap: () -> Unit) {
     val counter = remember { SecretTapCounter() }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         Column(
-            Modifier.clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) {
+            Modifier.heightIn(min = 64.dp).clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) {
                 if (counter.tap(System.currentTimeMillis())) onSecretTap()
             },
         ) {

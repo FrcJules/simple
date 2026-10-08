@@ -132,13 +132,13 @@
     <string name="ago_days">il y a %1$d jours</string>
     <string name="setup_people">Photos des proches</string>
     <string name="battery_level">Batterie %1$d&#160;%%</string>
-    <string name="battery_low">Batterie faible %1$d&#160;%%</string>
+    <string name="battery_low">Batterie faible %1$d&#160;%%. Branchez le téléphone.</string>
     <string name="battery_charging">En charge %1$d&#160;%%</string>
     <string name="setup_favorites">Qui apparaît sur l\'accueil</string>
-    <string name="setup_favorites_help">Activez les personnes que Jean-Pierre doit voir. Si personne n\'est activé, ce sont les contacts avec une étoile qui s\'affichent.</string>
+    <string name="setup_favorites_help">Choisissez qui apparaît sur l\'accueil. Sans choix, ce sont les contacts avec une étoile.</string>
     <string name="setup_favorites_search">Chercher un nom</string>
-    <string name="setup_favorites_on">Affiché</string>
-    <string name="setup_favorites_off">Caché</string>
+    <string name="setup_favorites_on">Sur l\'accueil</string>
+    <string name="setup_favorites_off">Pas sur l\'accueil</string>
     <string name="setup_favorites_more">Seuls les premiers noms sont listés : utilisez la recherche pour trouver les autres.</string>
     <string name="setup_contacts_allow">Autoriser l\'accès aux contacts</string>
     <string name="setup_people_empty">Aucun proche affiché : activez des personnes ci-dessus.</string>
