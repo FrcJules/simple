@@ -30,8 +30,11 @@ jobs:
               - 'package*.json'
               - 'eslint.config.js'
               - 'tsconfig.base.json'
+              - '.github/workflows/ci.yml'
             android:
               - 'apps/launcher-android/**'
+              - 'scripts/ci-emulator-tests.sh'
+              - '.github/workflows/ci.yml'
 
   web:
     needs: changes
