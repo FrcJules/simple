@@ -27,6 +27,11 @@ class MessagesViewModel(app: Application) : AndroidViewModel(app) {
     private val _items = MutableStateFlow<List<MessageItem>>(emptyList())
     val items: StateFlow<List<MessageItem>> = _items.asStateFlow()
 
+    private val _loaded = MutableStateFlow(false)
+
+    /** False until the conversations were built once: an empty list before that does not mean "the conversation vanished". */
+    val loaded: StateFlow<Boolean> = _loaded.asStateFlow()
+
     /** Number of messages not opened yet, shown as a badge on the home screen. */
     val unread: StateFlow<Int> = store.messages.map { store.unreadCount() }.flowOn(Dispatchers.IO)
         .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
@@ -45,6 +50,7 @@ class MessagesViewModel(app: Application) : AndroidViewModel(app) {
     private fun rebuild(list: List<StoredMessage>, replyable: Set<String>) {
         viewModelScope.launch {
             _items.value = withContext(Dispatchers.IO) { groupConversations(list, replyable, ::face) }
+            _loaded.value = true
         }
     }
 

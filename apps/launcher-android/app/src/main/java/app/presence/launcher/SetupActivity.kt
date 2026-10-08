@@ -300,6 +300,21 @@ class SetupActivity : ComponentActivity() {
                     }) { Text(stringResource(R.string.setup_appearance_reset_button)) }
                     appearanceMessage?.let { Text(it) }
 
+                    var feedbackOn by remember { mutableStateOf(profile.feedbackEnabled()) }
+                    Row(
+                        Modifier.fillMaxWidth().heightIn(min = 64.dp).toggleable(value = feedbackOn, role = Role.Switch, onValueChange = {
+                            feedbackOn = it
+                            profile.setFeedbackEnabled(it)
+                            if (it) app.presence.launcher.feedback.Feedback(this@SetupActivity) { true }.sent() // a try, so the family hears what was switched on
+                        }),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Switch(checked = feedbackOn, onCheckedChange = null)
+                        Text(stringResource(R.string.setup_feedback), fontSize = 24.sp, modifier = Modifier.weight(1f))
+                        Text(stringResource(if (feedbackOn) R.string.setup_yes else R.string.setup_no), fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                    }
+
                     var erased by remember { mutableStateOf(false) }
                     ConfirmedButton(stringResource(R.string.setup_erase_messages), stringResource(R.string.setup_erase_confirm)) {
                         MessageStore.get(this@SetupActivity).clear()
