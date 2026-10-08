@@ -51,6 +51,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import app.presence.launcher.notifications.PairingConfig
+import app.presence.launcher.notifications.PairingLink
 import app.presence.launcher.notifications.PairingStore
 
 /** Family-only settings (hub address, token, notification access). Not reachable from Jean-Pierre's home screen. */
@@ -121,7 +122,15 @@ class SetupActivity : ComponentActivity() {
         }
     }
 
+    /** A pairing link opened from a QR code: only fills the fields in, after the family code. */
+    private var link: PairingConfig? = null
+    private var linkRefused = false
+
     private fun onCreateContent() {
+        intent?.data?.let {
+            link = PairingLink.parse(it.toString())
+            linkRefused = link == null
+        }
         val store = PairingStore(this)
         val profile = ProfileStore(this)
         setContent {
@@ -150,15 +159,18 @@ class SetupActivity : ComponentActivity() {
                     }
                     return@PresenceTheme
                 }
-                var url by remember { mutableStateOf(store.load()?.baseUrl ?: "https://") }
-                var token by remember { mutableStateOf("") } // never re-display the stored token
-                var pin by remember { mutableStateOf(store.load()?.certSha256.orEmpty()) }
+                var url by remember { mutableStateOf(link?.baseUrl ?: store.load()?.baseUrl ?: "https://") }
+                var token by remember { mutableStateOf(link?.token.orEmpty()) } // a stored token is never shown again
+                var pin by remember { mutableStateOf(link?.certSha256 ?: store.load()?.certSha256.orEmpty()) }
                 var name by remember { mutableStateOf(profile.name()) }
                 var saved by remember { mutableStateOf<Boolean?>(null) }
                 var access by remember { mutableStateOf(hasNotificationAccess()) }
                 Column(Modifier.padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(stringResource(R.string.setup_title), fontSize = 28.sp)
+                    if (link != null) Text(stringResource(R.string.setup_link_received, link!!.baseUrl), fontWeight = FontWeight.Bold)
+                    if (linkRefused) Text(stringResource(R.string.setup_link_refused), fontWeight = FontWeight.Bold)
                     OutlinedTextField(name, { name = it }, label = { Text(stringResource(R.string.setup_name)) }, modifier = Modifier.fillMaxWidth())
+                    if (link == null) Text(stringResource(R.string.setup_scan_hint))
                     OutlinedTextField(url, { url = it }, label = { Text(stringResource(R.string.setup_hub_url)) }, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(
                         token, { token = it }, label = { Text(stringResource(R.string.setup_token)) },

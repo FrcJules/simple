@@ -1,6 +1,6 @@
 import { createServer } from "node:https";
-import { networkInterfaces } from "node:os";
 import { buildApp } from "./app";
+import { lanAddress } from "./pairing";
 import { loadOrCreateTls } from "./tls";
 
 function required(name: string, hint: string): string {
@@ -27,7 +27,8 @@ const tls = loadOrCreateTls(process.env.PRESENCE_TLS_DIR ?? "./data/tls");
 const tlsPort = Number(process.env.PRESENCE_TLS_PORT ?? 8788);
 createServer({ key: tls.key, cert: tls.cert }, (req, res) => app.routing(req, res)).listen(tlsPort, "0.0.0.0");
 
-const lan = Object.values(networkInterfaces()).flat().find((i) => i && i.family === "IPv4" && !i.internal)?.address ?? "<ip-du-pi>";
+const lan = lanAddress() ?? "<ip-du-pi>";
 console.log(`Presence hub: display on http://127.0.0.1:${port}`);
 console.log(`Pairing — address: https://${lan}:${tlsPort}`);
 console.log(`Pairing — certificate fingerprint (SHA-256): ${tls.fingerprint}`);
+console.log("To pair the phone with a QR code: npm run pair -w @presence/hub");
