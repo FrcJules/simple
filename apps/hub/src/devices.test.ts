@@ -240,6 +240,30 @@ describe("hub pairing", () => {
     expect((await app.inject({ method: "POST", url: "/events", remoteAddress: "10.0.0.10", payload: huge, headers: { authorization: `Bearer ${TOKEN}` } })).statusCode).toBe(413);
   });
 
+  it("the display starts a pairing with its token, at most every 3 seconds, and the answer holds a working one-time claim", async () => {
+    const reg = registry();
+    const app = buildApp({
+      displayToken: DISPLAY, devices: reg,
+      startPairing: () => ({ link: `presence://pair?s=${reg.createClaim()}`, fingerprint: "AAAA BBBB", expiresInSeconds: 120 }),
+    });
+    const go = (headers: Record<string, string>) => app.inject({ method: "POST", url: "/pairing/start", headers });
+    expect((await go({})).statusCode).toBe(401);
+    const ok = await go({ authorization: `Bearer ${DISPLAY}` });
+    expect(ok.statusCode).toBe(200);
+    expect(ok.json()).toMatchObject({ fingerprint: "AAAA BBBB", expiresInSeconds: 120 });
+    expect(reg.hasActiveClaim()).toBe(true);
+    expect((await go({ authorization: `Bearer ${DISPLAY}` })).statusCode).toBe(429); // too soon
+  });
+
+  it("/pairing/start is absent without the feature, refuses other addresses and reports a missing network", async () => {
+    const reg = registry();
+    const plain = buildApp({ displayToken: DISPLAY, devices: reg });
+    expect((await plain.inject({ method: "POST", url: "/pairing/start", headers: { authorization: `Bearer ${DISPLAY}` } })).statusCode).toBe(404);
+    const app = buildApp({ displayToken: DISPLAY, devices: reg, startPairing: () => { throw new Error("no address"); } });
+    expect((await app.inject({ method: "POST", url: "/pairing/start", remoteAddress: "192.168.1.20", headers: { authorization: `Bearer ${DISPLAY}` } })).statusCode).toBe(404);
+    expect((await app.inject({ method: "POST", url: "/pairing/start", headers: { authorization: `Bearer ${DISPLAY}` } })).statusCode).toBe(503);
+  });
+
   it("there is no /pair without a device registry", async () => {
     registry().createClaim();
     const app = buildApp({ pairingToken: TOKEN, displayToken: DISPLAY });

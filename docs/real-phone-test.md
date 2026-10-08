@@ -11,7 +11,7 @@ Ce que l'émulateur ne peut pas vérifier : les **vrais SMS et MMS d'un opérate
 3. Appuyer sur Accueil : Android propose de choisir l'application d'accueil → **Présence**, « Toujours ».
 
 ## 1 bis. Appairer avec l'écran maison (si vous avez le Raspberry Pi)
-Sur le Pi : `npm run pair -w @presence/hub` affiche un QR code. Le terminal affiche aussi l'**empreinte** du hub. Avec l'appareil photo du téléphone, scannez le QR code : il s'ouvre dans Présence → **Réglages famille** → code famille → une carte « Appairer avec cet écran maison ? » montre l'adresse et l'empreinte → **comparez l'empreinte avec celle du terminal** → **Appairer**. Le QR code ne marche qu'une fois et pendant 2 minutes. Vérifiez qu'un appel manqué apparaît ensuite sur l'écran maison.
+Sur le Pi : touchez 5 fois de suite l'heure sur l'écran maison (ou lancez `npm run pair -w @presence/hub` dans un terminal) : un QR code s'affiche. Le terminal affiche aussi l'**empreinte** du hub. Avec l'appareil photo du téléphone, scannez le QR code : il s'ouvre dans Présence → **Réglages famille** → code famille → une carte « Appairer avec cet écran maison ? » montre l'adresse et l'empreinte → **comparez l'empreinte avec celle du terminal** → **Appairer**. Le QR code ne marche qu'une fois et pendant 2 minutes. Vérifiez qu'un appel manqué apparaît ensuite sur l'écran maison.
 
 ## 2. Devenir l'application SMS
 Sur l'accueil, toucher **Messages**. L'explication s'affiche ; **Continuer**, puis « Oui » à la question d'Android. Vos anciens SMS sont copiés dans Présence (ils restent aussi dans Android).
