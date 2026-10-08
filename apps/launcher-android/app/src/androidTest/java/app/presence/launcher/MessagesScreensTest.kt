@@ -41,6 +41,13 @@ class MessagesScreensTest {
 
     private fun shot(name: String) = Screenshots.save(name, rule.onRoot().captureToImage().asAndroidBitmap())
 
+    /** Pictures are loaded in the background: wait for them before taking a screenshot. */
+    private fun shotAfterPicturesLoaded(name: String) {
+        Thread.sleep(1_500)
+        rule.waitForIdle()
+        shot(name)
+    }
+
     @Test
     fun listShowsSendersTextAndNewMarker() {
         rule.setContent { MessagesScreen(items, now, onOpen = {}, onWrite = {}, onBack = {}) }
@@ -210,7 +217,7 @@ class MessagesScreensTest {
         rule.onNodeWithText("Regarde !").assertIsDisplayed()
         rule.onNodeWithContentDescription("Photo").assertIsDisplayed()
         rule.onNodeWithText("Touchez la photo pour l'agrandir.").assertIsDisplayed()
-        shot("29_conversation_photo")
+        shotAfterPicturesLoaded("29_conversation_photo")
         rule.onNodeWithContentDescription("Photo").performClick()
         assertEquals(path, opened)
     }
@@ -246,7 +253,7 @@ class MessagesScreensTest {
         var back = false
         rule.setContent { ImageViewerScreen(pictureFile(), onBack = { back = true }) }
         rule.onNodeWithContentDescription("Photo").assertIsDisplayed()
-        shot("31_image_viewer")
+        shotAfterPicturesLoaded("31_image_viewer")
         rule.onNodeWithText("Retour").performClick()
         assertTrue(back)
     }
