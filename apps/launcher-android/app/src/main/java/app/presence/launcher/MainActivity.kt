@@ -16,7 +16,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Modifier
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,6 +39,7 @@ import app.presence.launcher.mms.MmsComponents
 import app.presence.launcher.mms.MmsFiles
 import app.presence.launcher.mms.MmsSendResult
 import app.presence.launcher.messages.MessagesViewModel
+import app.presence.launcher.feedback.Feedback
 import app.presence.launcher.messages.Speaker
 import app.presence.launcher.messages.StoredMessage
 import app.presence.launcher.notifications.Channel
@@ -71,6 +75,7 @@ class MainActivity : ComponentActivity() {
     private val profile by lazy { ProfileStore(this) }
     private val uiConfigStore by lazy { UiConfigStore(this) }
     private var uiConfig by mutableStateOf(UiConfig.Default)
+    private val feedback by lazy { Feedback(this) { profile.feedbackEnabled() } }
     private var speakerInstance: Speaker? = null
     private fun speaker() = speakerInstance ?: Speaker(this).also { speakerInstance = it }
     private var screen by mutableStateOf(Screen.HOME)
@@ -155,6 +160,20 @@ class MainActivity : ComponentActivity() {
         super.onSaveInstanceState(outState)
         // The camera app may outlive us: keep the name of the file it is writing so we can find (and delete) it afterwards.
         cameraTarget?.lastPathSegment?.let { outState.putString(STATE_CAMERA_FILE, it) }
+        // Android may kill the process while the camera or the microphone is in front: come back to the same conversation and draft.
+        // Only plain text is kept (never a photo, never a call in progress); a screen that needs more falls back to its parent.
+        val restorable = when (screen) {
+            Screen.CALL, Screen.MESSAGES, Screen.PICK_RECIPIENT, Screen.MESSAGE, Screen.REPLY -> screen
+            Screen.PHOTO_CHOICE, Screen.PHOTO_CONFIRM -> Screen.MESSAGE
+            else -> Screen.HOME
+        }
+        outState.putString(STATE_SCREEN, restorable.name)
+        openThreadKey?.let { outState.putString(STATE_THREAD, it) }
+        composeItem?.let {
+            outState.putString(STATE_COMPOSE_NUMBER, it.message.address)
+            outState.putString(STATE_COMPOSE_NAME, it.message.from)
+        }
+        if (replyText.isNotEmpty()) outState.putString(STATE_REPLY_TEXT, replyText)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -164,7 +183,7 @@ class MainActivity : ComponentActivity() {
             files.transferFile(name)?.let { cameraTarget = files.uriFor(it) }
         }
         MmsFiles(this).cleanOldTransfers(System.currentTimeMillis() - STALE_TRANSFER_MS)
-        if (savedInstanceState == null) handleIntent(intent)
+        if (savedInstanceState == null) handleIntent(intent) else restore(savedInstanceState)
         setContent {
             val contacts by contactsVm.contacts.collectAsStateWithLifecycle()
             val conversations by messagesVm.items.collectAsStateWithLifecycle()
@@ -172,6 +191,16 @@ class MainActivity : ComponentActivity() {
             val unread by messagesVm.unread.collectAsStateWithLifecycle()
             val open: MessageItem? = conversations.firstOrNull { it.threadKey == openThreadKey }
                 ?: composeItem?.takeIf { it.threadKey == openThreadKey }
+            val loaded by messagesVm.loaded.collectAsStateWithLifecycle()
+            // Sounds follow what the screen says: handed over, or failed. The words on screen are always there too.
+            LaunchedEffect(notice) {
+                when (notice) {
+                    R.string.whatsapp_sent, R.string.photo_on_the_way -> feedback.sent()
+                    R.string.send_failed, R.string.photo_send_failed, R.string.number_invalid -> feedback.failed()
+                }
+            }
+            // "J'appelle Marie" is also said aloud, once, when the call screen opens.
+            LaunchedEffect(calling) { calling?.let { if (profile.feedbackEnabled()) speakText(getString(R.string.calling, it.name)) } }
             val c = calling
             val image = viewingImage
             CompositionLocalProvider(LocalThemeConfig provides uiConfig.theme) {
@@ -189,6 +218,8 @@ class MainActivity : ComponentActivity() {
                             LauncherActions.call(this, c.number, direct = granted(Manifest.permission.CALL_PHONE))
                         },
                     )
+                } else if (!loaded && screen in NEEDS_CONVERSATIONS) {
+                    Box(Modifier.fillMaxSize()) // the conversations are being read: an empty list is not "the conversation is gone"
                 } else when (screen) {
                     Screen.HOME -> HomeScreen(
                         seniorName = seniorName,
@@ -310,6 +341,29 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** Back to where the person was after the process was killed. Nothing here starts a call, a photo or a message. */
+    private fun restore(state: Bundle) {
+        val saved = state.getString(STATE_SCREEN)?.let { name -> Screen.entries.firstOrNull { it.name == name } } ?: return
+        val key = state.getString(STATE_THREAD)
+        val number = state.getString(STATE_COMPOSE_NUMBER)
+        if (number != null) {
+            val contact = try { ContactsRepository(contentResolver).byNumber(number) } catch (e: SecurityException) { null }
+            val first = StoredMessage("new", state.getString(STATE_COMPOSE_NAME) ?: number, Channel.SMS, "", System.currentTimeMillis(), address = number)
+            composeItem = MessageItem(first, contact)
+        }
+        replyText = state.getString(STATE_REPLY_TEXT).orEmpty()
+        if (key != null) {
+            openThreadKey = key
+            messagesVm.select(key)
+        }
+        if (saved == Screen.REPLY) replyTargetKey = key?.let { ReplyRegistry.currentKey(it) } // noted again, as when the confirmation opens
+        screen = when {
+            saved in NEEDS_CONVERSATIONS && key == null -> Screen.MESSAGES
+            saved == Screen.REPLY && replyText.isBlank() -> Screen.MESSAGE
+            else -> saved
+        }
+    }
+
     override fun onResume() {
         super.onResume()
         seniorName = profile.name() // may have been changed in "Réglages famille"
@@ -335,6 +389,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         speakerInstance?.shutdown()
+        feedback.release()
         super.onDestroy()
     }
 
@@ -541,6 +596,7 @@ class MainActivity : ComponentActivity() {
         screen = Screen.MESSAGE
         lifecycleScope.launch {
             val result = withContext(Dispatchers.IO) { SmsComponents.sender(this@MainActivity).send(number, text, item.message.from) }
+            if (result is SendResult.Started) feedback.sent()
             if (result !is SendResult.Started) {
                 // Nothing was stored: go back to the confirmation with the text, instead of losing what was dictated.
                 replyText = text
@@ -664,6 +720,12 @@ class MainActivity : ComponentActivity() {
 
     private companion object {
         const val STATE_CAMERA_FILE = "camera_file"
+        const val STATE_SCREEN = "screen"
+        const val STATE_THREAD = "thread_key"
+        const val STATE_COMPOSE_NUMBER = "compose_number"
+        const val STATE_COMPOSE_NAME = "compose_name"
+        const val STATE_REPLY_TEXT = "reply_text"
+        private val NEEDS_CONVERSATIONS = setOf(Screen.MESSAGE, Screen.REPLY, Screen.PHOTO_CHOICE, Screen.PHOTO_CONFIRM)
         const val STALE_TRANSFER_MS = 20 * 60 * 1000L
         const val STALE_DOWNLOAD_MS = 10 * 60 * 1000L
         val SMS_SCHEMES = setOf("sms", "smsto") // mms:/mmsto: once MMS are handled
