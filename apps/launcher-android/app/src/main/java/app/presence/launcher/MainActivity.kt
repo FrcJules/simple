@@ -48,6 +48,7 @@ import app.presence.launcher.ui.CallScreen
 import app.presence.launcher.ui.CallingScreen
 import app.presence.launcher.ui.ConversationScreen
 import app.presence.launcher.ui.HomeScreen
+import app.presence.launcher.ui.rememberHomeStatus
 import app.presence.launcher.ui.ImageViewerScreen
 import app.presence.launcher.ui.LocalThemeConfig
 import app.presence.launcher.ui.MessageScreen
@@ -189,7 +190,14 @@ class MainActivity : ComponentActivity() {
                         },
                     )
                 } else when (screen) {
-                    Screen.HOME -> HomeScreen(seniorName = seniorName, unreadMessages = unread, config = uiConfig, onTile = ::onTile)
+                    Screen.HOME -> HomeScreen(
+                        seniorName = seniorName,
+                        unreadMessages = unread,
+                        config = uiConfig,
+                        status = rememberHomeStatus(),
+                        onSecretTap = { startActivity(Intent(this, SetupActivity::class.java)) },
+                        onTile = ::onTile,
+                    )
                     Screen.RATIONALE -> {
                         BackHandler { screen = Screen.HOME }
                         PermissionRationaleScreen(
