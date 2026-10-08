@@ -42,7 +42,9 @@
 |---|---|
 | Historique illimité (SQLite) | **Livré** |
 | Réception / envoi / import de l'historique, conversations | **Codé, testé** (unitaires + test de bout en bout sur émulateur) ; non vérifié sur un vrai téléphone |
-| MMS (réception, envoi) | **À faire** : bloque la publication |
+| MMS : réception (texte + photos, accusé, réessai) | **Codé, testé** (décodeur sur MMS fabriqués selon la spécification, flux avec faux opérateur, test émulateur) ; **non vérifié avec un vrai opérateur** |
+| MMS : envoi d'une photo | **À faire** |
+| Déplacer le rôle SMS dans le manifeste de release | Après essai réel des MMS sur un téléphone |
 | Formulaire Play « SMS » + vidéo | À faire après les MMS |
 
 ## Plan

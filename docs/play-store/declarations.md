@@ -30,4 +30,5 @@ Présence peut devenir l'application SMS par défaut (rôle `ROLE_SMS`). Google 
 - une **justification** pour `READ_SMS`, `SEND_SMS`, `RECEIVE_SMS`, `RECEIVE_MMS`, `RECEIVE_WAP_PUSH` (uniquement tant que l'application est celle par défaut ; arrêt de l'usage dès que le rôle est perdu) ;
 - une **vidéo de démonstration** de la demande du rôle et de l'envoi/réception d'un SMS ;
 - les **MMS** doivent fonctionner : un MMS non géré serait perdu. **Ne pas soumettre la version de production avant les MMS** (en release, le manifeste ne déclare ni le rôle ni les permissions SMS, et `SMS_ROLE_OFFERED` est `false`).
+**MMS** : `RECEIVE_MMS` et `RECEIVE_WAP_PUSH` servent à recevoir les photos de la famille ; le téléchargement et l'accusé de réception passent par les API du système (`SmsManager`). Joindre à la vidéo de démonstration la réception d'un MMS.
 Revue plus longue que d'habitude, refus possible : prévoir du temps avant de promettre une date.
