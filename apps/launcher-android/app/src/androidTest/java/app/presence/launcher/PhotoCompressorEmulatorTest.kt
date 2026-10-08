@@ -2,9 +2,7 @@ package app.presence.launcher
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.Paint
 import android.net.Uri
 import androidx.test.platform.app.InstrumentationRegistry
 import app.presence.launcher.mms.PhotoCompressor
@@ -23,12 +21,11 @@ class PhotoCompressorEmulatorTest {
     /** A noisy 4000x3000 picture (noise compresses badly, so this is a hard case), saved as a big JPEG like a camera would. */
     private fun bigPhoto(): File {
         val bmp = Bitmap.createBitmap(4000, 3000, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bmp)
-        val paint = Paint()
         val rnd = Random(42)
-        repeat(4000) {
-            paint.color = Color.rgb(rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256))
-            canvas.drawRect(rnd.nextInt(4000).toFloat(), rnd.nextInt(3000).toFloat(), rnd.nextInt(4000).toFloat(), rnd.nextInt(3000).toFloat(), paint)
+        val row = IntArray(4000)
+        for (y in 0 until 3000) { // real per-pixel noise: the worst case for a JPEG encoder
+            for (x in 0 until 4000) row[x] = Color.rgb(rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256))
+            bmp.setPixels(row, 0, 4000, 0, y, 4000, 1)
         }
         return File(context.cacheDir, "big-photo.jpg").also { f -> f.outputStream().use { bmp.compress(Bitmap.CompressFormat.JPEG, 95, it) } }
     }
