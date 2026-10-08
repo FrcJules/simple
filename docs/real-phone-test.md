@@ -38,3 +38,5 @@ Réglages Android → Applications → Applications par défaut → **Applicatio
 
 ### Option : me laisser regarder les journaux en direct
 Je ne peux pas accéder à votre téléphone par défaut. Si vous le souhaitez, vous pouvez activer *Options pour les développeurs → Débogage sans fil* et me donner l'adresse et le port affichés, **uniquement sur votre réseau Wi-Fi**, le temps de l'essai ; ADB donne un contrôle complet du téléphone : désactivez-le après. Ce n'est pas nécessaire : les journaux de l'application ne contiennent volontairement ni messages, ni numéros.
+
+> Premier lancement : tant que la famille n'a pas choisi de code, le geste caché (7 appuis sur l'heure) n'ouvre qu'un écran rassurant, jamais le choix du code. La famille ouvre « Réglages » depuis la liste des applications (si Présence est le lanceur : Réglages Android › Applications › Présence › Ouvrir) ou en scannant le QR code, puis choisit le code.

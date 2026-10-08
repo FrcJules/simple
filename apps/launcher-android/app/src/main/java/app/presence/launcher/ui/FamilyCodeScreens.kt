@@ -115,3 +115,20 @@ fun SetFamilyCodeScreen(error: String?, onEdit: () -> Unit, onSubmit: (code: Str
         BackButton(onBack)
     }
 }
+
+/**
+ * The hidden gesture on the home screen was used before the family ever chose a code. Whoever holds the phone must not be able to
+ * choose it then: the family chooses the code from the "Réglages" icon (or the QR code), never from Jean-Pierre's home screen.
+ */
+@Composable
+fun FamilyCodeNotSetScreen(onBack: () -> Unit) {
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(stringResource(R.string.family_code_not_set_title), fontSize = 28.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+        Text(stringResource(R.string.family_code_not_set_hint), fontSize = 24.sp, textAlign = TextAlign.Center)
+        BackButton(onBack)
+    }
+}

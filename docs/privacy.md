@@ -71,3 +71,8 @@ Garde-fous contre une réponse envoyée à la mauvaise personne (la conversation
 - Le **blocage** du code utilise l'horloge interne du téléphone (que le changement de date ne modifie pas), et, après un redémarrage, la date plafonnée à 15 minutes : changer la date ne le contourne pas et ne peut pas bloquer la famille plus de 15 minutes.
 - Le **premier** à ouvrir « Réglages famille » après l'installation choisit le code : l'écran le dit (« réservés à la famille ») et propose Retour.
 - Limite : sur un téléphone « rooté », l'empreinte du code (4 à 8 chiffres) peut être testée hors de l'application en quelques secondes ; protéger davantage demanderait une clé du Keystore (à envisager).
+
+### Code famille : ce qu'il protège et ses limites
+- Le verrou anti-force-brute mesure l'attente avec l'horloge monotone du téléphone, jamais avec la date ; un redémarrage relance l'attente entière (au plus 15 minutes). Changer la date ou redémarrer ne l'abrège donc pas.
+- Le geste caché de l'accueil n'ouvre jamais le choix du code : tant que la famille n'en a pas choisi, il affiche un écran rassurant. Le code se choisit depuis l'icône « Réglages » ou le QR code.
+- Limites connues : l'activité Réglages doit rester ouverte à la famille (icône, lien `presence://`), donc une autre application du téléphone, ou quiconque ouvre « Réglages » avant la famille, peut choisir le code s'il n'existe pas encore. **Choisissez le code dès l'installation.** Un code à 4 chiffres résiste à une force brute sur le téléphone pendant des semaines, pas indéfiniment : préférez 6 à 8 chiffres.

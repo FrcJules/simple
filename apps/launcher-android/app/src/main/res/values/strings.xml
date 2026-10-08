@@ -52,6 +52,8 @@
     <string name="family_code_new_title">Choisissez un code famille</string>
     <string name="family_code_new_hint">De 4 à 8 chiffres. Touchez l\'œil pour voir ce que vous tapez, et notez le code. S\'il est perdu, il faudra effacer les données de l\'application dans les réglages d\'Android : cela supprime aussi les messages et l\'appairage avec l\'écran maison.</string>
     <string name="family_code_for_family">Ces réglages sont réservés à la famille.</string>
+    <string name="family_code_not_set_title">Rien à faire ici. Tout va bien.</string>
+    <string name="family_code_not_set_hint">Pour la famille : ouvrez l\'icône « Réglages » de Présence, puis choisissez un code.</string>
     <string name="family_code_show">Voir le code</string>
     <string name="family_code_hide">Cacher le code</string>
     <string name="family_code_again">Répétez le code</string>
