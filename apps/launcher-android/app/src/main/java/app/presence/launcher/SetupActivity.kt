@@ -237,18 +237,19 @@ class SetupActivity : ComponentActivity() {
                     androidx.compose.runtime.LaunchedEffect(granted) { if (granted) contactsVm.loadAll() }
 
                     Text(stringResource(R.string.setup_favorites), fontSize = 28.sp)
-                    Text(stringResource(R.string.setup_favorites_help))
+                    Text(stringResource(R.string.setup_favorites_help), fontSize = 24.sp)
                     if (!granted) {
-                        Button(onClick = { askContacts.launch(Manifest.permission.READ_CONTACTS) }) {
-                            Text(stringResource(R.string.setup_contacts_allow))
+                        Button(onClick = { askContacts.launch(Manifest.permission.READ_CONTACTS) }, modifier = Modifier.heightIn(min = 64.dp)) {
+                            Text(stringResource(R.string.setup_contacts_allow), fontSize = 24.sp)
                         }
                     } else {
                         OutlinedTextField(
                             value = query,
                             onValueChange = { query = it },
-                            label = { Text(stringResource(R.string.setup_favorites_search)) },
+                            label = { Text(stringResource(R.string.setup_favorites_search), fontSize = 24.sp) },
+                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 24.sp),
                             singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp),
                         )
                         ContactPickerRows.rows(all, chosen, query).forEach { c ->
                             val on = c.id in chosen
@@ -265,7 +266,7 @@ class SetupActivity : ComponentActivity() {
                                 Text(stringResource(if (on) R.string.setup_favorites_on else R.string.setup_favorites_off), fontSize = 24.sp)
                             }
                         }
-                        if (all.size > ContactPickerRows.LIMIT && query.isBlank()) Text(stringResource(R.string.setup_favorites_more))
+                        if (all.size > ContactPickerRows.LIMIT && query.isBlank()) Text(stringResource(R.string.setup_favorites_more), fontSize = 24.sp)
                     }
 
                     Text(stringResource(R.string.setup_people), fontSize = 28.sp)
