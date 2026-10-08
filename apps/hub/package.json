@@ -8,16 +8,22 @@
     "build": "tsup",
     "start": "node dist/main.js",
     "typecheck": "tsc -p .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "pair": "tsx src/pair.ts",
+    "devices": "tsx src/revoke.ts",
+    "revoke": "tsx src/revoke.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.3.0",
     "@presence/contracts": "*",
-    "fastify": "^5.0.0"
+    "fastify": "^5.0.0",
+    "qrcode": "^1.5.4",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "tsup": "^8.3.0",
-    "tsx": "^4.19.0"
+    "tsx": "^4.19.0",
+    "@types/qrcode": "^1.5.5"
   }
 }

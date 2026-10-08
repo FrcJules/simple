@@ -48,6 +48,13 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- The QR code of the home display: any camera app opens this link in Présence (family settings, behind the code). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="presence" android:host="pair" />
+            </intent-filter>
         </activity>
 
         <receiver android:name=".sms.SmsStatusReceiver" android:exported="false" />
