@@ -18,7 +18,7 @@ Lecture des notifications (ADR 0002) : **livrée en v0.2, à valider sur apparei
 **Transport** : hub ↔ téléphone en HTTPS ; le certificat auto-signé du hub est généré une fois, son empreinte SHA-256 est affichée au démarrage du hub et saisie dans « Réglages famille » : le téléphone refuse tout autre certificat (voir [ADR 0003](adr/0003-tls-epingle.md)). Le HTTP en clair est désactivé sur le téléphone ; l'écran du Pi parle au hub en loopback.
 
 **Limites connues (à traiter avant publication sur le Play Store)**
-- Le jeton est dans des préférences privées non chiffrées (Keystore à prévoir).
+
 - « Réglages famille » est accessible depuis la liste des applications : prévoir un code famille.
 - Le filtre des codes à usage unique est volontairement large (faux positifs possibles) ; une option « ne pas afficher le texte » reste à faire.
 - La dictée vocale passe par le service du système et peut envoyer l'audio chez son éditeur (ADR 0004).
@@ -56,3 +56,9 @@ Le texte que la personne dicte est confirmé à l'écran, puis remis à WhatsApp
 - À l'écran maison, seuls les SMS de **personnes connues** (présentes dans les contacts) sont affichés ; ceux d'un numéro inconnu ou d'une entreprise restent sur le téléphone.
 - Le texte reçu est nettoyé des caractères de contrôle et d'inversion de sens (qui peuvent faire lire un texte autrement que ce qu'il dit).
 - Un expéditeur de SMS peut se faire passer pour quelqu'un : un faux SMS « de Marie » (même numéro falsifié) affichera sa photo. C'est inhérent au SMS.
+
+## « Réglages famille » protégés
+- Un **code famille** (4 à 8 chiffres, pas « 1111 » ni « 1234 ») est demandé à la première ouverture puis à chaque entrée dans les réglages ; ils se reverrouillent quand on les quitte. Le code n'est jamais stocké : seule son empreinte (PBKDF2, sel aléatoire) l'est. Après 5 erreurs, les réglages se bloquent 30 secondes, puis de plus en plus longtemps (15 minutes au plus), même si l'on ferme l'écran.
+- **Pas de récupération** : si le code est perdu, il faut effacer les données de l'application dans les réglages d'Android (ce qui efface aussi l'historique des messages).
+- Le **jeton d'appairage** de l'écran maison est chiffré avec une clé du **Keystore Android** (elle ne quitte pas la puce de sécurité du téléphone quand il en a une) : copier les fichiers de l'application ne suffit plus à le lire. Un jeton enregistré par une version précédente est chiffré à sa première lecture. Si le téléphone n'a pas de Keystore utilisable, le jeton reste stocké comme avant.
+- Limite : le code protège l'**interface** des réglages. Quelqu'un qui contrôle déjà le téléphone (accès « root ») peut contourner l'application.

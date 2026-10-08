@@ -43,6 +43,17 @@
     <string name="message_photo">Photo</string>
     <string name="mms_receiving">Photo en cours de réception…</string>
     <string name="mms_failed">Cette photo n\'est pas arrivée.</string>
+    <string name="family_code_title">Réglages famille : entrez le code</string>
+    <string name="family_code_label">Code famille</string>
+    <string name="family_code_ok">Valider</string>
+    <string name="family_code_new_title">Choisissez un code famille</string>
+    <string name="family_code_new_hint">De 4 à 8 chiffres. Il protège ces réglages. Notez-le : s\'il est perdu, il faut effacer les données de l\'application dans les réglages d\'Android.</string>
+    <string name="family_code_again">Répétez le code</string>
+    <string name="family_code_mismatch">Les deux codes ne sont pas pareils.</string>
+    <string name="family_code_length">Le code doit avoir de 4 à 8 chiffres.</string>
+    <string name="family_code_obvious">Ce code est trop simple (1111, 1234…). Choisissez-en un autre.</string>
+    <string name="family_code_wrong">Code incorrect. Il reste %1$d essais.</string>
+    <string name="family_code_locked">Trop d\'essais. Réessayez dans %1$d secondes.</string>
     <string name="whatsapp_open">Ouvrir WhatsApp</string>
     <string name="whatsapp_open_hint">Pour répondre à ce message, ouvrez WhatsApp.</string>
     <string name="whatsapp_reply_failed">Le message n\'a pas pu partir. Ouvrez WhatsApp pour répondre.</string>
