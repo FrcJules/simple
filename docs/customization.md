@@ -48,3 +48,9 @@ Un mauvais fichier ne doit jamais rendre le téléphone illisible, donc il est *
 
 ## Ce qui n'est pas (encore) personnalisable
 Les textes des autres écrans (appel, messages), la disposition de ces écrans et l'ajout de nouvelles actions : cela demande du code. Les nouvelles actions sont ajoutées dans `TileAction` (`config/UiConfig.kt`).
+
+## Réglages famille (accès caché)
+
+Les réglages ne sont pas visibles sur l'accueil de Jean-Pierre. Pour les ouvrir : toucher **7 fois de suite, rapidement (moins de 4 secondes), l'heure** en haut de l'accueil. Le code famille est ensuite demandé.
+
+Dans les réglages, la section « Qui apparaît sur l'accueil » liste tous les contacts du téléphone (avec recherche) : activer un interrupteur affiche la personne sur l'accueil. Si personne n'est activé, ce sont les contacts marqués d'une étoile qui s'affichent. Seuls les identifiants des contacts choisis sont mémorisés, sur le téléphone.
