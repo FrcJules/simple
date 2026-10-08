@@ -11,9 +11,13 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@fastify/cors": "^10.0.0",
+    "@fastify/cors": "^11.3.0",
     "@presence/contracts": "*",
     "fastify": "^5.0.0"
   },
-  "devDependencies": { "@types/node": "^22.0.0", "tsup": "^8.3.0", "tsx": "^4.19.0" }
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsup": "^8.3.0",
+    "tsx": "^4.19.0"
+  }
 }
