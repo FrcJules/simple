@@ -47,17 +47,16 @@ object PhotoCompressor {
             val decoded = resolver.openInputStream(source)?.use {
                 BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = sample })
             } ?: return null
-            val upright = rotate(decoded, orientation(context, source))
+            val upright = rotate(flattenOnWhite(decoded), orientation(context, source))
             try {
                 fit(MAX_SIDE, MAX_BYTES) { side, quality -> encode(upright, side, quality) }
             } finally {
-                if (upright !== decoded) decoded.recycle()
                 upright.recycle()
             }
         } catch (e: IOException) {
             null
-        } catch (e: SecurityException) {
-            null
+        } catch (e: RuntimeException) {
+            null // a third-party picture provider may fail in any way: the picture is "unreadable", the app lives on
         } catch (e: OutOfMemoryError) {
             null
         }
@@ -71,6 +70,15 @@ object PhotoCompressor {
         } finally {
             if (scaled !== bitmap) scaled.recycle()
         }
+    }
+
+    /** JPEG has no transparency: a transparent PNG would turn black, so it is laid on white first. */
+    private fun flattenOnWhite(bitmap: Bitmap): Bitmap {
+        if (!bitmap.hasAlpha()) return bitmap
+        val flat = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
+        android.graphics.Canvas(flat).apply { drawColor(android.graphics.Color.WHITE); drawBitmap(bitmap, 0f, 0f, null) }
+        bitmap.recycle()
+        return flat
     }
 
     private fun orientation(context: Context, source: Uri): Int =

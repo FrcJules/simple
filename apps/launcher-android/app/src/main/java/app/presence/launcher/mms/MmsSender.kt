@@ -53,7 +53,7 @@ class MmsSender(
     /** Tries again with the picture already kept with the message. */
     fun retry(messageId: String, subId: Int = -1) {
         val m = store.get(messageId) ?: return
-        if (!m.outgoing || !m.mms || !isDefaultApp()) return
+        if (!m.outgoing || !m.mms || m.status != MessageStatus.FAILED || !isDefaultApp()) return // only a failed picture is sent again
         val address = m.address ?: return
         val jpeg = m.attachments.firstOrNull()?.let { files.readPicture(it.path) }
         if (jpeg == null) {
@@ -82,10 +82,8 @@ class MmsSender(
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
             )
             transport.post(files.uriFor(file), subId, sent)
-        } catch (e: SecurityException) {
-            files.deleteQuietly(file)
-            store.setStatus(id, MessageStatus.FAILED)
-        } catch (e: IllegalArgumentException) {
+        } catch (e: RuntimeException) {
+            // Whatever the platform refuses with, the launcher (the home screen) must not crash and the PDU must not stay on disk.
             files.deleteQuietly(file)
             store.setStatus(id, MessageStatus.FAILED)
         }

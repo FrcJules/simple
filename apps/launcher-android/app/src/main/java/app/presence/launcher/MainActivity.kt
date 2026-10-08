@@ -88,6 +88,7 @@ class MainActivity : ComponentActivity() {
 
     /** The picture about to be sent (camera or picker), shown for confirmation. */
     private var photoToSend by mutableStateOf<Uri?>(null)
+    private var sendingPhoto by mutableStateOf(false)
     private var cameraTarget: Uri? = null
 
     private val takePicture = registerForActivityResult(ActivityResultContracts.TakePicture()) { taken ->
@@ -97,6 +98,9 @@ class MainActivity : ComponentActivity() {
             photoToSend = target
             notice = null
             screen = Screen.PHOTO_CONFIRM
+        } else {
+            discardTransferPhoto(target) // cancelled (or the process was restarted): never leave the camera's file behind
+            if (target == null) notice = R.string.photo_send_failed
         }
     }
 
@@ -139,8 +143,19 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        // The camera app may outlive us: keep the name of the file it is writing so we can find (and delete) it afterwards.
+        cameraTarget?.lastPathSegment?.let { outState.putString(STATE_CAMERA_FILE, it) }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        savedInstanceState?.getString(STATE_CAMERA_FILE)?.let { name ->
+            val files = MmsFiles(this)
+            files.transferFile(name)?.let { cameraTarget = files.uriFor(it) }
+        }
+        MmsFiles(this).cleanOldTransfers(System.currentTimeMillis() - STALE_TRANSFER_MS)
         if (savedInstanceState == null) handleIntent(intent)
         setContent {
             val contacts by contactsVm.contacts.collectAsStateWithLifecycle()
@@ -227,27 +242,30 @@ class MainActivity : ComponentActivity() {
                             LaunchedEffect(Unit) { closeConversation() }
                         } else {
                             PhotoChoiceScreen(
-                                name = open.message.from,
+                                contact = open.displayContact,
+                                known = open.contact != null,
                                 canTakePhoto = packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY),
+                                notice = notice?.let { stringResource(it) },
                                 onTake = { takePhoto() },
                                 onPick = { pickPhoto() },
-                                onBack = { screen = Screen.MESSAGE },
+                                onBack = { notice = null; screen = Screen.MESSAGE },
                             )
                         }
                     }
                     Screen.PHOTO_CONFIRM -> {
-                        BackHandler { screen = Screen.PHOTO_CHOICE }
+                        BackHandler { if (!sendingPhoto) notThisPhoto() }
                         val photo = photoToSend
                         if (open == null || photo == null) {
                             LaunchedEffect(Unit) { closeConversation() }
                         } else {
                             PhotoConfirmScreen(
-                                name = open.message.from,
+                                contact = open.displayContact,
+                                known = open.contact != null,
                                 photo = photo,
                                 notice = notice?.let { stringResource(it) },
+                                sending = sendingPhoto,
                                 onSend = { sendPhoto(open, photo) },
-                                onChange = { screen = Screen.PHOTO_CHOICE },
-                                onCancel = { photoToSend = null; screen = Screen.MESSAGE },
+                                onNotThisOne = { notThisPhoto() },
                             )
                         }
                     }
@@ -408,7 +426,9 @@ class MainActivity : ComponentActivity() {
         openThreadKey?.let { messagesVm.markThreadRead(it) }
         openThreadKey = null
         composeItem = null
+        discardTransferPhoto(photoToSend)
         photoToSend = null
+        sendingPhoto = false
         messagesVm.select(null)
     }
 
@@ -504,17 +524,26 @@ class MainActivity : ComponentActivity() {
 
     private fun takePhoto() {
         val files = MmsFiles(this)
-        val target = files.uriFor(files.newTransferFile()) // a short-lived private file: the picture never lands in the gallery
+        val file = try {
+            files.newTransferFile() // a short-lived private file: the picture never lands in the gallery
+        } catch (e: java.io.IOException) {
+            notice = R.string.photo_send_failed
+            return
+        }
+        val target = files.uriFor(file)
         cameraTarget = target
+        notice = null
         try {
             takePicture.launch(target)
         } catch (e: ActivityNotFoundException) {
             cameraTarget = null
-            notice = R.string.app_missing
+            files.deleteQuietly(file)
+            notice = R.string.app_missing // shown on the choice screen
         }
     }
 
     private fun pickPhoto() {
+        notice = null
         try {
             pickPicture.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         } catch (e: ActivityNotFoundException) {
@@ -522,16 +551,40 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** "Pas cette photo": the picture is dropped (and the camera's original file deleted) and the person chooses again. */
+    private fun notThisPhoto() {
+        discardTransferPhoto(photoToSend)
+        photoToSend = null
+        notice = null
+        screen = Screen.PHOTO_CHOICE
+    }
+
+    /** The camera writes the full-resolution original (with its GPS position) into one of our temporary files: delete it as soon as it is of no use. */
+    private fun discardTransferPhoto(uri: Uri?) {
+        if (uri == null || uri.authority != MmsFiles.authority(this)) return
+        val files = MmsFiles(this)
+        uri.lastPathSegment?.let { files.deleteQuietly(files.transferFile(it)) }
+    }
+
     private fun sendPhoto(item: MessageItem, photo: Uri) {
         val number = item.replyNumber ?: return
+        if (sendingPhoto) return // a second touch while it goes must not send it twice
+        sendingPhoto = true
         notice = null
         lifecycleScope.launch {
-            val result = withContext(Dispatchers.IO) { MmsComponents.sender(this@MainActivity).send(number, item.message.from, photo) }
+            val result = try {
+                withContext(Dispatchers.IO) { MmsComponents.sender(this@MainActivity).send(number, item.message.from, photo) }
+            } catch (e: RuntimeException) {
+                MmsSendResult.Unreadable
+            }
+            sendingPhoto = false
             if (result is MmsSendResult.Started) {
+                discardTransferPhoto(photo)
                 photoToSend = null
+                notice = R.string.photo_on_the_way
                 screen = Screen.MESSAGE // the picture appears in the conversation, "Envoi en cours…"
             } else {
-                notice = R.string.photo_send_failed // stay on the confirmation: the person can choose another picture
+                notice = R.string.photo_send_failed // stay on the confirmation: send again, or choose another picture
             }
         }
     }
@@ -549,6 +602,8 @@ class MainActivity : ComponentActivity() {
         ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
 
     private companion object {
+        const val STATE_CAMERA_FILE = "camera_file"
+        const val STALE_TRANSFER_MS = 20 * 60 * 1000L
         const val STALE_DOWNLOAD_MS = 10 * 60 * 1000L
         val SMS_SCHEMES = setOf("sms", "smsto") // mms:/mmsto: once MMS are handled
     }

@@ -132,7 +132,7 @@ object MmsPdu {
         try {
             val req = SendReq()
             req.from = EncodedStringValue(PduHeaders.FROM_INSERT_ADDRESS_TOKEN_STR) // the operator fills in our number
-            req.to = arrayOf(EncodedStringValue(to))
+            req.to = arrayOf(EncodedStringValue(to.filter { it.isDigit() || it == '+' })) // some operators refuse spaces and brackets
             req.date = System.currentTimeMillis() / 1000
             req.messageClass = PduHeaders.MESSAGE_CLASS_PERSONAL_STR.toByteArray()
             req.expiry = 7 * 24 * 3600L
