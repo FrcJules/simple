@@ -10,7 +10,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BatteryAlert
+import androidx.compose.material.icons.filled.BatteryChargingFull
+import androidx.compose.material.icons.filled.BatteryFull
+import androidx.compose.runtime.remember
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
@@ -38,6 +45,8 @@ fun HomeScreen(
     seniorName: String,
     unreadMessages: Int = 0,
     config: UiConfig = UiConfig.Default,
+    status: HomeStatus? = null,
+    onSecretTap: () -> Unit = {},
     onTile: (TileConfig) -> Unit = {},
 ) {
     PresenceTheme {
@@ -46,6 +55,7 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            if (status != null) StatusBar(status, onSecretTap)
             val greeting = if (seniorName.isBlank()) stringResource(R.string.greeting_anonymous) else stringResource(R.string.greeting, seniorName)
             Text(greeting, fontSize = 32.sp, textAlign = TextAlign.Center)
             config.home.tiles.chunked(config.home.columns).forEach { rowTiles ->
@@ -89,6 +99,43 @@ private fun RowScope.Tile(tile: TileConfig, badge: Int, onTile: (TileConfig) -> 
                         fontWeight = FontWeight.Bold,
                     )
                 }
+            }
+        }
+    }
+}
+
+/** Time, date and battery. The clock is also the family's hidden way into the settings (no visible hint). */
+@Composable
+private fun StatusBar(status: HomeStatus, onSecretTap: () -> Unit) {
+    val counter = remember { SecretTapCounter() }
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Column(
+            Modifier.heightIn(min = 64.dp).clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) {
+                if (counter.tap(System.currentTimeMillis())) onSecretTap()
+            },
+        ) {
+            Text(status.time, fontSize = 40.sp, fontWeight = FontWeight.Bold)
+            Text(status.date, fontSize = 24.sp)
+        }
+        val pct = status.batteryPercent
+        if (pct != null) {
+            // Icon + words carry the state; colour is never the only signal.
+            val label = when {
+                status.charging -> stringResource(R.string.battery_charging, pct)
+                status.batteryLow -> stringResource(R.string.battery_low, pct)
+                else -> stringResource(R.string.battery_level, pct)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(
+                    when {
+                        status.charging -> Icons.Filled.BatteryChargingFull
+                        status.batteryLow -> Icons.Filled.BatteryAlert
+                        else -> Icons.Filled.BatteryFull
+                    },
+                    contentDescription = null,
+                    modifier = Modifier.size(40.dp),
+                )
+                Text(label, fontSize = 24.sp, fontWeight = if (status.batteryLow && !status.charging) FontWeight.Bold else FontWeight.Normal)
             }
         }
     }
