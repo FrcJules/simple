@@ -29,10 +29,11 @@ class SmsInbox(
         val body = TextSafety.clean(rawBody)
         val sensitive = SensitiveText.looksSensitive(body)
         val contactName = nameFor(address)?.takeIf { it.isNotBlank() }
-        val message = StoredMessage(newId(), contactName ?: address, Channel.SMS, body, now, address = address, sensitive = sensitive)
         // A received SMS must never be lost: each step is isolated so that one failing does not stop the others.
+        // The id is the system row's when there is one ("sms-<row>", as in the history copy): leaving or entering the default-app mode never doubles a message.
+        val providerId = runCatching { gateway.insertIncoming(address, body, now, dateSentMs, subId) }.getOrNull()
+        val message = StoredMessage(providerId?.let { "sms-$it" } ?: newId(), contactName ?: address, Channel.SMS, body, now, address = address, sensitive = sensitive)
         runCatching { add(message) }
-        runCatching { gateway.insertIncoming(address, body, now, dateSentMs, subId) }
         // The home display is visible from the whole room: only people we know appear there, never a stranger's or a company's text.
         if (!sensitive && contactName != null) runCatching { forward(Incoming.Message(contactName.take(60), Channel.SMS, body.take(500))) }
         runCatching { notify(message) }
