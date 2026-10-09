@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { birthday, presenceEvent, reminder } from "./index";
+import { birthday, presenceEvent, reminder, weather } from "./index";
 
 const base = { schemaVersion: 1, id: "e1", occurredAt: "2026-10-06T09:30:00+02:00" };
 
@@ -66,6 +66,15 @@ describe("birthday", () => {
   it("refuses impossible days, bad formats and extra fields", () => {
     for (const bad of [{ day: "02-30" }, { day: "04-31" }, { day: "13-01" }, { day: "00-10" }, { day: "3-14" }, { name: "" }, { year: 1800 }, { extra: 1 }]) {
       expect(birthday.safeParse({ ...b, ...bad }).success, JSON.stringify(bad)).toBe(false);
+    }
+  });
+});
+
+describe("weather", () => {
+  it("accepts a reading and refuses nonsense", () => {
+    expect(weather.safeParse({ temperature: 18.4, code: 3, min: 11, max: 21 }).success).toBe(true);
+    for (const bad of [{ temperature: 500 }, { code: 120 }, { code: 1.5 }, { min: "cold" }]) {
+      expect(weather.safeParse({ temperature: 18, code: 3, min: 11, max: 21, ...bad }).success, JSON.stringify(bad)).toBe(false);
     }
   });
 });
