@@ -87,6 +87,7 @@ export function App() {
         {weather && sky && (
           <p className="weather">
             <span aria-hidden="true">{sky.icon}</span> {sky.label}, {degrees(weather.temperature)} <span className="range">(de {degrees(weather.min)} à {degrees(weather.max)})</span>
+            <span className="credit"> Open-Meteo.com</span>
           </p>
         )}
         {waiting[0] && <p className="next waiting">⏰ {formatAt(waiting[0].at)} — {waiting[0].title}</p>}
