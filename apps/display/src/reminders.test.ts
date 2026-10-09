@@ -1,6 +1,6 @@
 import type { Reminder } from "@presence/contracts";
 import { describe, expect, it } from "vitest";
-import { dismissKey, dueReminders, nextReminder } from "./reminders";
+import { cardReminders, dismissKey, dueReminders, formatAt, nextReminder } from "./reminders";
 
 const at = (iso: string) => new Date(iso); // local time
 const med: Reminder = { id: "m", title: "Médicament", at: "08:00" };
@@ -39,5 +39,20 @@ describe("nextReminder", () => {
 describe("dismissKey", () => {
   it("is per reminder and per day", () => {
     expect(dismissKey(med, at("2026-10-12T08:10:00"))).not.toBe(dismissKey(med, at("2026-10-13T08:10:00")));
+  });
+});
+
+describe("cardReminders", () => {
+  it("is full screen for five minutes, then only the small line remains", () => {
+    expect(cardReminders([med], at("2026-10-12T08:04:00"))).toEqual([med]);
+    expect(cardReminders([med], at("2026-10-12T08:05:00"))).toEqual([]);
+    expect(dueReminders([med], at("2026-10-12T08:05:00"))).toEqual([med]);
+  });
+});
+
+describe("formatAt", () => {
+  it("has no leading zero on the hour", () => {
+    expect(formatAt("08:05")).toBe("8 h 05");
+    expect(formatAt("14:30")).toBe("14 h 30");
   });
 });

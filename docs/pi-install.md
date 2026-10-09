@@ -74,7 +74,7 @@ sudo -u presence PRESENCE_DATA_DIR=/var/lib/presence npm run reminders -w @prese
 sudo -u presence PRESENCE_DATA_DIR=/var/lib/presence npm run reminders -w @presence/hub -- add "Marché" --at 09:00 --days mar,sam
 sudo -u presence PRESENCE_DATA_DIR=/var/lib/presence npm run reminders -w @presence/hub -- list
 ```
-Sans `--date` ni `--days`, le rappel revient tous les jours. L'écran le montre en grand à l'heure dite (une heure au plus), avec un bouton « J'ai compris ».
+Sans `--date` ni `--days`, le rappel revient tous les jours. L'écran le montre en plein écran à l'heure dite pendant 5 minutes (avec un bouton « OK »), puis en petit sous la date jusqu'à une heure après ou jusqu'à « OK ». Un titre ne peut pas contenir de dose (« 2 comprimés », « 500 mg ») : le rappel dit quoi, jamais combien. Les rappels de la même heure sont sur la même carte.
 
 ## 6. Mises à jour
 

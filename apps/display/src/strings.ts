@@ -11,3 +11,9 @@ export const pairingText = {
   close: "Fermer",
   qrLabel: "QR code pour ajouter un téléphone",
 } as const;
+
+/** Texts of the home screen's reminders (French for now; one place to translate). */
+export const homeText = {
+  ok: "OK",
+  okLabel: "OK, j'ai vu le rappel",
+} as const;
