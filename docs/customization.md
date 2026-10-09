@@ -35,10 +35,14 @@ Tous les champs sauf `schemaVersion` sont facultatifs : ce qui manque prend la v
 | `theme.*` (couleurs) | `#RRGGBB` |
 | `theme.fontScale` | de 1 à 1,6. Multiplie la taille de tout le texte ; **jamais en dessous de 1** pour garder le texte à 24 sp minimum |
 | `home.columns` | 1 ou 2 |
-| `home.tiles` | de 1 à 6 tuiles, `id` unique (1–32 caractères) |
-| `tiles[].action` | `call`, `messages`, `camera`, `gallery` (liste fermée : le JSON ne peut pas lancer autre chose) |
+| `home.tiles` | de 1 à 8 tuiles, `id` unique (1–32 caractères) |
+| `tiles[].action` | `call`, `messages`, `camera`, `gallery`, `app` (liste fermée : le JSON ne peut pas lancer autre chose) |
+| `tiles[].package` | **obligatoire pour `app`, interdit sinon** : le nom Android de l'application à ouvrir (`com.whatsapp`). La tuile affiche le nom et l'icône de cette application ; si elle n'est plus installée, un message simple s'affiche au toucher |
 | `tiles[].label` | facultatif, 1–24 caractères ; sinon libellé français par défaut de l'action |
 | `tiles[].icon` | `call`, `sms`, `camera`, `photos`, `favorite`, `home`, `person`, `music`, `tv`, `sun` ; sinon l'icône de l'action |
+
+## Modifier les cases sans fichier : « Cases de l'accueil »
+Dans « Réglages famille », la section **Cases de l'accueil** permet de **monter, descendre, retirer** une case, de **remettre** une case d'origine retirée (Appeler, Messages, Photo, Mes photos) et d'**ajouter une application** du téléphone (liste avec icônes, recherche par le début du nom). De 1 à 8 cases ; la dernière ne peut pas être retirée. Les couleurs et la taille du texte ne changent pas. « Remettre les 4 cases d'origine » annule tout. Le launcher voit seulement les applications qui ont une icône de lancement (aucune permission « toutes les applications »).
 
 ## Garde-fous pour les seniors
 Un mauvais fichier ne doit jamais rendre le téléphone illisible, donc il est **refusé** (pas corrigé en silence) si :

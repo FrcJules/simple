@@ -1,5 +1,6 @@
 package app.presence.launcher.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,6 +38,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.presence.launcher.R
+import app.presence.launcher.apps.AppInfo
 import app.presence.launcher.config.TileAction
 import app.presence.launcher.config.TileConfig
 import app.presence.launcher.config.UiConfig
@@ -51,6 +53,8 @@ fun HomeScreen(
     onTile: (TileConfig) -> Unit = {},
     showSetupHint: Boolean = false,
     onSetup: () -> Unit = {},
+    /** Name and icon of the app behind an "app" tile; null when it is not installed. */
+    appInfo: (String) -> AppInfo? = { null },
 ) {
     PresenceTheme {
         Column(
@@ -63,7 +67,7 @@ fun HomeScreen(
             Text(greeting, fontSize = 32.sp, textAlign = TextAlign.Center)
             config.home.tiles.chunked(config.home.columns).forEach { rowTiles ->
                 Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    rowTiles.forEach { Tile(it, if (it.action == TileAction.MESSAGES) unreadMessages else 0, onTile) }
+                    rowTiles.forEach { Tile(it, if (it.action == TileAction.MESSAGES) unreadMessages else 0, it.app?.let(appInfo), onTile) }
                     // Keep tile widths equal when the last row is not full.
                     repeat(config.home.columns - rowTiles.size) { Spacer(Modifier.weight(1f)) }
                 }
@@ -79,7 +83,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun RowScope.Tile(tile: TileConfig, badge: Int, onTile: (TileConfig) -> Unit) {
+private fun RowScope.Tile(tile: TileConfig, badge: Int, app: AppInfo?, onTile: (TileConfig) -> Unit) {
     val haptic = LocalHapticFeedback.current
     Card(
         Modifier.weight(1f).fillMaxSize()
@@ -94,9 +98,11 @@ private fun RowScope.Tile(tile: TileConfig, badge: Int, onTile: (TileConfig) -> 
                 BadgedBox(badge = {
                     if (badge > 0) Badge { Text("$badge", fontSize = 22.sp, modifier = Modifier.padding(horizontal = 6.dp)) }
                 }) {
-                    Icon(tile.icon.vector(), contentDescription = null, modifier = Modifier.size(72.dp))
+                    val picture = app?.icon
+                    if (picture != null) Image(picture, contentDescription = null, modifier = Modifier.size(72.dp))
+                    else Icon(tile.icon.vector(), contentDescription = null, modifier = Modifier.size(72.dp))
                 }
-                Text(tile.label ?: stringResource(tile.action.defaultLabel), fontSize = 24.sp, textAlign = TextAlign.Center)
+                Text(tile.label ?: app?.label ?: stringResource(tile.action.defaultLabel), fontSize = 24.sp, textAlign = TextAlign.Center, maxLines = 2)
                 if (badge > 0) {
                     Text(
                         when {

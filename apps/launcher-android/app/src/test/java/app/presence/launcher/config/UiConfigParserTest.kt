@@ -69,8 +69,8 @@ class UiConfigParserTest {
     @Test
     fun rejectsBadTileLists() {
         assertTrue(error("""{"schemaVersion":1,"home":{"tiles":[]}}""").contains("tuiles"))
-        val seven = (1..7).joinToString(",") { """{"id":"t$it","action":"call"}""" }
-        assertTrue(error("""{"schemaVersion":1,"home":{"tiles":[$seven]}}""").contains("tuiles"))
+        val nine = (1..9).joinToString(",") { """{"id":"t$it","action":"call"}""" }
+        assertTrue(error("""{"schemaVersion":1,"home":{"tiles":[$nine]}}""").contains("tuiles"))
         assertTrue(error("""{"schemaVersion":1,"home":{"tiles":[{"id":"a","action":"call"},{"id":"a","action":"camera"}]}}""").contains("deux fois"))
         assertTrue(error("""{"schemaVersion":1,"home":{"tiles":[{"action":"call"}]}}""").contains("id"))
     }
@@ -83,4 +83,50 @@ class UiConfigParserTest {
 
     @Test
     fun rejectsOversizedFile() = assertTrue(error("{" + " ".repeat(UiConfigParser.MAX_CHARS) + "}").contains("trop gros"))
+
+    @Test
+    fun anAppTileNeedsAPackageAndOnlyAnAppTileMayHaveOne() {
+        val c = ok("""{"schemaVersion":1,"home":{"tiles":[{"id":"wa","action":"app","package":"com.whatsapp"},{"id":"c","action":"call"}]}}""")
+        assertEquals("com.whatsapp", c.home.tiles[0].app)
+        assertEquals(TileIcon.APPS, c.home.tiles[0].icon)
+        assertEquals(null, c.home.tiles[1].app)
+        assertTrue(error("""{"schemaVersion":1,"home":{"tiles":[{"id":"a","action":"app"}]}}""").contains("package"))
+        assertTrue(error("""{"schemaVersion":1,"home":{"tiles":[{"id":"a","action":"call","package":"com.whatsapp"}]}}""").contains("n'est permis"))
+    }
+
+    @Test
+    fun aPackageNameIsStrictlyAnAndroidPackageName() {
+        for (bad in listOf("whatsapp", "com.whatsapp;rm", "com..x", "1com.x", "com.whatsapp/.Main", "com.x y", "")) {
+            assertTrue(bad, error("""{"schemaVersion":1,"home":{"tiles":[{"id":"a","action":"app","package":"$bad"}]}}""").contains("package"))
+        }
+        for (good in listOf("com.whatsapp", "com.google.android.youtube", "org.mozilla.firefox", "fr.free_tv.app2")) {
+            assertEquals(good, ok("""{"schemaVersion":1,"home":{"tiles":[{"id":"a","action":"app","package":"$good"}]}}""").home.tiles[0].app)
+        }
+    }
+
+    @Test
+    fun upToEightTilesAreAllowed() {
+        fun tiles(n: Int) = (1..n).joinToString(",") { """{"id":"t$it","action":"app","package":"com.example.app$it"}""" }
+        assertEquals(8, ok("""{"schemaVersion":1,"home":{"tiles":[${tiles(8)}]}}""").home.tiles.size)
+        assertTrue(error("""{"schemaVersion":1,"home":{"tiles":[${tiles(9)}]}}""").contains("8"))
+    }
+
+    @Test
+    fun theBuiltInDefaultNeverContainsAnAppTile() {
+        assertEquals(listOf(TileAction.CALL, TileAction.MESSAGES, TileAction.CAMERA, TileAction.GALLERY), UiConfig.Default.home.tiles.map { it.action })
+    }
+
+    @Test
+    fun writingAConfigAndReadingItBackGivesTheSameConfig() {
+        val config = UiConfig(
+            ThemeConfig.Default.copy(primary = 0xFF006400.toInt(), fontScale = 1.2f),
+            HomeConfig(1, listOf(
+                TileConfig("call", TileAction.CALL, null, TileIcon.CALL),
+                TileConfig("m", TileAction.MESSAGES, "Courrier", TileIcon.HOME),
+                TileConfig("app-1", TileAction.APP, null, TileIcon.APPS, app = "com.whatsapp"),
+            )),
+        )
+        assertEquals(config, ok(UiConfigJson.write(config)))
+        assertEquals(UiConfig.Default, ok(UiConfigJson.write(UiConfig.Default)))
+    }
 }
