@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.BatteryAlert
 import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.BatteryFull
@@ -67,7 +68,9 @@ fun HomeScreen(
             Text(greeting, fontSize = 32.sp, textAlign = TextAlign.Center)
             config.home.tiles.chunked(config.home.columns).forEach { rowTiles ->
                 Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    rowTiles.forEach { Tile(it, if (it.action == TileAction.MESSAGES) unreadMessages else 0, it.app?.let(appInfo), onTile) }
+                    // More than four rubriques: smaller pictures so that eight still fit one screen without scrolling (a hidden gesture).
+                    val picture = if (config.home.tiles.size > 4) 48.dp else 72.dp
+                    rowTiles.forEach { Tile(it, if (it.action == TileAction.MESSAGES) unreadMessages else 0, it.app?.let(appInfo), picture, onTile) }
                     // Keep tile widths equal when the last row is not full.
                     repeat(config.home.columns - rowTiles.size) { Spacer(Modifier.weight(1f)) }
                 }
@@ -83,7 +86,9 @@ fun HomeScreen(
 }
 
 @Composable
-private fun RowScope.Tile(tile: TileConfig, badge: Int, app: AppInfo?, onTile: (TileConfig) -> Unit) {
+private fun RowScope.Tile(tile: TileConfig, badge: Int, app: AppInfo?, pictureSize: androidx.compose.ui.unit.Dp, onTile: (TileConfig) -> Unit) {
+    // An app tile whose app is gone says so right on the home screen (a warning picture and plain words), not only when touched.
+    val gone = tile.action == TileAction.APP && app == null
     val haptic = LocalHapticFeedback.current
     Card(
         Modifier.weight(1f).fillMaxSize()
@@ -96,13 +101,17 @@ private fun RowScope.Tile(tile: TileConfig, badge: Int, app: AppInfo?, onTile: (
         Box(Modifier.fillMaxSize().padding(8.dp), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 BadgedBox(badge = {
-                    if (badge > 0) Badge { Text("$badge", fontSize = 22.sp, modifier = Modifier.padding(horizontal = 6.dp)) }
+                    if (badge > 0) Badge { Text("$badge", fontSize = 24.sp, modifier = Modifier.padding(horizontal = 6.dp)) }
                 }) {
                     val picture = app?.icon
-                    if (picture != null) Image(picture, contentDescription = null, modifier = Modifier.size(72.dp))
-                    else Icon(tile.icon.vector(), contentDescription = null, modifier = Modifier.size(72.dp))
+                    if (picture != null) Image(picture, contentDescription = null, modifier = Modifier.size(pictureSize))
+                    else if (gone) Icon(Icons.Filled.Warning, contentDescription = null, modifier = Modifier.size(pictureSize))
+                    else Icon(tile.icon.vector(), contentDescription = null, modifier = Modifier.size(pictureSize))
                 }
-                Text(tile.label ?: app?.label ?: stringResource(tile.action.defaultLabel), fontSize = 24.sp, textAlign = TextAlign.Center, maxLines = 2)
+                Text(
+                    if (gone) stringResource(R.string.tile_app_gone) else (if (tile.action == TileAction.APP) app?.label else tile.label) ?: stringResource(tile.action.defaultLabel),
+                    fontSize = 24.sp, textAlign = TextAlign.Center, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                )
                 if (badge > 0) {
                     Text(
                         when {

@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import app.presence.launcher.R
 import app.presence.launcher.apps.AppEntry
 import app.presence.launcher.apps.AppInfo
+import app.presence.launcher.config.HomeConfig
 import app.presence.launcher.config.TileAction
 import app.presence.launcher.config.TileConfig
 import app.presence.launcher.config.TileEditing
@@ -63,7 +64,7 @@ fun HomeTilesEditor(
         Text(stringResource(R.string.tiles_help, TileEditing.MAX), fontSize = 24.sp)
         tiles.forEachIndexed { index, tile ->
             val app = tile.app?.let(appInfo)
-            val name = tile.label ?: app?.label ?: stringResource(tile.action.defaultLabel)
+            val name = (if (tile.action == TileAction.APP) app?.label else tile.label) ?: stringResource(tile.action.defaultLabel)
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -76,17 +77,11 @@ fun HomeTilesEditor(
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
                         val up = stringResource(R.string.tiles_up, name)
                         val down = stringResource(R.string.tiles_down, name)
-                        OutlinedButton(
-                            onClick = { onChange(TileEditing.move(tiles, index, -1)) }, enabled = index > 0,
-                            modifier = Modifier.weight(1f).heightIn(min = 64.dp).semantics { contentDescription = up },
-                        ) { Icon(Icons.Filled.ArrowUpward, contentDescription = null) }
-                        OutlinedButton(
-                            onClick = { onChange(TileEditing.move(tiles, index, +1)) }, enabled = index < tiles.lastIndex,
-                            modifier = Modifier.weight(1f).heightIn(min = 64.dp).semantics { contentDescription = down },
-                        ) { Icon(Icons.Filled.ArrowDownward, contentDescription = null) }
+                        MoveKey(Icons.Filled.ArrowUpward, stringResource(R.string.tiles_earlier), up, index > 0, Modifier.weight(1f)) { onChange(TileEditing.move(tiles, index, -1)) }
+                        MoveKey(Icons.Filled.ArrowDownward, stringResource(R.string.tiles_later), down, index < tiles.lastIndex, Modifier.weight(1f)) { onChange(TileEditing.move(tiles, index, +1)) }
                         ConfirmRemove(
                             label = stringResource(R.string.tiles_remove), confirm = stringResource(R.string.tiles_remove_confirm),
-                            enabled = tiles.size > 1, modifier = Modifier.weight(2f),
+                            enabled = tiles.size > 1, modifier = Modifier.weight(1f),
                         ) { onChange(TileEditing.remove(tiles, index)) }
                     }
                 }
@@ -110,9 +105,10 @@ fun HomeTilesEditor(
             }
             if (picking) AppPicker(loadApps, appInfo, tiles.mapNotNull { it.app }.toSet()) { pkg -> onChange(TileEditing.addApp(tiles, pkg)); picking = false }
         }
-        OutlinedButton(onClick = onReset, modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)) {
-            Text(stringResource(R.string.tiles_reset), fontSize = 24.sp)
-        }
+        ConfirmRemove(
+            label = stringResource(R.string.tiles_reset, HomeConfig.Default.tiles.size), confirm = stringResource(R.string.tiles_reset_confirm),
+            enabled = true, modifier = Modifier.fillMaxWidth(), onConfirmed = onReset,
+        )
     }
 }
 
@@ -133,24 +129,39 @@ private fun AppPicker(loadApps: () -> List<AppEntry>, appInfo: (String) -> AppIn
         Text(stringResource(R.string.tiles_loading_apps), fontSize = 24.sp)
         return
     }
-    val shown = list.filter { it.packageName !in already && it.label.contains(query.trim(), ignoreCase = true) }.take(40)
+    val shown = list.filter { it.packageName !in already && it.label.contains(query.trim(), ignoreCase = true) }.take(60)
     if (shown.isEmpty()) Text(stringResource(R.string.tiles_no_app), fontSize = 24.sp)
+    if (shown.size == 60) Text(stringResource(R.string.tiles_type_more), fontSize = 24.sp)
     shown.forEach { entry ->
         val picture = appInfo(entry.packageName)?.icon
         OutlinedButton(onClick = { onPick(entry.packageName) }, modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)) {
             if (picture != null) Image(picture, contentDescription = null, modifier = Modifier.size(40.dp))
             Spacer(Modifier.width(12.dp))
-            Text(entry.label, fontSize = 24.sp, modifier = Modifier.weight(1f))
+            Text(entry.label, fontSize = 24.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
         }
     }
 }
 
-/** Removing needs two touches: the first only asks. */
+/** Two touches for anything that removes: the first only asks, shows a different (filled) button, and gives up by itself after a few seconds. */
 @Composable
 private fun ConfirmRemove(label: String, confirm: String, enabled: Boolean, modifier: Modifier, onConfirmed: () -> Unit) {
     var armed by remember { mutableStateOf(false) }
-    OutlinedButton(
-        onClick = { if (armed) { armed = false; onConfirmed() } else armed = true },
-        enabled = enabled, modifier = modifier.heightIn(min = 64.dp),
-    ) { Text(if (armed) confirm else label, fontSize = 24.sp, fontWeight = if (armed) FontWeight.Bold else FontWeight.Normal) }
+    LaunchedEffect(armed) {
+        if (armed) {
+            kotlinx.coroutines.delay(4_000)
+            armed = false
+        }
+    }
+    val click = { if (armed) { armed = false; onConfirmed() } else armed = true }
+    if (armed) Button(onClick = click, enabled = enabled, modifier = modifier.heightIn(min = 64.dp)) { Text(confirm, fontSize = 24.sp, fontWeight = FontWeight.Bold) }
+    else OutlinedButton(onClick = click, enabled = enabled, modifier = modifier.heightIn(min = 64.dp)) { Text(label, fontSize = 24.sp) }
+}
+
+/** Up / down with words: "Avant" and "Après" say which way, a greyed arrow alone says nothing. */
+@Composable
+private fun MoveKey(icon: androidx.compose.ui.graphics.vector.ImageVector, word: String, spoken: String, enabled: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    OutlinedButton(onClick = onClick, enabled = enabled, modifier = modifier.heightIn(min = 64.dp).semantics { contentDescription = spoken }, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp)) {
+        Icon(icon, contentDescription = null, modifier = Modifier.size(24.dp))
+        Text(word, fontSize = 24.sp, maxLines = 1)
+    }
 }

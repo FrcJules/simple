@@ -18,7 +18,7 @@
     <string name="tiles_up">Monter %1$s</string>
     <string name="tiles_down">Descendre %1$s</string>
     <string name="tiles_remove">Retirer</string>
-    <string name="tiles_remove_confirm">Sûr ? Touchez encore</string>
+    <string name="tiles_remove_confirm">Sûr ?</string>
     <string name="tiles_app_missing">Cette application n\'est plus sur le téléphone.</string>
     <string name="tiles_full">L\'accueil est plein (%1$d cases au plus). Retirez une case pour en ajouter une.</string>
     <string name="tiles_add_title">Ajouter une case</string>
@@ -28,7 +28,12 @@
     <string name="tiles_search_apps">Chercher une application</string>
     <string name="tiles_loading_apps">Je cherche les applications…</string>
     <string name="tiles_no_app">Aucune application ne correspond.</string>
-    <string name="tiles_reset">Remettre les 4 cases d\'origine</string>
+    <string name="tiles_reset">Remettre les %1$d cases d\'origine</string>
+    <string name="tiles_reset_confirm">Sûr ? Touchez encore</string>
+    <string name="tiles_earlier">Avant</string>
+    <string name="tiles_later">Après</string>
+    <string name="tiles_type_more">Tapez le début du nom pour voir les autres applications.</string>
+    <string name="tile_app_gone">Application absente</string>
     <string name="tile_app">Application</string>
     <string name="tile_app_missing">Cette application n\'est plus sur le téléphone.\n\nDemandez à un proche de la remettre ou de changer cette case.</string>
     <string name="tile_photos">Mes photos</string>
