@@ -51,7 +51,7 @@ class ScreensTest {
     @Test
     fun callScreenShowsContactsAndAsksConfirmation() {
         var called: Contact? = null
-        rule.setContent { CallScreen(contacts = listOf(marie, jules), onBack = {}, onCall = { called = it }) }
+        rule.setContent { CallScreen(favorites = listOf(marie, jules), all = listOf(marie, jules), onBack = {}, onCall = { called = it }) }
         rule.onNodeWithText("Marie").assertIsDisplayed()
         rule.onNodeWithText("Jules").assertIsDisplayed()
         shot("02_call_list")
@@ -65,7 +65,7 @@ class ScreensTest {
     @Test
     fun cancelInConfirmationDoesNotCall() {
         var called = false
-        rule.setContent { CallScreen(contacts = listOf(marie), onBack = {}, onCall = { called = true }) }
+        rule.setContent { CallScreen(favorites = listOf(marie), all = listOf(marie), onBack = {}, onCall = { called = true }) }
         rule.onNodeWithText("Marie").performClick()
         rule.onNodeWithText("Non, annuler").performClick()
         assertFalse(called)
@@ -73,7 +73,7 @@ class ScreensTest {
 
     @Test
     fun callScreenWithoutContactsExplainsWhatToDo() {
-        rule.setContent { CallScreen(contacts = emptyList(), onBack = {}, onCall = {}) }
+        rule.setContent { CallScreen(favorites = emptyList(), all = emptyList(), onBack = {}, onCall = {}) }
         rule.onNodeWithText("Demandez à un proche d'ajouter vos contacts.").assertIsDisplayed()
         shot("03_call_empty")
     }
