@@ -5,6 +5,7 @@ import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { DeviceRegistry } from "./devices";
 import { FailureLimiter } from "./limiter";
+import type { BirthdaysStore } from "./birthdays";
 import type { PhotosStore } from "./photos";
 import type { RemindersStore } from "./reminders";
 
@@ -31,6 +32,8 @@ export interface HubOptions {
   reminders?: RemindersStore;
   /** The family photos folder for the display slideshow (`GET /photos`, `GET /photos/<name>`). Without it the routes do not exist. */
   photos?: PhotosStore;
+  /** The loved ones' birthdays for the display (`GET /birthdays`, display token). Without it the route does not exist. */
+  birthdays?: BirthdaysStore;
   /**
    * Starts a pairing from the home display: makes a one-time claim and returns the link for the QR code and the grouped fingerprint
    * shown beside it. Throws if the hub has no home-network address. Without it, `/pairing/start` does not exist.
@@ -162,6 +165,13 @@ export function buildApp(opts: HubOptions): FastifyInstance {
     if (!canRead(req)) return unauthorized(req.ip, reply);
     void reply.header("Cache-Control", "no-store");
     return { reminders: opts.reminders.list() };
+  });
+
+  app.get("/birthdays", async (req, reply) => {
+    if (!opts.birthdays) return reply.code(404).send({ error: "not_found" });
+    const refused = displayGuard(req, reply);
+    if (refused) return refused;
+    return { birthdays: opts.birthdays.list() };
   });
 
   app.get("/photos", async (req, reply) => {
