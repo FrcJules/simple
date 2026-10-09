@@ -40,6 +40,15 @@ describe("PhotosStore", () => {
     for (const bad of ["../outside.jpg", "..%2Foutside.jpg", "/etc/passwd", "ok.jpg/../ok.jpg", "", "nope.jpg"]) expect(s.read(bad), bad).toBeNull();
   });
 
+  it("refuses a file replaced by a link after it was listed", () => {
+    put("ok.jpg", "bytes");
+    const s = new PhotosStore(dir);
+    writeFileSync(join(root, "secret.jpg"), "secret");
+    rmSync(join(dir, "ok.jpg"));
+    symlinkSync(join(root, "secret.jpg"), join(dir, "ok.jpg"));
+    expect(s.read("ok.jpg")).toBeNull();
+  });
+
   it("no folder means no photos", () => expect(new PhotosStore(join(root, "missing")).list()).toEqual([]));
 });
 
@@ -55,6 +64,7 @@ describe("photo routes", () => {
     expect(img.statusCode).toBe(200);
     expect(img.headers["content-type"]).toBe("image/jpeg");
     expect(img.headers["x-content-type-options"]).toBe("nosniff");
+    expect(img.headers["cache-control"]).toBe("no-store");
     expect((await app.inject({ method: "GET", url: "/photos/..%2Fsecret.jpg", headers: auth })).statusCode).toBe(404);
     expect((await app.inject({ method: "GET", url: "/photos/ok.jpg", headers: { ...auth, host: "evil.example" } })).statusCode).toBe(404);
   });
