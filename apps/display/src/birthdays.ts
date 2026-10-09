@@ -46,9 +46,13 @@ export function turnsAge(b: Birthday, now: Date): number | undefined {
 
 export const birthdaysToday = (list: Birthday[], now: Date) => list.filter((b) => daysUntil(b, now) === 0);
 
-/** The nearest birthday in the next [withinDays] days (not today). */
-export function nextBirthday(list: Birthday[], now: Date, withinDays = 7): Birthday | undefined {
-  return list
-    .filter((b) => daysUntil(b, now) > 0 && daysUntil(b, now) <= withinDays)
-    .sort((a, b) => daysUntil(a, now) - daysUntil(b, now))[0];
+/** All the birthdays of the nearest day in the next [withinDays] days (not today), with how many days away it is. */
+export function nextBirthdays(list: Birthday[], now: Date, withinDays = 7): { days: number; people: Birthday[] } | undefined {
+  const coming = list.filter((b) => daysUntil(b, now) > 0 && daysUntil(b, now) <= withinDays);
+  if (coming.length === 0) return undefined;
+  const days = Math.min(...coming.map((b) => daysUntil(b, now)));
+  return { days, people: coming.filter((b) => daysUntil(b, now) === days) };
 }
+
+/** An age worth saying out loud: a wrong year of birth must never give "-3 ans" or "140 ans". */
+export const plausibleAge = (age: number | undefined): number | undefined => (age !== undefined && age >= 2 && age <= 110 ? age : undefined);

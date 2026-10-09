@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { body, formatDate, formatTime, greeting, headline, icon, timeAgo } from "./format";
-import { birthdaysToday, daysUntil, fetchBirthdays, nextBirthday, turnsAge } from "./birthdays";
+import { birthdaysToday, fetchBirthdays, nextBirthdays, plausibleAge, turnsAge } from "./birthdays";
 import { PairingScreen } from "./PairingScreen";
 import { cardReminders, dismissKey, dueReminders, fetchReminders, formatAt, nextReminder } from "./reminders";
 import { homeText } from "./strings";
@@ -39,7 +39,7 @@ export function App() {
     return () => { alive = false; clearInterval(timer); };
   }, []);
   const today = birthdaysToday(birthdays, now);
-  const soon = nextBirthday(birthdays, now);
+  const soon = nextBirthdays(birthdays, now);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   useEffect(() => {
     let alive = true;
@@ -85,12 +85,19 @@ export function App() {
         <h1>{greeting(now, NAME)}</h1>
         <p className="time" onClick={onClockTap}>{formatTime(now)}</p>
         <p className="date">{formatDate(now)}</p>
-        {today.map((b) => (
-          <p key={b.id} className="birthday">🎂 {homeText.birthdayToday(b.name, turnsAge(b, now))}</p>
-        ))}
-        {today.length === 0 && soon && <p className="next">🎂 {homeText.birthdaySoon(soon.name, daysUntil(soon, now))}</p>}
-        {waiting[0] && <p className="next waiting">⏰ {formatAt(waiting[0].at)} — {waiting[0].title}</p>}
-        {!waiting[0] && next && <p className="next">⏰ {formatAt(next.at)} — {next.title}</p>}
+        {waiting[0] && <p className="next waiting"><span aria-hidden="true">⏰</span> {formatAt(waiting[0].at)} — {waiting[0].title}</p>}
+        {!waiting[0] && next && <p className="next"><span aria-hidden="true">⏰</span> {formatAt(next.at)} — {next.title}</p>}
+        {today.length > 0 && (
+          <p className="birthday">
+            <span aria-hidden="true">🎂</span>{" "}
+            {homeText.birthdayToday(today.map((b) => b.name), plausibleAge(turnsAge(today[0] as Birthday, now)))}
+          </p>
+        )}
+        {today.length === 0 && soon && (
+          <p className="next">
+            <span aria-hidden="true">🎂</span> {homeText.birthdaySoon(soon.people.map((b) => b.name), soon.days, new Date(now.getFullYear(), now.getMonth(), now.getDate() + soon.days).getDay())}
+          </p>
+        )}
       </div>
       {latest && (
         <section className="card" aria-live="polite">

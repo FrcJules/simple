@@ -82,7 +82,7 @@ Sans `--date` ni `--days`, le rappel revient tous les jours. L'écran le montre 
 cd /opt/presence && sudo -u presence PRESENCE_DATA_DIR=/var/lib/presence npm run birthdays -w @presence/hub -- add "Marie" --day 03-14 --year 1950
 sudo -u presence PRESENCE_DATA_DIR=/var/lib/presence npm run birthdays -w @presence/hub -- list
 ```
-Le jour même, l'écran affiche « Aujourd'hui, c'est l'anniversaire de Marie (76 ans) » (l'année est facultative) ; dans les 7 jours qui précèdent, « Dans 3 jours, anniversaire de Marie ». Le 29 février est fêté le 28 les autres années. `-- remove <identifiant>` supprime une entrée.
+Le jour même, l'écran affiche « Aujourd'hui, Marie fête ses 76 ans » (si l'année est donnée et plausible ; sinon « Aujourd'hui, anniversaire de Marie ») ; dans les 7 jours qui précèdent, « Samedi, anniversaire de Marie » (ou « Demain »). Plusieurs personnes le même jour sont regroupées en une phrase. Le 29 février est fêté le 28 les autres années. `-- remove <identifiant>` supprime une entrée.
 
 ## 5 ter. Photos de famille
 
