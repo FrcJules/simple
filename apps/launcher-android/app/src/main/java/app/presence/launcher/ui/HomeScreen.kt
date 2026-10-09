@@ -21,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -48,6 +49,8 @@ fun HomeScreen(
     status: HomeStatus? = null,
     onSecretTap: () -> Unit = {},
     onTile: (TileConfig) -> Unit = {},
+    showSetupHint: Boolean = false,
+    onSetup: () -> Unit = {},
 ) {
     PresenceTheme {
         Column(
@@ -63,6 +66,12 @@ fun HomeScreen(
                     rowTiles.forEach { Tile(it, if (it.action == TileAction.MESSAGES) unreadMessages else 0, onTile) }
                     // Keep tile widths equal when the last row is not full.
                     repeat(config.home.columns - rowTiles.size) { Spacer(Modifier.weight(1f)) }
+                }
+            }
+            // Until the family has chosen a code: the one visible way in to the settings (afterwards only the hidden gesture and the "Réglages" icon).
+            if (showSetupHint) {
+                OutlinedButton(onClick = onSetup, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
+                    Text(stringResource(R.string.home_setup_hint), fontSize = 24.sp, textAlign = TextAlign.Center)
                 }
             }
         }
