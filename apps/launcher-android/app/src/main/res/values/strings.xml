@@ -19,6 +19,17 @@
     <string name="call_yes">Oui, appeler</string>
     <string name="call_no">Non, annuler</string>
     <string name="back">Retour</string>
+    <string name="home_setup_hint">Première installation, pour la famille : touchez ici pour régler Présence</string>
+    <string name="call_tab_favorites">Favoris</string>
+    <string name="call_tab_all">Général</string>
+    <string name="call_search">Chercher</string>
+    <string name="call_search_title">Écrivez le début du prénom</string>
+    <string name="call_search_none">Personne ne correspond.</string>
+    <string name="call_search_more">Écrivez encore une lettre pour voir les autres.</string>
+    <string name="call_search_erase">Effacer</string>
+    <string name="call_search_clear">Tout effacer</string>
+    <string name="call_search_close">Retour à la liste</string>
+    <string name="no_favorites">Pas encore de favoris. Touchez «&#160;Général&#160;» pour voir tous vos contacts, ou «&#160;Chercher&#160;».</string>
     <string name="no_contacts">Demandez à un proche d\'ajouter vos contacts.</string>
     <string name="app_missing">Cette fonction n\'est pas disponible sur ce téléphone.</string>
     <string name="setup_label">Réglages famille</string>
