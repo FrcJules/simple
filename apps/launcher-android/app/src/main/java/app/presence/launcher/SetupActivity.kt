@@ -22,6 +22,8 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Switch
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -143,6 +145,7 @@ class SetupActivity : ComponentActivity() {
 
     private fun openAppInfo() {
         openingChild = true
+        smsRoleAnswer = null // the family is about to change what Android allows: the old answer no longer counts
         startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.fromParts("package", packageName, null)))
     }
     private var unlocked by mutableStateOf(false)
@@ -365,7 +368,7 @@ class SetupActivity : ComponentActivity() {
                         erased = true
                     }
                     // Messages: what is missing, and a button for each fix (the family reads this, Jean-Pierre does not).
-                    Text(stringResource(R.string.setup_messages_title), fontSize = 28.sp)
+                    Text(stringResource(R.string.setup_messages_title), fontSize = 28.sp, modifier = Modifier.semantics { heading() })
                     Text(stringResource(if (smsHeld) R.string.setup_sms_held else R.string.setup_sms_not_held), fontSize = 24.sp, fontWeight = FontWeight.Bold)
                     Text(stringResource(if (access) R.string.setup_access_on else R.string.setup_access_off), fontSize = 24.sp)
                     if (!smsHeld) {
@@ -378,10 +381,11 @@ class SetupActivity : ComponentActivity() {
                             Text(stringResource(R.string.setup_sms_unavailable), fontSize = 24.sp)
                         }
                     }
-                    if (sideloaded) {
+                    if (smsRoleAnswer == true) Text(stringResource(R.string.setup_sms_done), fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                    if (sideloaded && (smsRoleAnswer == false || !access)) {
                         // Android 13+ blocks some access for an app that was not installed from a store until it is allowed by hand.
                         Text(stringResource(R.string.setup_restricted_hint), fontSize = 24.sp)
-                        OutlinedButton(onClick = { openAppInfo() }, modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)) {
+                        Button(onClick = { openAppInfo() }, modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)) {
                             Text(stringResource(R.string.setup_open_app_info), fontSize = 24.sp)
                         }
                     }
