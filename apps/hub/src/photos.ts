@@ -1,4 +1,4 @@
-import { lstatSync, readdirSync, readFileSync } from "node:fs";
+import { closeSync, constants, fstatSync, lstatSync, openSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const NAME = /^[\p{L}\p{N} ._()-]{1,100}\.(jpe?g|png|webp)$/iu;
@@ -38,11 +38,18 @@ export class PhotosStore {
   /** The bytes and type of a listed photo, or null for anything else (the name is looked up in the list, never joined blindly). */
   read(name: string): { data: Buffer; type: string } | null {
     if (!this.list().includes(name)) return null;
+    let fd: number | undefined;
     try {
+      // Opened without following a link, and checked on the open file itself: a file swapped for a link or grown after the listing is refused.
+      fd = openSync(join(this.dir, name), constants.O_RDONLY | constants.O_NOFOLLOW);
+      const st = fstatSync(fd);
+      if (!st.isFile() || st.size === 0 || st.size > MAX_PHOTO_BYTES) return null;
       const ext = name.slice(name.lastIndexOf(".") + 1).toLowerCase();
-      return { data: readFileSync(join(this.dir, name)), type: TYPES[ext] ?? "application/octet-stream" };
+      return { data: readFileSync(fd), type: TYPES[ext] ?? "application/octet-stream" };
     } catch {
       return null;
+    } finally {
+      if (fd !== undefined) closeSync(fd);
     }
   }
 }

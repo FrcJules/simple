@@ -25,6 +25,7 @@ describe("slideshow in the app", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
     vi.stubGlobal("URL", Object.assign(URL, { createObjectURL: () => "blob:photo-1", revokeObjectURL: () => {} }));
+    vi.stubGlobal("Image", class { src = ""; decode() { return Promise.resolve(); } });
     render(<App />);
     await vi.waitFor(() => expect(document.querySelector("main.photo")).not.toBeNull());
     expect(fetchMock).toHaveBeenCalledWith(expect.stringMatching(/\/photos\/a%20b\.jpg$/), expect.objectContaining({ headers: expect.objectContaining({ Authorization: expect.stringContaining("Bearer") }) }));

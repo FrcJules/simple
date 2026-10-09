@@ -1,3 +1,4 @@
+import { photoList } from "@presence/contracts";
 import { useEffect, useState } from "react";
 
 const HUB = import.meta.env.VITE_HUB_URL ?? "http://localhost:8787";
@@ -12,9 +13,8 @@ export async function fetchPhotoNames(): Promise<string[]> {
   try {
     const res = await fetch(`${HUB}/photos`, { headers });
     if (!res.ok) return [];
-    const data: unknown = await res.json();
-    const photos = (data as { photos?: unknown }).photos;
-    return Array.isArray(photos) ? photos.filter((p): p is string => typeof p === "string").slice(0, 300) : [];
+    const parsed = photoList.safeParse(await res.json());
+    return parsed.success ? parsed.data.photos : [];
   } catch {
     return [];
   }
@@ -26,7 +26,18 @@ async function fetchPhotoUrl(name: string): Promise<string | null> {
     const res = await fetch(`${HUB}/photos/${encodeURIComponent(name)}`, { headers });
     if (!res.ok) return null;
     const blob = await res.blob();
-    return blob.type.startsWith("image/") ? URL.createObjectURL(blob) : null;
+    if (!blob.type.startsWith("image/")) return null;
+    const url = URL.createObjectURL(blob);
+    // Decoded before it is shown: the screen never flashes the dark background between two photos.
+    try {
+      const img = new Image();
+      img.src = url;
+      await img.decode();
+    } catch {
+      URL.revokeObjectURL(url);
+      return null; // not an image the browser can show: skip it
+    }
+    return url;
   } catch {
     return null;
   }
@@ -61,7 +72,12 @@ export function useSlideshow(seconds = SLIDE_SECONDS): string | null {
       if (!alive) return;
       const first = names.length === 0;
       names = list;
-      if (list.length === 0) { setUrl(null); return; }
+      if (list.length === 0) {
+        setUrl(null);
+        if (current) URL.revokeObjectURL(current);
+        current = null;
+        return;
+      }
       if (first) await show();
     };
     void refresh();

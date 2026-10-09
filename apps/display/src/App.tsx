@@ -69,12 +69,14 @@ export function App() {
     );
   }
   return (
-    <main className={photo ? "screen photo" : "screen"} style={photo ? { backgroundImage: `linear-gradient(rgba(0,0,0,.45), rgba(0,0,0,.45)), url("${photo}")` } : undefined}>
-      <h1>{greeting(now, NAME)}</h1>
-      <p className="time" onClick={onClockTap}>{formatTime(now)}</p>
-      <p className="date">{formatDate(now)}</p>
-      {waiting[0] && <p className="next waiting">⏰ {formatAt(waiting[0].at)} — {waiting[0].title}</p>}
-      {!waiting[0] && next && <p className="next">⏰ {formatAt(next.at)} — {next.title}</p>}
+    <main className={photo ? "screen photo" : "screen"} style={photo ? { backgroundImage: `url("${photo}")` } : undefined}>
+      <div className="panel">
+        <h1>{greeting(now, NAME)}</h1>
+        <p className="time" onClick={onClockTap}>{formatTime(now)}</p>
+        <p className="date">{formatDate(now)}</p>
+        {waiting[0] && <p className="next waiting">⏰ {formatAt(waiting[0].at)} — {waiting[0].title}</p>}
+        {!waiting[0] && next && <p className="next">⏰ {formatAt(next.at)} — {next.title}</p>}
+      </div>
       {latest && (
         <section className="card" aria-live="polite">
           <span className="icon" aria-hidden="true">{icon(latest)}</span>

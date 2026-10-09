@@ -180,7 +180,7 @@ export function buildApp(opts: HubOptions): FastifyInstance {
     return reply
       .header("Content-Type", photo.type)
       .header("X-Content-Type-Options", "nosniff")
-      .header("Cache-Control", "private, max-age=3600")
+      .header("Cache-Control", "no-store") // family photos are not kept in the browser's disk cache
       .header("Content-Security-Policy", "default-src 'none'")
       .send(photo.data);
   });

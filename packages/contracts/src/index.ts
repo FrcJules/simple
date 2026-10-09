@@ -78,6 +78,9 @@ export const reminder = z
   .strict()
   .refine((r) => !(r.date && r.days), "date and days are exclusive");
 
+/** The family photo folder listing for the display slideshow (file names only). */
+export const photoList = z.object({ photos: z.array(z.string().min(1).max(120)).max(300) });
+
 export const remindersResponse = z.object({ reminders: z.array(reminder).max(50) });
 
 export type Reminder = z.infer<typeof reminder>;
