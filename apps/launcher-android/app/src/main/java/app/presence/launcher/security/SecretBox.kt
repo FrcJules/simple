@@ -63,6 +63,10 @@ class SecretBox(private val key: () -> SecretKey) {
         }
 
         @Volatile private var cached: SecretBox? = null
+        @Volatile private var cachedFamilyCode: SecretBox? = null
+
+        /** Its own key, apart from the pairing token's: losing one never takes the other with it. */
+        fun familyCode(): SecretBox? = cachedFamilyCode ?: forKeystore("presence-family-code")?.also { cachedFamilyCode = it }
 
         /**
          * The Keystore box, probed once it works. A probe that fails is not remembered: the Keystore can be briefly unavailable
@@ -71,9 +75,9 @@ class SecretBox(private val key: () -> SecretKey) {
         fun shared(): SecretBox? = cached ?: forKeystore()?.also { cached = it }
 
         /** The Keystore-backed box, or null if this phone has no usable Keystore (the caller then keeps the old behaviour). */
-        fun forKeystore(): SecretBox? =
+        fun forKeystore(alias: String = "presence-pairing"): SecretBox? =
             try {
-                val key = keystoreKey() // the key handle is kept: the Keystore is not queried again for every notification
+                val key = keystoreKey(alias) // the key handle is kept: the Keystore is not queried again for every notification
             SecretBox { key }.also { it.seal("probe") ?: return null }
             } catch (e: GeneralSecurityException) {
                 null

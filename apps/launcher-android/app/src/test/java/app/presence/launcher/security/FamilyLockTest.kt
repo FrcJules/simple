@@ -22,7 +22,9 @@ class FamilyLockTest {
 
     @Before fun fresh() { context.getSharedPreferences("family_lock", Context.MODE_PRIVATE).edit().clear().commit() }
 
-    private fun lock() = FamilyLock(context, elapsed = { mono }, bootCount = { boot })
+    private var sealing: SecretBox? = null
+    private fun lock() = FamilyLock(context, elapsed = { mono }, bootCount = { boot }, box = { sealing })
+    private fun prefs() = context.getSharedPreferences("family_lock", Context.MODE_PRIVATE)
     private fun pass(ms: Long) { now += ms; mono += ms }
 
     @Test
@@ -168,6 +170,91 @@ class FamilyLockTest {
         l.set("2580")
         repeat(40) { if (l.lockedSeconds() > 0) pass(l.lockedSeconds() * 1000L + 1); l.verify("9999") }
         assertTrue(l.lockedSeconds() <= FamilyLock.MAX_LOCK_SECONDS)
+    }
+
+    private fun softBox() = SecretBox { javax.crypto.KeyGenerator.getInstance("AES").apply { init(256) }.generateKey() }
+
+    @Test
+    fun withAKeystoreTheHashIsSealedAndNeverStoredAsIs() {
+        val key = javax.crypto.KeyGenerator.getInstance("AES").apply { init(256) }.generateKey()
+        sealing = SecretBox { key }
+        val l = lock()
+        l.set("2580")
+        assertFalse(prefs().contains("hash"))
+        assertTrue(prefs().contains("sealed"))
+        assertTrue(l.isSet())
+        assertEquals(FamilyLock.Result.Ok, l.verify("2580"))
+        assertEquals(FamilyLock.Result.Wrong(4), l.verify("9999"))
+    }
+
+    @Test
+    fun aCopyOfTheFilesOnAnotherKeyCannotBeOpenedNorReset() {
+        sealing = softBox()
+        lock().set("2580")
+        sealing = softBox() // the Keystore key is not the one that sealed it (copied files, lost key)
+        val l = lock()
+        assertTrue(l.verify("2580") is FamilyLock.Result.Wrong)
+        assertTrue(l.isSet()) // not wiped: nobody can reset the code by making the Keystore fail
+    }
+
+    @Test
+    fun aKeystoreThatIsBrieflyUnavailableDoesNotWipeTheCode() {
+        val key = javax.crypto.KeyGenerator.getInstance("AES").apply { init(256) }.generateKey()
+        sealing = SecretBox { key }
+        lock().set("2580")
+        sealing = null
+        assertTrue(lock().verify("2580") is FamilyLock.Result.Wrong)
+        assertTrue(lock().isSet())
+        sealing = SecretBox { key }
+        assertEquals(FamilyLock.Result.Ok, lock().verify("2580"))
+    }
+
+    @Test
+    fun onceSealedAPlainHashPutBackFromOutsideIsNeverAccepted() {
+        val key = javax.crypto.KeyGenerator.getInstance("AES").apply { init(256) }.generateKey()
+        sealing = SecretBox { key }
+        lock().set("2580")
+        val salt = prefs().getString("salt", null)!!
+        // someone writes a plain record for a code they know and removes the sealed one
+        prefs().edit().remove("sealed").putString("hash", "00".repeat(32)).commit()
+        assertTrue(lock().verify("1357") is FamilyLock.Result.Wrong)
+        assertEquals(salt, prefs().getString("salt", null)) // and nothing was wiped
+        assertTrue(lock().verify("2580") is FamilyLock.Result.Wrong)
+    }
+
+    @Test
+    fun aKeystoreThatCannotBeReadIsNotCountedAsMistakes() {
+        val key = javax.crypto.KeyGenerator.getInstance("AES").apply { init(256) }.generateKey()
+        sealing = SecretBox { key }
+        lock().set("2580")
+        sealing = null
+        repeat(12) { assertTrue(lock().verify("2580") is FamilyLock.Result.Wrong) }
+        assertEquals(0, lock().lockedSeconds()) // no lock was imposed on the family
+        sealing = SecretBox { key }
+        assertEquals(FamilyLock.Result.Ok, lock().verify("2580"))
+    }
+
+    @Test
+    fun aDamagedSaltOfASealedCodeCountsAsAMistakeAndWipesNothing() {
+        val key = javax.crypto.KeyGenerator.getInstance("AES").apply { init(256) }.generateKey()
+        sealing = SecretBox { key }
+        lock().set("2580")
+        prefs().edit().putString("salt", "zz").commit()
+        assertTrue(lock().verify("2580") is FamilyLock.Result.Wrong)
+        assertTrue(lock().isSet())
+    }
+
+    @Test
+    fun aCodeChosenBeforeTheKeystoreWasUsedIsSealedAtTheNextSuccess() {
+        sealing = null
+        lock().set("2580")
+        assertTrue(prefs().contains("hash"))
+        val key = javax.crypto.KeyGenerator.getInstance("AES").apply { init(256) }.generateKey()
+        sealing = SecretBox { key }
+        assertEquals(FamilyLock.Result.Ok, lock().verify("2580"))
+        assertFalse(prefs().contains("hash"))
+        assertTrue(prefs().contains("sealed"))
+        assertEquals(FamilyLock.Result.Ok, lock().verify("2580"))
     }
 
     @Test

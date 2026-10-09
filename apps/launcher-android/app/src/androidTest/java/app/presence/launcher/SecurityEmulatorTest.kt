@@ -66,7 +66,10 @@ class SecurityEmulatorTest {
         rule.waitForIdle()
         // now the settings themselves are shown
         rule.onNodeWithText("Réglages famille").assertIsDisplayed()
-        assertTrue(context.getSharedPreferences("family_lock", Context.MODE_PRIVATE).contains("hash"))
+        // with the real Keystore the hash is stored sealed, never as is
+        val prefs = context.getSharedPreferences("family_lock", Context.MODE_PRIVATE)
+        assertTrue(prefs.contains("sealed") && !prefs.contains("hash"))
+        assertEquals(app.presence.launcher.security.FamilyLock.Result.Ok, app.presence.launcher.security.FamilyLock(context).verify("2580"))
     }
 
     @Test
@@ -75,6 +78,6 @@ class SecurityEmulatorTest {
         rule.onNodeWithText("Répétez le code").performTextInput("1234")
         rule.onNodeWithText("Valider").performClick()
         rule.onNodeWithText("Ce code est trop simple (1111, 1234…). Choisissez-en un autre.").assertIsDisplayed()
-        assertFalse(context.getSharedPreferences("family_lock", Context.MODE_PRIVATE).contains("hash"))
+        assertFalse(context.getSharedPreferences("family_lock", Context.MODE_PRIVATE).let { it.contains("hash") || it.contains("sealed") })
     }
 }
