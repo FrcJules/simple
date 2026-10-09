@@ -22,6 +22,9 @@ interface SmsProviderGateway {
 
     /** Everything in the system SMS database, oldest first. */
     fun readAll(): List<ProviderSms>
+
+    /** The rows added after [afterId] (the highest row id already copied), oldest first: used when we are not the default SMS app. */
+    fun readSince(afterId: Long): List<ProviderSms>
 }
 
 class TelephonyGateway(private val resolver: ContentResolver) : SmsProviderGateway {
@@ -59,12 +62,14 @@ class TelephonyGateway(private val resolver: ContentResolver) : SmsProviderGatew
         }
     }
 
-    override fun readAll(): List<ProviderSms> =
+    override fun readAll(): List<ProviderSms> = readSince(0)
+
+    override fun readSince(afterId: Long): List<ProviderSms> =
         try {
             resolver.query(
                 Telephony.Sms.CONTENT_URI,
                 arrayOf(Telephony.Sms._ID, Telephony.Sms.ADDRESS, Telephony.Sms.BODY, Telephony.Sms.DATE, Telephony.Sms.TYPE, Telephony.Sms.READ),
-                null, null, "${Telephony.Sms.DATE} ASC",
+                "${Telephony.Sms._ID} > ?", arrayOf(afterId.toString()), "${Telephony.Sms.DATE} ASC",
             )?.use { c ->
                 buildList {
                     while (c.moveToNext()) {

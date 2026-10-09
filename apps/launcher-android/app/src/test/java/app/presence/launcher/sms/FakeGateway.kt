@@ -24,4 +24,6 @@ class FakeGateway(var rows: List<ProviderSms> = emptyList(), private val writabl
     }
 
     override fun readAll(): List<ProviderSms> = rows
+
+    override fun readSince(afterId: Long): List<ProviderSms> = rows.filter { it.id > afterId }
 }

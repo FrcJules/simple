@@ -33,6 +33,19 @@ class SmsInboxTest {
     }
 
     @Test
+    fun aReceivedMessageTakesTheIdOfTheSystemRowSoTheHistoryCopyNeverDoublesIt() {
+        inbox().onReceived("0611223344", "Bonjour", 0L, -1)
+        assertEquals("sms-100", stored.single().id) // FakeGateway's first row; the history copy would call it "sms-100" too
+    }
+
+    @Test
+    fun withoutASystemRowItFallsBackToAFreshId() {
+        val inbox = SmsInbox(FakeGateway(writable = false), stored::add, { null }, forwarded::add, notified::add, clock = { 5_000L }, newId = { "sms-x" })
+        inbox.onReceived("0611223344", "Bonjour", 0L, -1)
+        assertEquals("sms-x", stored.single().id)
+    }
+
+    @Test
     fun anUnknownSenderIsShownByNumberAndNeverSentToTheDisplay() {
         inbox().onReceived("0611223344", "Bonjour", 0L, -1)
         assertEquals("0611223344", stored.single().from)

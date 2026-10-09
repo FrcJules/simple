@@ -55,6 +55,22 @@ class SmsSenderTest {
     }
 
     @Test
+    fun theIdIsTheSystemRowsWhenThereIsOneAndFreshWhenNot() {
+        val r = sender(FakeTransport()).send("0611223344", "Salut", "Marie") as SendResult.Started
+        assertEquals("sms-100", r.messageId)
+        val direct = SmsSender(context, FakeGateway(writable = false), { stored[it.id] = it }, { id, s -> statuses[id] = s }, { true }, FakeTransport(), clock = { 9_000L })
+        assertTrue((direct.send("0611223344", "Salut", "Marie") as SendResult.Started).messageId.startsWith("out-"))
+    }
+
+    @Test
+    fun sendsDirectlyWithoutBeingTheDefaultAppWhenAllowed() {
+        val t = FakeTransport()
+        val allowed = SmsSender(context, FakeGateway(writable = false), { stored[it.id] = it }, { id, s -> statuses[id] = s }, { true }, t, clock = { 9_000L })
+        assertTrue(allowed.send("0611223344", "Salut", "Marie") is SendResult.Started)
+        assertEquals(listOf("Salut"), t.parts)
+    }
+
+    @Test
     fun aLongMessageIsSplitIntoPartsEachWithItsOwnCallback() {
         val t = FakeTransport(splitAt = 5)
         sender(t).send("0611223344", "abcdefghijkl", "Marie")

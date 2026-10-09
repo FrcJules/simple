@@ -54,6 +54,14 @@
     <string name="message_sensitive_tap">Touchez pour voir. Un code : ne le donnez à personne.</string>
     <string name="reply_unknown_number">Ce numéro n\'est pas dans vos contacts.</string>
     <string name="setup_erase_confirm">Toucher encore pour effacer pour de bon</string>
+    <string name="setup_sms_direct_on">SMS directs : activés (Présence lit vos SMS et en envoie sans être l\'application SMS)</string>
+    <string name="setup_sms_direct_off">SMS directs : pas encore autorisés</string>
+    <string name="setup_sms_direct_allow">Autoriser la lecture et l\'envoi des SMS</string>
+    <string name="setup_sms_copy">Copier mes SMS maintenant</string>
+    <plurals name="setup_sms_copied">
+        <item quantity="one">%1$d nouveau message copié dans Présence.</item>
+        <item quantity="other">%1$d nouveaux messages copiés dans Présence.</item>
+    </plurals>
     <string name="setup_sms_offer">Faire de Présence l\'application SMS</string>
     <string name="setup_messages_title">Messages</string>
     <string name="setup_sms_held">SMS : gérés par Présence</string>
@@ -132,7 +140,7 @@
     <string name="message_retry">Réessayer</string>
     <string name="message_dictate">Dire mon message</string>
     <string name="write_to">Écrire à %1$s</string>
-    <string name="importing">Je range vos anciens messages…</string>
+    <string name="importing">Je copie vos anciens messages. Rien n\'est effacé.</string>
     <string name="status_sending">Envoi en cours…</string>
     <string name="status_sent">Envoyé</string>
     <string name="status_delivered">Reçu</string>
@@ -141,7 +149,12 @@
     <string name="reply_send_direct">Envoyer</string>
     <string name="send_failed">Le message n\'a pas pu partir. Demandez à un proche.</string>
     <string name="write_to_title">À qui voulez-vous écrire ?</string>
-    <string name="sms_role_text">Pour écrire vos messages ici, il faut le permettre une fois.\n\nLe téléphone va vous poser une question : touchez «&#160;Oui&#160;».\n\nVos anciens messages seront gardés.</string>
+    <string name="sms_role_text">Pour lire et écrire vos messages ici, le téléphone va vous poser une ou deux questions.
+
+Touchez «&#160;Oui&#160;» ou «&#160;Autoriser&#160;» à chaque fois.
+
+Vos messages ne sont pas effacés.</string>
+    <string name="sms_denied">Les messages ne sont pas autorisés.\n\nDemandez à un proche de les autoriser dans les réglages de Présence.</string>
     <string name="sms_role_continue">Continuer</string>
     <string name="sms_role_later">Plus tard</string>
     <string name="notif_channel">Nouveaux messages</string>
