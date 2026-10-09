@@ -6,6 +6,12 @@ const TOKEN = import.meta.env.VITE_DISPLAY_TOKEN ?? "";
 /** A reminder stays on screen this long after its time unless it is touched: late in the morning it is still worth saying. */
 export const SHOW_FOR_MINUTES = 60;
 
+/** The full-screen card only lasts this long; then the home screen is back and the reminder stays as a small line until it is touched. */
+export const CARD_FOR_MINUTES = 5;
+
+/** "08:05" → "8 h 05". */
+export const formatAt = (at: string) => `${Number(at.slice(0, 2))} h ${at.slice(3, 5)}`;
+
 /** The family's reminders from the hub. Empty when the hub cannot be reached: the clock keeps working. */
 export async function fetchReminders(): Promise<Reminder[]> {
   try {
@@ -33,6 +39,12 @@ export function dueReminders(list: Reminder[], now: Date): Reminder[] {
   return list
     .filter((r) => happensToday(r, now) && m >= minutesOf(r.at) && m < minutesOf(r.at) + SHOW_FOR_MINUTES)
     .sort((a, b) => minutesOf(a.at) - minutesOf(b.at));
+}
+
+/** The reminders to show as a full-screen card now: the due ones that started less than [CARD_FOR_MINUTES] ago. */
+export function cardReminders(list: Reminder[], now: Date): Reminder[] {
+  const m = now.getHours() * 60 + now.getMinutes();
+  return dueReminders(list, now).filter((r) => m < minutesOf(r.at) + CARD_FOR_MINUTES);
 }
 
 /** The next one today that has not started yet, for the small line under the date. */

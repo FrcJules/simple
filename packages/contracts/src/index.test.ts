@@ -46,8 +46,11 @@ describe("reminder", () => {
     expect(reminder.safeParse({ ...r, days: [1, 3, 5] }).success).toBe(true);
     expect(reminder.safeParse({ ...r, date: "2026-10-12" }).success).toBe(true);
   });
+  it("accepts a title without a dose", () => {
+    for (const title of ["Médicament du matin", "Médecin à 14 h 30", "Appeler Marie", "Kiné"]) expect(reminder.safeParse({ ...r, title }).success, title).toBe(true);
+  });
   it("refuses bad times, days, titles and extra fields", () => {
-    for (const bad of [{ at: "8:00" }, { at: "24:00" }, { at: "08:60" }, { days: [7] }, { days: [] }, { title: "" }, { title: "x".repeat(81) }, { date: "12/10/2026" }, { extra: 1 }, { date: "2026-10-12", days: [1] }]) {
+    for (const bad of [{ at: "8:00" }, { at: "24:00" }, { at: "08:60" }, { days: [7] }, { days: [] }, { title: "" }, { title: "x".repeat(81) }, { date: "12/10/2026" }, { extra: 1 }, { date: "2026-10-12", days: [1] }, { title: "Prendre 2 comprimés" }, { title: "Doliprane 500 mg" }, { title: "10 gouttes" }]) {
       expect(reminder.safeParse({ ...r, ...bad }).success, JSON.stringify(bad)).toBe(false);
     }
   });
