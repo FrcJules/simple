@@ -1,6 +1,5 @@
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
@@ -10,7 +9,7 @@ kotlin {
 
 android {
     namespace = "app.presence.launcher"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "app.presence.launcher"
@@ -59,7 +58,7 @@ android {
 }
 
 dependencies {
-    implementation(platform("androidx.compose:compose-bom:2025.12.01"))
+    implementation(platform("androidx.compose:compose-bom:2026.09.00"))
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended") // Apache-2.0; R8 strips unused icons
     implementation("androidx.compose.ui:ui")
@@ -68,7 +67,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
     implementation("io.coil-kt:coil-compose:2.7.0") // Apache-2.0, photos de contacts
     testImplementation("junit:junit:4.13.2")
-    androidTestImplementation(platform("androidx.compose:compose-bom:2025.12.01"))
+    androidTestImplementation(platform("androidx.compose:compose-bom:2026.09.00"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test:runner:1.6.2")
