@@ -111,3 +111,6 @@ Les anniversaires (prénom, jour, année facultative) sont saisis **sur le Pi** 
 ## SMS en mode direct (versions de test)
 Si Android n'accorde pas à Présence le rôle d'application SMS, [ADR 0007](adr/0007-sms-mode-direct.md) : avec les permissions `READ_SMS` et `SEND_SMS` (demandées à ce moment, debug seulement), Présence **copie** les SMS du téléphone dans son historique local (sans rien supprimer dans l'autre application), récupère les nouveaux à l'ouverture et à chaque notification de SMS, et envoie directement. Rien ne quitte le téléphone ; les codes à usage unique et alertes bancaires restent masqués et n'atteignent jamais l'écran maison. « Réglages famille › Effacer les messages » supprime la copie.
 
+## Messages « sensibles » (codes à usage unique)
+Un message qui parle d'un code et contient un nombre (« votre code est 482913 », « mot de passe 1530 ») ou d'une opération bancaire avec un long numéro est masqué dans les listes (« Touchez pour voir »), jamais lu à voix haute et jamais envoyé à l'écran maison. Les mots sont reconnus **en tant que mots** (« lapin » n'est pas « pin »), et un numéro de téléphone, une année ou une heure seule ne suffisent pas. Un faux positif ne coûte qu'un toucher ; un oubli laisserait fuiter un secret : le détecteur reste volontairement prudent.
+

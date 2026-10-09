@@ -63,3 +63,6 @@ Ouvrez « Réglages famille » : la section **Messages** dit en clair où ça bl
 4. **Rien de tout cela** → notez le texte exact affiché dans cette section et le modèle du téléphone, et ouvrez une issue.
 Une version « release » ne propose pas encore le rôle SMS (voir le commentaire de `src/debug/AndroidManifest.xml`) : utilisez l'APK debug de la CI pour ces essais.
 
+## Écrire un message à quelqu'un
+« Messages › Écrire un message » ouvre le même choix que pour appeler : **Favoris**, **Général** (tous les contacts du téléphone) et **Chercher** (clavier de lettres : le début du prénom suffit). « Reculer » et « Recommencer » restent à côté des lettres tapées.
+
