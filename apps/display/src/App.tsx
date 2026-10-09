@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { body, formatDate, formatTime, greeting, headline, icon, timeAgo } from "./format";
 import { PairingScreen } from "./PairingScreen";
+import { dismissKey, dueReminders, fetchReminders, nextReminder } from "./reminders";
+import type { Reminder } from "@presence/contracts";
 import { useEvents } from "./useEvents";
 import "./app.css";
 
@@ -23,6 +25,17 @@ export function App() {
   const now = useNow();
   const latest = useEvents()[0];
   const [pairing, setPairing] = useState(false);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    let alive = true;
+    const load = () => void fetchReminders().then((list) => alive && setReminders(list));
+    load();
+    const timer = setInterval(load, 60_000); // a reminder added on the Pi appears within a minute
+    return () => { alive = false; clearInterval(timer); };
+  }, []);
+  const due = dueReminders(reminders, now).find((r) => !dismissed.has(dismissKey(r, now)));
+  const next = nextReminder(reminders, now);
   const taps = useRef<number[]>([]);
   const closePairing = useCallback(() => setPairing(false), []);
   const onClockTap = () => {
@@ -34,11 +47,22 @@ export function App() {
     }
   };
   if (pairing) return <PairingScreen onClose={closePairing} />;
+  if (due) {
+    return (
+      <main className="screen reminder" aria-live="assertive">
+        <span className="icon" aria-hidden="true">⏰</span>
+        <h1>{due.at.replace(":", " h ")}</h1>
+        <p className="headline">{due.title}</p>
+        <button className="ok" onClick={() => setDismissed((s) => new Set(s).add(dismissKey(due, now)))}>✓ J'ai compris</button>
+      </main>
+    );
+  }
   return (
     <main className="screen">
       <h1>{greeting(now, NAME)}</h1>
       <p className="time" onClick={onClockTap}>{formatTime(now)}</p>
       <p className="date">{formatDate(now)}</p>
+      {next && <p className="next">Prochain rappel : {next.at.replace(":", " h ")} — {next.title}</p>}
       {latest && (
         <section className="card" aria-live="polite">
           <span className="icon" aria-hidden="true">{icon(latest)}</span>

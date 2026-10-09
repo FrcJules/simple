@@ -19,3 +19,8 @@ h1 { font-size: 3rem; margin: 0; font-weight: 600; }
 .pairing .timer div { height: 100%; background: #fff; transition: width 1s linear; }
 .pairing button { font-size: 2.5rem; min-height: 5rem; padding: 0 3rem; border-radius: 1.5rem; border: 0; background: #fff; color: #101418; font-weight: 700; }
 .pairing button:active, .pairing button:focus-visible { outline: .4rem solid #ffd24a; }
+.reminder { background: #1b4332; }
+.reminder .headline { font-size: 4.5rem; max-width: 20ch; }
+.reminder .ok { font-size: 3rem; min-height: 6rem; padding: 0 4rem; border-radius: 2rem; border: 0; background: #fff; color: #101418; font-weight: 700; }
+.reminder .ok:active, .reminder .ok:focus-visible { outline: .4rem solid #ffd24a; }
+.next { font-size: 2rem; margin: 0; opacity: 1; }

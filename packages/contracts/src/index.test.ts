@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { presenceEvent } from "./index";
+import { presenceEvent, reminder } from "./index";
 
 const base = { schemaVersion: 1, id: "e1", occurredAt: "2026-10-06T09:30:00+02:00" };
 
@@ -36,5 +36,19 @@ describe("presenceEvent", () => {
   it("rejects an unsupported schema version", () => {
     const r = presenceEvent.safeParse({ ...base, schemaVersion: 2, type: "missed_call", from: { name: "Marie" } });
     expect(r.success).toBe(false);
+  });
+});
+
+describe("reminder", () => {
+  const r = { id: "r1", title: "Prendre le médicament", at: "08:00" };
+  it("accepts every day, some days, or one date", () => {
+    expect(reminder.safeParse(r).success).toBe(true);
+    expect(reminder.safeParse({ ...r, days: [1, 3, 5] }).success).toBe(true);
+    expect(reminder.safeParse({ ...r, date: "2026-10-12" }).success).toBe(true);
+  });
+  it("refuses bad times, days, titles and extra fields", () => {
+    for (const bad of [{ at: "8:00" }, { at: "24:00" }, { at: "08:60" }, { days: [7] }, { days: [] }, { title: "" }, { title: "x".repeat(81) }, { date: "12/10/2026" }, { extra: 1 }, { date: "2026-10-12", days: [1] }]) {
+      expect(reminder.safeParse({ ...r, ...bad }).success, JSON.stringify(bad)).toBe(false);
+    }
   });
 });

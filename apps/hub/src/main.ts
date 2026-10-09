@@ -1,6 +1,7 @@
 import { createServer } from "node:https";
 import { buildApp } from "./app";
 import { DeviceRegistry } from "./devices";
+import { RemindersStore } from "./reminders";
 import { buildPairingLink, groupFingerprint, lanAddress } from "./pairing";
 import { loadOrCreateTls } from "./tls";
 
@@ -23,6 +24,7 @@ const app = buildApp({
   displayToken: required("PRESENCE_DISPLAY_TOKEN", "min 16 chars, different from the pairing token if any"),
   displayOrigin: process.env.PRESENCE_DISPLAY_ORIGIN,
   devices,
+  reminders: new RemindersStore(process.env.PRESENCE_DATA_DIR ?? "./data"),
   startPairing: () => {
     const host = process.env.PRESENCE_HOST ?? lanAddress();
     if (!host) throw new Error("no home-network address");
