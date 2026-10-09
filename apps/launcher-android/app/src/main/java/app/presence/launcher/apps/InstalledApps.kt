@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import app.presence.launcher.config.AppPolicy
 import java.util.Locale
 
 /** An app that can be opened from a home tile: its package and the name the person knows it by. */
@@ -28,7 +29,7 @@ object InstalledApps {
         }
         return found
             .map { AppEntry(it.activityInfo.packageName, it.loadLabel(pm).toString()) }
-            .filter { it.packageName != self && it.label.isNotBlank() }
+            .filter { it.packageName != self && AppPolicy.isAllowed(it.packageName) && it.label.isNotBlank() }
             .distinctBy { it.packageName }
             .sortedBy { it.label.lowercase(Locale.getDefault()) }
     }
@@ -44,7 +45,7 @@ object InstalledApps {
 
     /** The intent that opens the app, or null if it has no launcher activity (or is gone). */
     fun launchIntent(pm: PackageManager, packageName: String): Intent? =
-        pm.getLaunchIntentForPackage(packageName)?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        if (!AppPolicy.isAllowed(packageName)) null else pm.getLaunchIntentForPackage(packageName)?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
     private fun icon(pm: PackageManager, packageName: String): ImageBitmap? =
         try {

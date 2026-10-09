@@ -66,3 +66,5 @@ Une version « release » ne propose pas encore le rôle SMS (voir le commentair
 ## Changer les cases de l'accueil
 « Réglages famille › Cases de l'accueil » : montez, descendez ou retirez une case, remettez une case d'origine, ou **ajoutez une application du téléphone** (WhatsApp, une application de vidéos…) : la case reprend le nom et l'icône de l'application. De 1 à 8 cases. Vérifiez sur l'accueil que chaque case ouvre bien ce qu'elle annonce.
 
+### Revenir à l'accueil depuis une application
+Présence est l'application d'**accueil** du téléphone (choisissez-la dans Android : Réglages › Applications › Applications par défaut › Application d'accueil). Depuis n'importe quelle application ouverte par une case, le bouton **Accueil** d'Android (la maison, ou le geste « glisser vers le haut ») ramène sur l'accueil de Jean-Pierre. Gardez de préférence la **navigation à 3 boutons** (Réglages › Système › Navigation) : le bouton maison est toujours visible. Une case dont l'application a été désinstallée affiche un triangle d'avertissement et « Application absente ».

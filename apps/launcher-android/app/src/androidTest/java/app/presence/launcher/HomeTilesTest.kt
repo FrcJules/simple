@@ -51,7 +51,7 @@ class HomeTilesTest {
         }
         rule.onNodeWithContentDescription("Descendre Appeler").performClick()
         assertEquals(listOf("messages", "call", "camera", "gallery"), tiles.map { it.id })
-        rule.onNodeWithContentDescription("Monter Messages").assertIsNotEnabled() // already first
+        rule.onNodeWithContentDescription("Monter Messages").assertIsNotEnabled() // already first, and the word "Avant" is on the key
         rule.onNodeWithText("Ajouter une application").performClick()
         rule.onNodeWithText("WhatsApp").performClick()
         assertEquals("com.whatsapp", tiles.last().app)

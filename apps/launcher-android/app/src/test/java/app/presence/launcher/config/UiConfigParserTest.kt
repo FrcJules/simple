@@ -129,4 +129,19 @@ class UiConfigParserTest {
         assertEquals(config, ok(UiConfigJson.write(config)))
         assertEquals(UiConfig.Default, ok(UiConfigJson.write(UiConfig.Default)))
     }
+
+    @Test
+    fun appsThatChangeThePhoneOrInstallThingsCannotBeTiles() {
+        for (bad in listOf("com.android.settings", "com.android.settings.intelligence", "com.android.vending", "org.fdroid.fdroid", "com.samsung.android.settings", "com.anydesk.anydeskandroid", "app.presence.launcher")) {
+            assertTrue(bad, error("""{"schemaVersion":1,"home":{"tiles":[{"id":"a","action":"app","package":"$bad"}]}}""").contains("ne peut pas être sur l'accueil"))
+        }
+        assertEquals("com.google.android.youtube", ok("""{"schemaVersion":1,"home":{"tiles":[{"id":"a","action":"app","package":"com.google.android.youtube"}]}}""").home.tiles[0].app)
+    }
+
+    @Test
+    fun anAppTileKeepsTheNameOfTheAppSoItCannotPassForSomethingElse() {
+        assertTrue(error("""{"schemaVersion":1,"home":{"tiles":[{"id":"a","action":"app","package":"com.whatsapp","label":"Photos"}]}}""").contains("garde toujours le nom"))
+        // a label stays possible on the built-in rubriques
+        assertEquals("Courrier", ok("""{"schemaVersion":1,"home":{"tiles":[{"id":"a","action":"messages","label":"Courrier"}]}}""").home.tiles[0].label)
+    }
 }
