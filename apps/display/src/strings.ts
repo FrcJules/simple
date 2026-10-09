@@ -12,15 +12,26 @@ export const pairingText = {
   qrLabel: "QR code pour ajouter un téléphone",
 } as const;
 
+const WEEKDAYS = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+
+/** "Marie", "Marie et Paul", "Marie, Paul et 2 autres": the panel never grows with the number of people. */
+export const nameList = (names: string[]): string => {
+  if (names.length <= 2) return names.join(" et ");
+  return `${names[0]}, ${names[1]} et ${names.length - 2} ${names.length - 2 > 1 ? "autres" : "autre"}`;
+};
+
 export const birthdayText = {
-  today: (name: string, age?: number) => `Aujourd'hui, c'est l'anniversaire de ${name}${age ? ` (${age} ans)` : ""}`,
-  soon: (name: string, days: number) => (days === 1 ? `Demain, anniversaire de ${name}` : `Dans ${days} jours, anniversaire de ${name}`),
+  /** [age] only for one person alone, and only when it makes sense. */
+  today: (names: string[], age?: number) =>
+    names.length === 1 && age ? `Aujourd'hui, ${names[0]} fête ses ${age} ans` : `Aujourd'hui, anniversaire de ${nameList(names)}`,
+  /** "Demain", or the weekday ("Samedi") rather than a number of days to count. */
+  soon: (names: string[], days: number, weekday: number) => `${days === 1 ? "Demain" : (WEEKDAYS[weekday] ?? "Bientôt")}, anniversaire de ${nameList(names)}`,
 } as const;
 
 /** Texts of the home screen's reminders (French for now; one place to translate). */
 export const homeText = {
   ok: "OK",
   okLabel: "OK, j'ai vu le rappel",
-  birthdayToday: (name: string, age?: number) => birthdayText.today(name, age),
-  birthdaySoon: (name: string, days: number) => birthdayText.soon(name, days),
+  birthdayToday: birthdayText.today,
+  birthdaySoon: birthdayText.soon,
 } as const;
