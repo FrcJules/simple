@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { presenceEvent, reminder, weather } from "./index";
+import { birthday, presenceEvent, reminder, weather } from "./index";
 
 const base = { schemaVersion: 1, id: "e1", occurredAt: "2026-10-06T09:30:00+02:00" };
 
@@ -52,6 +52,20 @@ describe("reminder", () => {
   it("refuses bad times, days, titles and extra fields", () => {
     for (const bad of [{ at: "8:00" }, { at: "24:00" }, { at: "08:60" }, { days: [7] }, { days: [] }, { title: "" }, { title: "x".repeat(81) }, { date: "12/10/2026" }, { extra: 1 }, { date: "2026-10-12", days: [1] }, { title: "Prendre 2 comprimés" }, { title: "Doliprane 500 mg" }, { title: "10 gouttes" }]) {
       expect(reminder.safeParse({ ...r, ...bad }).success, JSON.stringify(bad)).toBe(false);
+    }
+  });
+});
+
+describe("birthday", () => {
+  const b = { id: "b1", name: "Marie", day: "03-14" };
+  it("accepts a day with or without a year", () => {
+    expect(birthday.safeParse(b).success).toBe(true);
+    expect(birthday.safeParse({ ...b, year: 1950 }).success).toBe(true);
+    expect(birthday.safeParse({ ...b, day: "02-29" }).success).toBe(true);
+  });
+  it("refuses impossible days, bad formats and extra fields", () => {
+    for (const bad of [{ day: "02-30" }, { day: "04-31" }, { day: "13-01" }, { day: "00-10" }, { day: "3-14" }, { name: "" }, { year: 1800 }, { extra: 1 }]) {
+      expect(birthday.safeParse({ ...b, ...bad }).success, JSON.stringify(bad)).toBe(false);
     }
   });
 });
