@@ -10,7 +10,8 @@ import javax.crypto.spec.PBEKeySpec
 
 /**
  * The family code that protects "Réglages famille" (pairing, erasing, appearance) from whoever holds the phone. Only a salted
- * hash (PBKDF2) is kept, never the code. After repeated mistakes the screen locks for longer and longer, so the code cannot
+ * hash (PBKDF2) is kept, never the code, and where the phone has a Keystore that hash is itself sealed with a key that never leaves
+ * it: a copy of the app's files (root, a forensic image) cannot be tried offline against all the 4-to-8-digit codes. After repeated mistakes the screen locks for longer and longer, so the code cannot
  * be tried exhaustively on the phone. There is no recovery: forgetting it means clearing the app's data in Android settings.
  *
  * The lock is measured with the phone's monotonic clock only, never with the date (which anyone can change). A restart cannot be
@@ -21,6 +22,7 @@ class FamilyLock(
     context: Context,
     private val elapsed: () -> Long = SystemClock::elapsedRealtime,
     private val bootCount: () -> Int = { Settings.Global.getInt(context.contentResolver, Settings.Global.BOOT_COUNT, 0) },
+    private val box: () -> SecretBox? = { SecretBox.shared() },
 ) {
     private val prefs = context.applicationContext.getSharedPreferences("family_lock", Context.MODE_PRIVATE)
 
@@ -32,7 +34,7 @@ class FamilyLock(
 
     enum class Problem { LENGTH, OBVIOUS }
 
-    fun isSet(): Boolean = prefs.contains("hash") && prefs.contains("salt")
+    fun isSet(): Boolean = (prefs.contains("hash") || prefs.contains("sealed")) && prefs.contains("salt")
 
     /** Seconds still to wait, 0 if the code can be tried now. */
     @Synchronized
@@ -65,10 +67,9 @@ class FamilyLock(
     fun set(code: String): Boolean {
         if (problemWith(code) != null) return false
         val salt = ByteArray(16).also { SecureRandom().nextBytes(it) }
-        prefs.edit()
-            .putString("salt", hex(salt)).putString("hash", hex(hash(code, salt)))
-            .putInt("failures", 0).putLong("lock_ms", 0)
-            .commit()
+        val edit = prefs.edit().putString("salt", hex(salt)).putInt("failures", 0).putLong("lock_ms", 0)
+        storeHash(edit, hex(hash(code, salt)))
+        edit.commit()
         return true
     }
 
@@ -77,14 +78,20 @@ class FamilyLock(
         val locked = lockedSeconds()
         if (locked > 0) return Result.Locked(locked)
         val salt = prefs.getString("salt", null)?.let(::unhex)
-        val expected = prefs.getString("hash", null)?.let(::unhex)
-        if (salt == null || expected == null) {
+        val sealed = prefs.getString("sealed", null)
+        val stored = if (sealed != null) sealed.let { box()?.open(it) } else prefs.getString("hash", null)
+        val expected = stored?.let(::unhex)
+        if (salt == null || (sealed == null && expected == null)) {
             // Unreadable or missing record (never a state we write): start again rather than lock the family out for good.
-            prefs.edit().remove("hash").remove("salt").commit()
+            prefs.edit().remove("hash").remove("sealed").remove("salt").commit()
             return Result.Wrong(0)
         }
-        if (MessageDigest.isEqual(hash(code, salt), expected)) {
-            prefs.edit().putInt("failures", 0).putLong("lock_ms", 0).commit()
+        // A sealed hash that cannot be opened (Keystore briefly unavailable, or its key was lost) is never wiped here: it counts as a
+        // wrong code, so nobody can reset the code by making the Keystore fail. A lost key means clearing the app's data, as documented.
+        if (expected != null && MessageDigest.isEqual(hash(code, salt), expected)) {
+            val reset = prefs.edit().putInt("failures", 0).putLong("lock_ms", 0)
+            if (sealed == null) storeHash(reset, hex(expected)) // a code chosen before the Keystore was used is sealed now
+            reset.commit()
             return Result.Ok
         }
         val failures = prefs.getInt("failures", 0) + 1
@@ -98,6 +105,12 @@ class FamilyLock(
         }
         edit.commit()
         return Result.Wrong(FREE_TRIES - failures % FREE_TRIES)
+    }
+
+    /** Seals the hash when the phone has a Keystore; otherwise (or if sealing fails) it is kept as before, protected by PBKDF2 alone. */
+    private fun storeHash(edit: android.content.SharedPreferences.Editor, hashHex: String) {
+        val sealed = box()?.seal(hashHex)
+        if (sealed != null) edit.putString("sealed", sealed).remove("hash") else edit.putString("hash", hashHex).remove("sealed")
     }
 
     private fun hash(code: String, salt: ByteArray): ByteArray {
