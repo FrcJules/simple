@@ -52,3 +52,11 @@ Installation du Pi : [docs/pi-install.md](pi-install.md).
 - Dans les réglages : « Qui voulez-vous appeler ? » affiche deux onglets, **Favoris** (les personnes choisies ici) et **Général** (tous les contacts du téléphone), plus un bouton **Chercher** avec un gros clavier pour trouver une personne par les premières lettres de son prénom.
 - « Écrire un message » : si Présence n'est pas encore l'application SMS par défaut, la question est reposée ; si elle n'est pas disponible dans cette version, un message simple s'affiche (jamais Google Messages).
 
+## Les messages ne marchent pas ?
+Ouvrez « Réglages famille » : la section **Messages** dit en clair où ça bloque.
+1. **« Application SMS du téléphone : une autre »** → touchez **Faire de Présence l'application SMS** et acceptez la question d'Android. Sans cela, Présence ne voit que les SMS annoncés par les notifications, et ne peut pas écrire elle-même.
+2. **La question ne s'affiche pas, ou le bouton ne change rien** → si le texte « installée à la main » est présent, c'est le blocage d'Android 13+ pour les applications hors boutique : touchez **Ouvrir les infos de l'application**, puis ⋮ (en haut à droite) › **Autoriser les paramètres restreints**, puis revenez et réessayez. La même autorisation débloque « Lecture des notifications ».
+3. **« Lecture des notifications : désactivée »** → touchez « Ouvrir l'accès aux notifications » plus bas, activez Présence (voir 2 si c'est grisé).
+4. **Rien de tout cela** → notez le texte exact affiché dans cette section et le modèle du téléphone, et ouvrez une issue.
+Une version « release » ne propose pas encore le rôle SMS (voir le commentaire de `src/debug/AndroidManifest.xml`) : utilisez l'APK debug de la CI pour ces essais.
+
