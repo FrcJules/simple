@@ -210,6 +210,41 @@ class FamilyLockTest {
     }
 
     @Test
+    fun onceSealedAPlainHashPutBackFromOutsideIsNeverAccepted() {
+        val key = javax.crypto.KeyGenerator.getInstance("AES").apply { init(256) }.generateKey()
+        sealing = SecretBox { key }
+        lock().set("2580")
+        val salt = prefs().getString("salt", null)!!
+        // someone writes a plain record for a code they know and removes the sealed one
+        prefs().edit().remove("sealed").putString("hash", "00".repeat(32)).commit()
+        assertTrue(lock().verify("1357") is FamilyLock.Result.Wrong)
+        assertEquals(salt, prefs().getString("salt", null)) // and nothing was wiped
+        assertTrue(lock().verify("2580") is FamilyLock.Result.Wrong)
+    }
+
+    @Test
+    fun aKeystoreThatCannotBeReadIsNotCountedAsMistakes() {
+        val key = javax.crypto.KeyGenerator.getInstance("AES").apply { init(256) }.generateKey()
+        sealing = SecretBox { key }
+        lock().set("2580")
+        sealing = null
+        repeat(12) { assertTrue(lock().verify("2580") is FamilyLock.Result.Wrong) }
+        assertEquals(0, lock().lockedSeconds()) // no lock was imposed on the family
+        sealing = SecretBox { key }
+        assertEquals(FamilyLock.Result.Ok, lock().verify("2580"))
+    }
+
+    @Test
+    fun aDamagedSaltOfASealedCodeCountsAsAMistakeAndWipesNothing() {
+        val key = javax.crypto.KeyGenerator.getInstance("AES").apply { init(256) }.generateKey()
+        sealing = SecretBox { key }
+        lock().set("2580")
+        prefs().edit().putString("salt", "zz").commit()
+        assertTrue(lock().verify("2580") is FamilyLock.Result.Wrong)
+        assertTrue(lock().isSet())
+    }
+
+    @Test
     fun aCodeChosenBeforeTheKeystoreWasUsedIsSealedAtTheNextSuccess() {
         sealing = null
         lock().set("2580")
