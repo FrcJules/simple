@@ -4,6 +4,7 @@ import { PairingScreen } from "./PairingScreen";
 import { cardReminders, dismissKey, dueReminders, fetchReminders, formatAt, nextReminder } from "./reminders";
 import { homeText } from "./strings";
 import type { Reminder } from "@presence/contracts";
+import { useSlideshow } from "./slideshow";
 import { useEvents } from "./useEvents";
 import "./app.css";
 
@@ -26,6 +27,7 @@ export function App() {
   const now = useNow();
   const latest = useEvents()[0];
   const [pairing, setPairing] = useState(false);
+  const photo = useSlideshow();
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   useEffect(() => {
@@ -67,7 +69,7 @@ export function App() {
     );
   }
   return (
-    <main className="screen">
+    <main className={photo ? "screen photo" : "screen"} style={photo ? { backgroundImage: `linear-gradient(rgba(0,0,0,.45), rgba(0,0,0,.45)), url("${photo}")` } : undefined}>
       <h1>{greeting(now, NAME)}</h1>
       <p className="time" onClick={onClockTap}>{formatTime(now)}</p>
       <p className="date">{formatDate(now)}</p>
