@@ -76,6 +76,14 @@ sudo -u presence PRESENCE_DATA_DIR=/var/lib/presence npm run reminders -w @prese
 ```
 Sans `--date` ni `--days`, le rappel revient tous les jours. L'écran le montre en plein écran à l'heure dite pendant 5 minutes (avec un bouton « OK »), puis en petit sous la date jusqu'à une heure après ou jusqu'à « OK ». Un titre ne peut pas contenir de dose (« 2 comprimés », « 500 mg ») : le rappel dit quoi, jamais combien. Les rappels de la même heure sont sur la même carte.
 
+## 5 quater. Anniversaires
+
+```sh
+cd /opt/presence && sudo -u presence PRESENCE_DATA_DIR=/var/lib/presence npm run birthdays -w @presence/hub -- add "Marie" --day 03-14 --year 1950
+sudo -u presence PRESENCE_DATA_DIR=/var/lib/presence npm run birthdays -w @presence/hub -- list
+```
+Le jour même, l'écran affiche « Aujourd'hui, c'est l'anniversaire de Marie (76 ans) » (l'année est facultative) ; dans les 7 jours qui précèdent, « Dans 3 jours, anniversaire de Marie ». Le 29 février est fêté le 28 les autres années. `-- remove <identifiant>` supprime une entrée.
+
 ## 5 ter. Photos de famille
 
 Le diaporama utilise **un dossier du Pi choisi par la famille**, jamais la photothèque d'un téléphone :

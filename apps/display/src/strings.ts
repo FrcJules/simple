@@ -12,8 +12,15 @@ export const pairingText = {
   qrLabel: "QR code pour ajouter un téléphone",
 } as const;
 
+export const birthdayText = {
+  today: (name: string, age?: number) => `Aujourd'hui, c'est l'anniversaire de ${name}${age ? ` (${age} ans)` : ""}`,
+  soon: (name: string, days: number) => (days === 1 ? `Demain, anniversaire de ${name}` : `Dans ${days} jours, anniversaire de ${name}`),
+} as const;
+
 /** Texts of the home screen's reminders (French for now; one place to translate). */
 export const homeText = {
   ok: "OK",
   okLabel: "OK, j'ai vu le rappel",
+  birthdayToday: (name: string, age?: number) => birthdayText.today(name, age),
+  birthdaySoon: (name: string, days: number) => birthdayText.soon(name, days),
 } as const;
