@@ -28,6 +28,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import app.presence.launcher.apps.AppInfo
+import app.presence.launcher.apps.InstalledApps
 import app.presence.launcher.config.TileAction
 import app.presence.launcher.config.TileConfig
 import app.presence.launcher.config.UiConfig
@@ -70,7 +72,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
-    private enum class Screen { HOME, RATIONALE, DENIED, CALL, SMS_ROLE, MESSAGES, PICK_RECIPIENT, MESSAGE, REPLY, PHOTO_CHOICE, PHOTO_CONFIRM, WRITE_NOT_READY, SMS_DENIED }
+    private enum class Screen { HOME, RATIONALE, DENIED, CALL, SMS_ROLE, MESSAGES, PICK_RECIPIENT, MESSAGE, REPLY, PHOTO_CHOICE, PHOTO_CONFIRM, WRITE_NOT_READY, SMS_DENIED, APP_MISSING }
 
     private val contactsVm: ContactsViewModel by viewModels()
     private val messagesVm: MessagesViewModel by viewModels()
@@ -234,6 +236,7 @@ class MainActivity : ComponentActivity() {
                         status = rememberHomeStatus(),
                         onSecretTap = { startActivity(Intent(this, SetupActivity::class.java).putExtra(SetupActivity.EXTRA_FROM_HOME, true)) },
                         onTile = ::onTile,
+                        appInfo = ::appInfo,
                         showSetupHint = needsSetup,
                         onSetup = { startActivity(Intent(this, SetupActivity::class.java)) }, // no "from home" mark: the family chooses the code
                     )
@@ -254,6 +257,10 @@ class MainActivity : ComponentActivity() {
                         LaunchedEffect(Unit) { contactsVm.loadAll() } // the "Général" tab and the search need every contact
                         androidx.compose.runtime.DisposableEffect(Unit) { onDispose { contactsVm.clearAll() } } // and they are forgotten when the screen is left
                         CallScreen(favorites = contacts, all = everybody, onBack = { screen = Screen.HOME }, onCall = { calling = it })
+                    }
+                    Screen.APP_MISSING -> {
+                        BackHandler { screen = Screen.HOME }
+                        MessageScreen(R.string.tile_app_missing, onBack = { screen = Screen.HOME })
                     }
                     Screen.SMS_DENIED -> {
                         BackHandler { screen = Screen.HOME }
@@ -406,6 +413,7 @@ class MainActivity : ComponentActivity() {
         if (!SmsRole.isHeld(this) && SmsAccess.canRead(this)) lifecycleScope.launch(Dispatchers.IO) { runCatching { SmsComponents.syncNew(this@MainActivity) } }
         needsSetup = profile.setupHintVisible(System.currentTimeMillis(), FamilyLock(this).isSet())
         uiConfig = uiConfigStore.load()
+        appInfos.clear()
         if (granted(Manifest.permission.READ_CONTACTS)) {
             contactsVm.refresh()
             messagesVm.refresh() // a photo may have been chosen in "Réglages famille"
@@ -465,7 +473,27 @@ class MainActivity : ComponentActivity() {
         TileAction.MESSAGES -> openMessages()
         TileAction.CAMERA -> LauncherActions.camera(this)
         TileAction.GALLERY -> LauncherActions.gallery(this)
+        TileAction.APP -> openApp(tile.app)
     }
+
+    /** Opens the app behind an "app" tile; if it is gone, a plain message instead of nothing happening. */
+    private fun openApp(packageName: String?) {
+        val intent = packageName?.let { InstalledApps.launchIntent(packageManager, it) }
+        if (intent == null) {
+            screen = Screen.APP_MISSING
+            return
+        }
+        try {
+            startActivity(intent)
+        } catch (e: ActivityNotFoundException) {
+            screen = Screen.APP_MISSING
+        }
+    }
+
+    private val appInfos = HashMap<String, AppInfo?>()
+
+    /** Name and icon of an app tile, looked up once per resume (an app installed meanwhile shows up at the next return to the home screen). */
+    private fun appInfo(packageName: String): AppInfo? = appInfos.getOrPut(packageName) { InstalledApps.info(packageManager, packageName) }
 
     // ---- SMS role ----
 
