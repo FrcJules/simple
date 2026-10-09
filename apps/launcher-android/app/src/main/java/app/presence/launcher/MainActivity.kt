@@ -40,6 +40,7 @@ import app.presence.launcher.mms.MmsFiles
 import app.presence.launcher.mms.MmsSendResult
 import app.presence.launcher.messages.MessagesViewModel
 import app.presence.launcher.feedback.Feedback
+import app.presence.launcher.security.FamilyLock
 import app.presence.launcher.messages.Speaker
 import app.presence.launcher.messages.StoredMessage
 import app.presence.launcher.notifications.Channel
@@ -79,6 +80,9 @@ class MainActivity : ComponentActivity() {
     private var speakerInstance: Speaker? = null
     private fun speaker() = speakerInstance ?: Speaker(this).also { speakerInstance = it }
     private var screen by mutableStateOf(Screen.HOME)
+
+    /** No family code yet: the home screen shows a plain way in to the settings for whoever installs the app. */
+    private var needsSetup by mutableStateOf(false)
 
     /** Set while "J'appelle X…" is shown; null otherwise. Kept separate so the call screen can never exist without a contact. */
     private var calling by mutableStateOf<Contact?>(null)
@@ -223,6 +227,8 @@ class MainActivity : ComponentActivity() {
                         status = rememberHomeStatus(),
                         onSecretTap = { startActivity(Intent(this, SetupActivity::class.java).putExtra(SetupActivity.EXTRA_FROM_HOME, true)) },
                         onTile = ::onTile,
+                        showSetupHint = needsSetup,
+                        onSetup = { startActivity(Intent(this, SetupActivity::class.java)) }, // no "from home" mark: the family chooses the code
                     )
                     Screen.RATIONALE -> {
                         BackHandler { screen = Screen.HOME }
@@ -237,7 +243,9 @@ class MainActivity : ComponentActivity() {
                     }
                     Screen.CALL -> {
                         BackHandler { screen = Screen.HOME }
-                        CallScreen(contacts = contacts, onBack = { screen = Screen.HOME }, onCall = { calling = it })
+                        val everybody by contactsVm.allContacts.collectAsStateWithLifecycle()
+                        LaunchedEffect(Unit) { contactsVm.loadAll() } // the "Général" tab and the search need every contact
+                        CallScreen(favorites = contacts, all = everybody, onBack = { screen = Screen.HOME }, onCall = { calling = it })
                     }
                     Screen.SMS_ROLE -> {
                         BackHandler { screen = Screen.HOME }
@@ -375,6 +383,7 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         seniorName = profile.name() // may have been changed in "Réglages famille"
+        needsSetup = !FamilyLock(this).isSet()
         uiConfig = uiConfigStore.load()
         if (granted(Manifest.permission.READ_CONTACTS)) {
             contactsVm.refresh()
@@ -520,7 +529,16 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun write() {
-        if (SmsRole.isHeld(this)) screen = Screen.PICK_RECIPIENT else LauncherActions.messages(this)
+        when {
+            SmsRole.isHeld(this) -> screen = Screen.PICK_RECIPIENT
+            // Not the default SMS app: ask again here (it may have been refused once) instead of sending the person to another app.
+            BuildConfig.SMS_ROLE_OFFERED && SmsRole.requestIntent(this) != null -> {
+                profile.setSmsRoleDeclined(false)
+                smsRoleLater = false
+                screen = Screen.SMS_ROLE
+            }
+            else -> LauncherActions.messages(this)
+        }
     }
 
     private fun startNewConversation(contact: Contact) = startConversationWithNumber(contact.number, "", contact)
