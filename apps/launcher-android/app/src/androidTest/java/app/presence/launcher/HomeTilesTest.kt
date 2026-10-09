@@ -6,6 +6,8 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.Modifier
 import app.presence.launcher.apps.AppEntry
 import app.presence.launcher.apps.AppInfo
 import app.presence.launcher.config.HomeConfig
@@ -15,6 +17,8 @@ import app.presence.launcher.config.TileIcon
 import app.presence.launcher.config.UiConfig
 import app.presence.launcher.ui.HomeScreen
 import app.presence.launcher.ui.HomeTilesEditor
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -44,17 +48,20 @@ class HomeTilesTest {
     fun theEditorMovesRemovesAndAddsAndNeverEmptiesTheHomeScreen() {
         var tiles by mutableStateOf(UiConfig.Default.home.tiles) // a Compose state: the editor redraws when the list changes
         rule.setContent {
-            HomeTilesEditor(
-                tiles = tiles, appInfo = { null },
-                loadApps = { listOf(AppEntry("com.whatsapp", "WhatsApp"), AppEntry("org.videolan.vlc", "VLC")) },
-                onChange = { tiles = it }, onReset = { tiles = UiConfig.Default.home.tiles },
-            )
+            // As in the settings: the editor sits in a scrolling page, taller than the screen.
+            androidx.compose.foundation.layout.Column(Modifier.verticalScroll(rememberScrollState())) {
+                HomeTilesEditor(
+                    tiles = tiles, appInfo = { null },
+                    loadApps = { listOf(AppEntry("com.whatsapp", "WhatsApp"), AppEntry("org.videolan.vlc", "VLC")) },
+                    onChange = { tiles = it }, onReset = { tiles = UiConfig.Default.home.tiles },
+                )
+            }
         }
-        rule.onNodeWithContentDescription("Descendre Appeler").performClick()
+        rule.onNodeWithContentDescription("Descendre Appeler").performScrollTo().performClick()
         assertEquals(listOf("messages", "call", "camera", "gallery"), tiles.map { it.id })
         rule.onNodeWithContentDescription("Monter Messages").assertIsNotEnabled() // already first, and the word "Avant" is on the key
-        rule.onNodeWithText("Ajouter une application").performClick()
-        rule.onNodeWithText("WhatsApp").performClick()
+        rule.onNodeWithText("Ajouter une application").performScrollTo().performClick()
+        rule.onNodeWithText("WhatsApp").performScrollTo().performClick()
         assertEquals("com.whatsapp", tiles.last().app)
     }
 }
