@@ -13,6 +13,10 @@ export const roundCoordinate = (value: number) => Math.round(value * 10) / 10;
 export type FetchLike = (input: URL, init?: RequestInit) => Promise<Response>;
 
 const REFRESH_MS = 30 * 60_000;
+/** After a failure the next try comes sooner (a network that was not up yet at start), but never in a hurry. */
+const RETRY_MS = 2 * 60_000;
+const MAX_BODY_BYTES = 64 * 1024;
+const NUMBER = /^-?\d+(\.\d+)?$/;
 const TIMEOUT_MS = 5_000;
 
 /**
@@ -21,6 +25,7 @@ const TIMEOUT_MS = 5_000;
  */
 export class WeatherService {
   private cached: { at: number; value: Weather | null } | undefined;
+  private inFlight: Promise<Weather | null> | undefined;
   private readonly latitude: number;
   private readonly longitude: number;
 
@@ -36,19 +41,22 @@ export class WeatherService {
 
   /** Null when the coordinates are not usable numbers: the feature stays off. */
   static fromEnv(lat: string | undefined, lon: string | undefined, fetchFn?: FetchLike): WeatherService | undefined {
-    if (!lat || !lon) return undefined;
-    const la = Number(lat);
-    const lo = Number(lon);
+    if (!lat || !lon || !NUMBER.test(lat.trim()) || !NUMBER.test(lon.trim())) return undefined; // " ", "0x10", "1e1" do not switch it on
+    const la = Number(lat.trim());
+    const lo = Number(lon.trim());
     if (!Number.isFinite(la) || !Number.isFinite(lo) || Math.abs(la) > 90 || Math.abs(lo) > 180) return undefined;
     return new WeatherService(la, lo, fetchFn);
   }
 
   async get(): Promise<Weather | null> {
     const now = this.clock();
-    if (this.cached && now - this.cached.at < REFRESH_MS) return this.cached.value;
-    const value = await this.fetchNow();
-    this.cached = { at: now, value };
-    return value;
+    if (this.cached && now - this.cached.at < (this.cached.value ? REFRESH_MS : RETRY_MS)) return this.cached.value;
+    // Several screens asking at once make one request, not several.
+    this.inFlight ??= this.fetchNow().then((value) => {
+      this.cached = { at: now, value };
+      return value;
+    }).finally(() => { this.inFlight = undefined; });
+    return this.inFlight;
   }
 
   private async fetchNow(): Promise<Weather | null> {
@@ -64,7 +72,9 @@ export class WeatherService {
     try {
       const res = await this.fetchFn(url, { signal: AbortSignal.timeout(TIMEOUT_MS), redirect: "error" });
       if (!res.ok) return null;
-      const parsed = answer.safeParse(await res.json());
+      const text = await res.text();
+      if (text.length > MAX_BODY_BYTES) return null;
+      const parsed = answer.safeParse(JSON.parse(text));
       if (!parsed.success) return null;
       const out = weather.safeParse({
         temperature: parsed.data.current.temperature_2m,
