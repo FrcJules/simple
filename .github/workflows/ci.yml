@@ -69,11 +69,17 @@ jobs:
           name: launcher-debug-apk
           path: apps/launcher-android/app/build/outputs/apk/debug/*.apk
 
+  # The 61+ UI tests take ~5 of the ~9 minutes of this job: two emulators each run half of them (AndroidJUnitRunner sharding), in parallel.
+  # The SMS tests (which need the default-SMS role) run in shard 0 only. A third shard would add ~3 runner-minutes for ~40 s less.
   android-emulator:
     needs: changes
     if: needs.changes.outputs.android == 'true' || github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -91,12 +97,12 @@ jobs:
           arch: x86_64
           profile: pixel_6
           disable-animations: true
-          script: bash scripts/ci-emulator-tests.sh
+          script: SHARD=${{ matrix.shard }} NUM_SHARDS=2 bash scripts/ci-emulator-tests.sh
       - name: Upload screenshots and reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: emulator-screenshots-and-reports
+          name: emulator-screenshots-and-reports-${{ matrix.shard }}
           if-no-files-found: warn
           path: |
             apps/launcher-android/app/build/screenshots/**
