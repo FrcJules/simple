@@ -36,3 +36,4 @@ h1 { font-size: 3rem; margin: 0; font-weight: 600; }
 .screen.photo .headline { font-size: 2.25rem; }
 .screen.photo .body { font-size: 2rem; }
 .next { white-space: normal; max-width: 36ch; }
+.birthday { font-size: 3rem; font-weight: 700; margin: 0; max-width: 28ch; }

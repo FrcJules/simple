@@ -1,6 +1,7 @@
 import { createServer } from "node:https";
 import { buildApp } from "./app";
 import { DeviceRegistry } from "./devices";
+import { BirthdaysStore } from "./birthdays";
 import { PhotosStore } from "./photos";
 import { RemindersStore } from "./reminders";
 import { buildPairingLink, groupFingerprint, lanAddress } from "./pairing";
@@ -26,6 +27,7 @@ const app = buildApp({
   displayOrigin: process.env.PRESENCE_DISPLAY_ORIGIN,
   devices,
   reminders: new RemindersStore(process.env.PRESENCE_DATA_DIR ?? "./data"),
+  birthdays: new BirthdaysStore(process.env.PRESENCE_DATA_DIR ?? "./data"),
   photos: new PhotosStore(process.env.PRESENCE_PHOTOS_DIR ?? "./data/photos"),
   startPairing: () => {
     const host = process.env.PRESENCE_HOST ?? lanAddress();
