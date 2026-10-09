@@ -54,6 +54,14 @@
     <string name="message_sensitive_tap">Touchez pour voir. Un code : ne le donnez à personne.</string>
     <string name="reply_unknown_number">Ce numéro n\'est pas dans vos contacts.</string>
     <string name="setup_erase_confirm">Toucher encore pour effacer pour de bon</string>
+    <string name="setup_sms_direct_on">SMS directs : activés (Présence lit vos SMS et en envoie sans être l\'application SMS)</string>
+    <string name="setup_sms_direct_off">SMS directs : pas encore autorisés</string>
+    <string name="setup_sms_direct_allow">Autoriser la lecture et l\'envoi des SMS</string>
+    <string name="setup_sms_copy">Copier mes SMS maintenant</string>
+    <plurals name="setup_sms_copied">
+        <item quantity="one">%1$d nouveau message copié dans Présence.</item>
+        <item quantity="other">%1$d nouveaux messages copiés dans Présence.</item>
+    </plurals>
     <string name="setup_sms_offer">Faire de Présence l\'application SMS</string>
     <string name="setup_messages_title">Messages</string>
     <string name="setup_sms_held">SMS : gérés par Présence</string>

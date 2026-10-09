@@ -66,4 +66,41 @@ class SmsHistoryImporterTest {
         assertTrue(m[0].sensitive)
         assertFalse(m[1].sensitive)
     }
+
+    private fun sync(rows: List<ProviderSms>, afterId: Long, keepRead: Boolean, out: MutableList<StoredMessage>) =
+        SmsHistoryImporter(FakeGateway(rows), { out += it }, { null }).syncSince(afterId, keepRead)
+
+    @Test
+    fun aSyncOnlyCopiesWhatCameAfterTheLastCopiedRowAndReportsTheNewLastId() {
+        val rows = listOf(row(1, Telephony.Sms.MESSAGE_TYPE_INBOX), row(2, Telephony.Sms.MESSAGE_TYPE_INBOX), row(5, Telephony.Sms.MESSAGE_TYPE_INBOX))
+        val out = mutableListOf<StoredMessage>()
+        val first = sync(rows, 0, keepRead = false, out)
+        assertEquals(3, first.count)
+        assertEquals(5L, first.lastId)
+        out.clear()
+        val again = sync(rows, first.lastId, keepRead = true, out)
+        assertEquals(0, again.count)
+        assertEquals(5L, again.lastId) // nothing new: the marker does not move back
+        val more = sync(rows + row(9, Telephony.Sms.MESSAGE_TYPE_INBOX), again.lastId, keepRead = true, out)
+        assertEquals(listOf("sms-9"), out.map { it.id })
+        assertEquals(9L, more.lastId)
+    }
+
+    @Test
+    fun theFirstCopyMarksEverythingReadButLaterOnesKeepTheSystemFlag() {
+        val rows = listOf(row(1, Telephony.Sms.MESSAGE_TYPE_INBOX, read = false), row(2, Telephony.Sms.MESSAGE_TYPE_INBOX, read = true))
+        val first = mutableListOf<StoredMessage>()
+        sync(rows, 0, keepRead = false, first)
+        assertEquals(listOf(true, true), first.map { it.read }) // an old inbox must not raise a huge badge
+        val later = mutableListOf<StoredMessage>()
+        sync(rows, 0, keepRead = true, later)
+        assertEquals(listOf(false, true), later.map { it.read }) // a new unread SMS counts as new
+    }
+
+    @Test
+    fun sentMessagesAreAlwaysReadWhateverTheFlag() {
+        val out = mutableListOf<StoredMessage>()
+        sync(listOf(row(1, Telephony.Sms.MESSAGE_TYPE_SENT, read = false)), 0, keepRead = true, out)
+        assertTrue(out.single().read)
+    }
 }

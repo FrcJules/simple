@@ -51,6 +51,8 @@ import app.presence.launcher.config.UiConfigParser
 import app.presence.launcher.config.UiConfigStore
 import app.presence.launcher.messages.MessageStore
 import app.presence.launcher.security.FamilyLock
+import app.presence.launcher.sms.SmsAccess
+import app.presence.launcher.sms.SmsComponents
 import app.presence.launcher.sms.SmsRole
 import app.presence.launcher.ui.EnterFamilyCodeScreen
 import app.presence.launcher.ui.FamilyCodeNotSetScreen
@@ -127,8 +129,25 @@ class SetupActivity : ComponentActivity() {
         }
     }
 
+    /** Direct mode: the SMS permissions are given, so old and new SMS are copied in and messages are sent without the SMS role. */
+    private var directSms by mutableStateOf(false)
+    private var copiedSms by mutableStateOf<Int?>(null)
+
+    private val smsPermissions = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        directSms = SmsAccess.direct(this)
+        if (directSms) copySms()
+    }
+
+    private fun copySms() {
+        lifecycleScope.launch {
+            copiedSms = withContext(Dispatchers.IO) { runCatching { SmsComponents.syncNew(this@SetupActivity) }.getOrDefault(0) }
+            ProfileStore(this@SetupActivity).markSmsImported()
+        }
+    }
+
     private val smsRoleResult = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         smsHeld = SmsRole.isHeld(this)
+        directSms = SmsAccess.direct(this)
         smsRoleAnswer = smsHeld
         if (smsHeld) ProfileStore(this).setSmsRoleDeclined(false)
     }
@@ -180,6 +199,7 @@ class SetupActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         smsHeld = SmsRole.isHeld(this)
+        directSms = SmsAccess.direct(this)
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
             contactsVm.refresh()
         }
@@ -371,6 +391,15 @@ class SetupActivity : ComponentActivity() {
                     Text(stringResource(R.string.setup_messages_title), fontSize = 28.sp, modifier = Modifier.semantics { heading() })
                     Text(stringResource(if (smsHeld) R.string.setup_sms_held else R.string.setup_sms_not_held), fontSize = 24.sp, fontWeight = FontWeight.Bold)
                     Text(stringResource(if (access) R.string.setup_access_on else R.string.setup_access_off), fontSize = 24.sp)
+                    if (BuildConfig.SMS_ROLE_OFFERED && !smsHeld) {
+                        // Direct mode: works even when Android refuses the SMS role (the usual case for an app installed by hand).
+                        Text(stringResource(if (directSms) R.string.setup_sms_direct_on else R.string.setup_sms_direct_off), fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                        Button(
+                            onClick = { openingChild = true; if (directSms) copySms() else smsPermissions.launch(arrayOf(Manifest.permission.READ_SMS, Manifest.permission.SEND_SMS)) },
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp),
+                        ) { Text(stringResource(if (directSms) R.string.setup_sms_copy else R.string.setup_sms_direct_allow), fontSize = 24.sp) }
+                        copiedSms?.let { Text(resources.getQuantityString(R.plurals.setup_sms_copied, it, it), fontSize = 24.sp) }
+                    }
                     if (!smsHeld) {
                         if (BuildConfig.SMS_ROLE_OFFERED && SmsRole.requestIntent(this@SetupActivity) != null) {
                             Button(onClick = { requestSmsRole() }, modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)) {

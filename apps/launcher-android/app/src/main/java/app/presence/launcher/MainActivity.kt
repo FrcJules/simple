@@ -47,6 +47,7 @@ import app.presence.launcher.notifications.Channel
 import app.presence.launcher.notifications.ReplyRegistry
 import app.presence.launcher.sms.MessageNotifier
 import app.presence.launcher.sms.SendResult
+import app.presence.launcher.sms.SmsAccess
 import app.presence.launcher.sms.SmsComponents
 import app.presence.launcher.sms.SmsRole
 import app.presence.launcher.ui.CallScreen
@@ -144,6 +145,12 @@ class MainActivity : ComponentActivity() {
     }
 
     private val smsRole = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { onSmsRoleAnswered() }
+
+    /** Direct mode (Android did not make us the SMS app): the SMS permissions alone read old and new SMS and send. */
+    private val smsPermissions = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { onSmsPermissionsAnswered() }
+
+    /** "Écrire un message" was touched before the SMS question: go on to choosing who to write to once it is answered. */
+    private var pendingWrite = false
     private val notificationsPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     private val dictation = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -332,7 +339,7 @@ class MainActivity : ComponentActivity() {
                             ReplyConfirmScreen(
                                 item = open,
                                 text = replyText,
-                                directSend = SmsRole.isHeld(this) || open.message.channel == Channel.WHATSAPP,
+                                directSend = SmsAccess.canSend(this) || open.message.channel == Channel.WHATSAPP,
                                 whatsapp = open.message.channel == Channel.WHATSAPP,
                                 onOpenWhatsApp = if (open.message.channel == Channel.WHATSAPP && notice == R.string.whatsapp_reply_failed) ({ openWhatsApp() }) else null,
                                 isNew = thread.isEmpty(),
@@ -388,6 +395,8 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         seniorName = profile.name() // may have been changed in "Réglages famille"
+        // Direct mode: new SMS of the phone's own messaging app are copied in (the default SMS app receives them itself).
+        if (!SmsRole.isHeld(this) && SmsAccess.canRead(this)) lifecycleScope.launch(Dispatchers.IO) { runCatching { SmsComponents.syncNew(this@MainActivity) } }
         needsSetup = profile.setupHintVisible(System.currentTimeMillis(), FamilyLock(this).isSet())
         uiConfig = uiConfigStore.load()
         if (granted(Manifest.permission.READ_CONTACTS)) {
@@ -453,8 +462,9 @@ class MainActivity : ComponentActivity() {
 
     // ---- SMS role ----
 
+    // The offer comes first only while neither the role nor the direct permissions are there (debug builds: they carry the SMS permissions).
     private fun shouldOfferSmsRole() =
-        BuildConfig.SMS_ROLE_OFFERED && !SmsRole.isHeld(this) && !profile.smsRoleDeclined() && !smsRoleLater && SmsRole.requestIntent(this) != null
+        BuildConfig.SMS_ROLE_OFFERED && !SmsAccess.direct(this) && !profile.smsRoleDeclined() && !smsRoleLater
 
     private fun openMessages() {
         screen = if (shouldOfferSmsRole()) Screen.SMS_ROLE else Screen.MESSAGES
@@ -463,14 +473,37 @@ class MainActivity : ComponentActivity() {
     private fun requestSmsRole() {
         val intent = SmsRole.requestIntent(this)
         if (intent == null) {
-            screen = Screen.MESSAGES
+            requestSmsPermissions() // this phone offers no SMS role: the permissions alone still give the direct mode
             return
         }
         try {
             smsRole.launch(intent)
         } catch (e: ActivityNotFoundException) {
-            screen = Screen.MESSAGES
+            requestSmsPermissions()
         }
+    }
+
+    /** Asks for the two SMS permissions; the answer arrives in [onSmsPermissionsAnswered]. Nothing to ask when they are already given. */
+    private fun requestSmsPermissions() {
+        if (SmsAccess.direct(this)) {
+            onSmsPermissionsAnswered()
+            return
+        }
+        smsPermissions.launch(arrayOf(Manifest.permission.READ_SMS, Manifest.permission.SEND_SMS))
+    }
+
+    private fun onSmsPermissionsAnswered() {
+        val write = pendingWrite
+        pendingWrite = false
+        if (SmsAccess.canRead(this)) {
+            importing = !profile.smsImported() // the first copy of the old messages can take a moment
+            lifecycleScope.launch {
+                withContext(Dispatchers.IO) { runCatching { SmsComponents.syncNew(this@MainActivity) } }
+                profile.markSmsImported()
+                importing = false
+            }
+        }
+        screen = if (write && SmsAccess.direct(this)) Screen.PICK_RECIPIENT else Screen.MESSAGES
     }
 
     private fun declineSmsRole() {
@@ -502,8 +535,12 @@ class MainActivity : ComponentActivity() {
             }
         } else {
             profile.setSmsRoleDeclined(true)
+            // Android did not make us the SMS app (refused, or no dialog on this phone): the SMS permissions give the direct mode.
+            requestSmsPermissions()
+            return
         }
-        screen = Screen.MESSAGES
+        screen = if (pendingWrite && SmsAccess.direct(this)) Screen.PICK_RECIPIENT else Screen.MESSAGES
+        pendingWrite = false
     }
 
     // ---- Messages ----
@@ -535,11 +572,12 @@ class MainActivity : ComponentActivity() {
 
     private fun write() {
         when {
-            SmsRole.isHeld(this) -> screen = Screen.PICK_RECIPIENT
-            // Not the default SMS app: ask again here (it may have been refused once) instead of sending the person to another app.
-            BuildConfig.SMS_ROLE_OFFERED && SmsRole.requestIntent(this) != null -> {
+            SmsAccess.direct(this) -> screen = Screen.PICK_RECIPIENT
+            // Neither the SMS role nor the SMS permissions yet: ask here (it may have been refused once) instead of sending the person to another app.
+            BuildConfig.SMS_ROLE_OFFERED -> {
                 profile.setSmsRoleDeclined(false)
                 smsRoleLater = false
+                pendingWrite = true
                 screen = Screen.SMS_ROLE
             }
             // Never another app: say plainly that this is still being set up by the family.
@@ -620,7 +658,7 @@ class MainActivity : ComponentActivity() {
             failure(R.string.number_invalid) // stay on the confirmation, with the text still there
             return
         }
-        if (!SmsRole.isHeld(this)) {
+        if (!SmsAccess.canSend(this)) {
             LauncherActions.smsDraft(this, number, text)
             closeConversation()
             return
