@@ -114,3 +114,6 @@ Si Android n'accorde pas à Présence le rôle d'application SMS, [ADR 0007](adr
 ## Cases « application » de l'accueil
 Pour proposer les applications du téléphone, le launcher déclare qu'il veut voir celles qui ont une icône de lancement (`<queries>` MAIN/LAUNCHER) : **pas** la permission « toutes les applications ». La liste n'est affichée que dans « Réglages famille », derrière le code ; seul le nom de l'application choisie (son identifiant Android) est mémorisé, sur le téléphone, dans le fichier d'apparence. Une case ne lance que l'application choisie, par son point d'entrée habituel.
 
+## Messages « sensibles » (codes à usage unique)
+Un message qui parle d'un code et contient un nombre (« votre code est 482913 », « mot de passe 1530 ») ou d'une opération bancaire avec un long numéro est masqué dans les listes (« Touchez pour voir »), jamais lu à voix haute et jamais envoyé à l'écran maison. Les mots sont reconnus **en tant que mots** (« lapin » n'est pas « pin »), et un numéro de téléphone, une année ou une heure seule ne suffisent pas. Un faux positif ne coûte qu'un toucher ; un oubli laisserait fuiter un secret : le détecteur reste volontairement prudent.
+
