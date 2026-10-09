@@ -76,6 +76,15 @@ sudo -u presence PRESENCE_DATA_DIR=/var/lib/presence npm run reminders -w @prese
 ```
 Sans `--date` ni `--days`, le rappel revient tous les jours. L'écran le montre en plein écran à l'heure dite pendant 5 minutes (avec un bouton « OK »), puis en petit sous la date jusqu'à une heure après ou jusqu'à « OK ». Un titre ne peut pas contenir de dose (« 2 comprimés », « 500 mg ») : le rappel dit quoi, jamais combien. Les rappels de la même heure sont sur la même carte.
 
+## 5 ter. Photos de famille
+
+Le diaporama utilise **un dossier du Pi choisi par la famille**, jamais la photothèque d'un téléphone :
+```sh
+sudo install -d -m 0750 -o presence -g presence /var/lib/presence/photos
+# depuis votre ordinateur : scp *.jpg famille@presence.local:/tmp/ puis sudo mv /tmp/*.jpg /var/lib/presence/photos/ ; sudo chown presence: /var/lib/presence/photos/*
+```
+Ajoutez dans `/etc/presence/hub.env` : `PRESENCE_PHOTOS_DIR=/var/lib/presence/photos` (et `VITE_SLIDE_SECONDS=30` avant la construction de l'écran pour changer la durée). Formats : JPEG, PNG, WebP, 12 Mo au plus, 300 photos au plus, pas de sous-dossier ni de lien. Une nouvelle photo apparaît au plus tard 10 minutes après son dépôt. Sans photo, l'écran garde son fond uni.
+
 ## 6. Mises à jour
 
 - **Système** : automatiques (étape 1).
