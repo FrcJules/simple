@@ -10,7 +10,8 @@ L'ADR 0005 fait de Présence l'application SMS par défaut. Premier essai sur un
 - S'il n'est pas accordé, **mode direct** avec les seules permissions SMS (`READ_SMS`, `SEND_SMS`), demandées à ce moment :
   - les SMS existants sont **copiés dans l'historique de Présence** (une copie, rien n'est déplacé ni effacé dans l'autre application), puis les nouveaux à chaque ouverture et à chaque notification de SMS ;
   - l'envoi se fait directement (`SmsManager`), suivi d'une confirmation d'envoi comme avant ;
-  - les identifiants des messages copiés sont ceux du mode complet (`sms-<id>`) : passer plus tard au rôle ne crée aucun doublon.
+  - les messages reçus ou envoyés en mode complet portent désormais le même identifiant que la copie (`sms-<ligne du système>`) : passer d'un mode à l'autre ne crée aucun doublon. Seuls les quelques messages déjà copiés par une *notification* avant l'octroi des permissions peuvent apparaître une fois en double.
+  - les SMS d'inconnus et d'entreprises restent absents de l'écran maison (seuls les contacts connus y sont transmis) ; le texte copié est nettoyé comme en mode complet ; la première copie marque tout « lu », les suivantes gardent l'état du système.
 - Toujours **debug seulement** pour l'instant (permissions dans `src/debug`), jusqu'au test sur téléphone réel.
 - Les MMS (photos) restent réservés au mode complet.
 

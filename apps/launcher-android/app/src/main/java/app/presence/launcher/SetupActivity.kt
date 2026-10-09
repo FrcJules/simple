@@ -140,8 +140,9 @@ class SetupActivity : ComponentActivity() {
 
     private fun copySms() {
         lifecycleScope.launch {
-            copiedSms = withContext(Dispatchers.IO) { runCatching { SmsComponents.syncNew(this@SetupActivity) }.getOrDefault(0) }
-            ProfileStore(this@SetupActivity).markSmsImported()
+            val result = withContext(Dispatchers.IO) { runCatching { SmsComponents.syncNew(this@SetupActivity) } }
+            copiedSms = result.getOrDefault(0)
+            if (result.isSuccess) ProfileStore(this@SetupActivity).markSmsImported()
         }
     }
 

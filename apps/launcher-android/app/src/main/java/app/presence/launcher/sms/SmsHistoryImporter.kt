@@ -3,6 +3,7 @@ package app.presence.launcher.sms
 import android.provider.Telephony
 import app.presence.launcher.messages.MessageStatus
 import app.presence.launcher.messages.StoredMessage
+import app.presence.launcher.messages.TextSafety
 import app.presence.launcher.notifications.Channel
 import app.presence.launcher.notifications.SensitiveText
 
@@ -29,10 +30,11 @@ class SmsHistoryImporter(
         val names = HashMap<String, String>()
         val messages = rows.mapNotNull { sms ->
             if (sms.address.isBlank() || sms.body.isBlank() || sms.type == Telephony.Sms.MESSAGE_TYPE_DRAFT) return@mapNotNull null
+            val text = TextSafety.clean(sms.body) // control and bidirectional-override characters could make a text read differently from what it says
             val outgoing = sms.type != Telephony.Sms.MESSAGE_TYPE_INBOX
             val name = names.getOrPut(sms.address) { nameFor(sms.address)?.takeIf { it.isNotBlank() } ?: sms.address }
             StoredMessage(
-                id = "sms-${sms.id}", from = name, channel = Channel.SMS, text = sms.body, receivedAtMs = sms.dateMs,
+                id = "sms-${sms.id}", from = name, channel = Channel.SMS, text = text, receivedAtMs = sms.dateMs,
                 read = if (keepReadFlag && !outgoing) sms.read else true, outgoing = outgoing, address = sms.address,
                 status = when (sms.type) {
                     Telephony.Sms.MESSAGE_TYPE_SENT -> MessageStatus.SENT
@@ -40,7 +42,7 @@ class SmsHistoryImporter(
                     Telephony.Sms.MESSAGE_TYPE_FAILED -> MessageStatus.FAILED
                     else -> MessageStatus.SENDING // outbox / queued
                 },
-                sensitive = !outgoing && SensitiveText.looksSensitive(sms.body),
+                sensitive = !outgoing && SensitiveText.looksSensitive(text),
             )
         }
         addAll(messages)
