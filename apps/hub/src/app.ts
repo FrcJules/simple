@@ -6,6 +6,7 @@ import { z } from "zod";
 import { DeviceRegistry } from "./devices";
 import { FailureLimiter } from "./limiter";
 import type { PhotosStore } from "./photos";
+import type { WeatherService } from "./weather";
 import type { RemindersStore } from "./reminders";
 
 const pairBody = z.object({ claim: z.string().min(16).max(200) }).strict();
@@ -31,6 +32,8 @@ export interface HubOptions {
   reminders?: RemindersStore;
   /** The family photos folder for the display slideshow (`GET /photos`, `GET /photos/<name>`). Without it the routes do not exist. */
   photos?: PhotosStore;
+  /** The day's weather (`GET /weather`, display token), asked by the hub itself (ADR 0006). Without it the route does not exist. */
+  weather?: WeatherService;
   /**
    * Starts a pairing from the home display: makes a one-time claim and returns the link for the QR code and the grouped fingerprint
    * shown beside it. Throws if the hub has no home-network address. Without it, `/pairing/start` does not exist.
@@ -162,6 +165,13 @@ export function buildApp(opts: HubOptions): FastifyInstance {
     if (!canRead(req)) return unauthorized(req.ip, reply);
     void reply.header("Cache-Control", "no-store");
     return { reminders: opts.reminders.list() };
+  });
+
+  app.get("/weather", async (req, reply) => {
+    if (!opts.weather) return reply.code(404).send({ error: "not_found" });
+    const refused = displayGuard(req, reply);
+    if (refused) return refused;
+    return { weather: await opts.weather.get() };
   });
 
   app.get("/photos", async (req, reply) => {

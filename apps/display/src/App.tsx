@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { body, formatDate, formatTime, greeting, headline, icon, timeAgo } from "./format";
 import { PairingScreen } from "./PairingScreen";
+import { degrees, describeWeather, fetchWeather } from "./weather";
 import { cardReminders, dismissKey, dueReminders, fetchReminders, formatAt, nextReminder } from "./reminders";
 import { homeText } from "./strings";
-import type { Reminder } from "@presence/contracts";
+import type { Reminder, Weather } from "@presence/contracts";
 import { useSlideshow } from "./slideshow";
 import { useEvents } from "./useEvents";
 import "./app.css";
@@ -29,6 +30,15 @@ export function App() {
   const [pairing, setPairing] = useState(false);
   const photo = useSlideshow();
   const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [weather, setWeather] = useState<Weather | null>(null);
+  useEffect(() => {
+    let alive = true;
+    const load = () => void fetchWeather().then((w) => alive && setWeather(w));
+    load();
+    const timer = setInterval(load, 30 * 60_000);
+    return () => { alive = false; clearInterval(timer); };
+  }, []);
+  const sky = weather ? describeWeather(weather.code) : null;
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   useEffect(() => {
     let alive = true;
@@ -74,6 +84,11 @@ export function App() {
         <h1>{greeting(now, NAME)}</h1>
         <p className="time" onClick={onClockTap}>{formatTime(now)}</p>
         <p className="date">{formatDate(now)}</p>
+        {weather && sky && (
+          <p className="weather">
+            <span aria-hidden="true">{sky.icon}</span> {sky.label}, {degrees(weather.temperature)} <span className="range">(de {degrees(weather.min)} à {degrees(weather.max)})</span>
+          </p>
+        )}
         {waiting[0] && <p className="next waiting">⏰ {formatAt(waiting[0].at)} — {waiting[0].title}</p>}
         {!waiting[0] && next && <p className="next">⏰ {formatAt(next.at)} — {next.title}</p>}
       </div>

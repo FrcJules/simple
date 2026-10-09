@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { presenceEvent, reminder } from "./index";
+import { presenceEvent, reminder, weather } from "./index";
 
 const base = { schemaVersion: 1, id: "e1", occurredAt: "2026-10-06T09:30:00+02:00" };
 
@@ -52,6 +52,15 @@ describe("reminder", () => {
   it("refuses bad times, days, titles and extra fields", () => {
     for (const bad of [{ at: "8:00" }, { at: "24:00" }, { at: "08:60" }, { days: [7] }, { days: [] }, { title: "" }, { title: "x".repeat(81) }, { date: "12/10/2026" }, { extra: 1 }, { date: "2026-10-12", days: [1] }, { title: "Prendre 2 comprimés" }, { title: "Doliprane 500 mg" }, { title: "10 gouttes" }]) {
       expect(reminder.safeParse({ ...r, ...bad }).success, JSON.stringify(bad)).toBe(false);
+    }
+  });
+});
+
+describe("weather", () => {
+  it("accepts a reading and refuses nonsense", () => {
+    expect(weather.safeParse({ temperature: 18.4, code: 3, min: 11, max: 21 }).success).toBe(true);
+    for (const bad of [{ temperature: 500 }, { code: 120 }, { code: 1.5 }, { min: "cold" }]) {
+      expect(weather.safeParse({ temperature: 18, code: 3, min: 11, max: 21, ...bad }).success, JSON.stringify(bad)).toBe(false);
     }
   });
 });
