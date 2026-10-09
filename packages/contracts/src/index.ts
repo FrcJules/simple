@@ -96,3 +96,23 @@ export const weather = z.object({
 });
 
 export type Weather = z.infer<typeof weather>;
+/**
+ * A loved one's birthday, entered on the Pi by the family. `day` is "MM-DD" (29 February counts on 28 February in other years);
+ * `year` is optional and only used to say how old the person turns. Kept on the Pi only.
+ */
+export const birthday = z
+  .object({
+    id: z.string().min(1).max(40),
+    name: z.string().trim().min(1).max(60),
+    day: z.string().regex(/^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/),
+    year: z.number().int().min(1900).max(2100).optional(),
+  })
+  .strict()
+  .refine((b) => {
+    const [m, d] = b.day.split("-").map(Number) as [number, number];
+    return d <= [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1]!;
+  }, "no such day");
+
+export const birthdaysResponse = z.object({ birthdays: z.array(birthday).max(100) });
+
+export type Birthday = z.infer<typeof birthday>;

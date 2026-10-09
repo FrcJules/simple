@@ -85,6 +85,14 @@ PRESENCE_WEATHER_LON=2.4
 ```
 puis `sudo systemctl restart presence-hub`. Le Pi interroge Open-Meteo toutes les 30 minutes au plus ; l'écran affiche « Grand soleil, 18° (de 11° à 21°) ». Pour la désactiver, videz les deux lignes.
 
+## 5 quater. Anniversaires
+
+```sh
+cd /opt/presence && sudo -u presence PRESENCE_DATA_DIR=/var/lib/presence npm run birthdays -w @presence/hub -- add "Marie" --day 03-14 --year 1950
+sudo -u presence PRESENCE_DATA_DIR=/var/lib/presence npm run birthdays -w @presence/hub -- list
+```
+Le jour même, l'écran affiche « Aujourd'hui, Marie fête ses 76 ans » (si l'année est donnée et plausible ; sinon « Aujourd'hui, anniversaire de Marie ») ; dans les 7 jours qui précèdent, « Samedi, anniversaire de Marie » (ou « Demain »). Plusieurs personnes le même jour sont regroupées en une phrase. Le 29 février est fêté le 28 les autres années. `-- remove <identifiant>` supprime une entrée.
+
 ## 5 ter. Photos de famille
 
 Le diaporama utilise **un dossier du Pi choisi par la famille**, jamais la photothèque d'un téléphone :
