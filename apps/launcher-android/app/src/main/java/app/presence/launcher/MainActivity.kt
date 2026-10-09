@@ -69,7 +69,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
-    private enum class Screen { HOME, RATIONALE, DENIED, CALL, SMS_ROLE, MESSAGES, PICK_RECIPIENT, MESSAGE, REPLY, PHOTO_CHOICE, PHOTO_CONFIRM }
+    private enum class Screen { HOME, RATIONALE, DENIED, CALL, SMS_ROLE, MESSAGES, PICK_RECIPIENT, MESSAGE, REPLY, PHOTO_CHOICE, PHOTO_CONFIRM, WRITE_NOT_READY }
 
     private val contactsVm: ContactsViewModel by viewModels()
     private val messagesVm: MessagesViewModel by viewModels()
@@ -245,7 +245,12 @@ class MainActivity : ComponentActivity() {
                         BackHandler { screen = Screen.HOME }
                         val everybody by contactsVm.allContacts.collectAsStateWithLifecycle()
                         LaunchedEffect(Unit) { contactsVm.loadAll() } // the "Général" tab and the search need every contact
+                        androidx.compose.runtime.DisposableEffect(Unit) { onDispose { contactsVm.clearAll() } } // and they are forgotten when the screen is left
                         CallScreen(favorites = contacts, all = everybody, onBack = { screen = Screen.HOME }, onCall = { calling = it })
+                    }
+                    Screen.WRITE_NOT_READY -> {
+                        BackHandler { screen = Screen.MESSAGES }
+                        MessageScreen(R.string.write_not_ready, onBack = { screen = Screen.MESSAGES })
                     }
                     Screen.SMS_ROLE -> {
                         BackHandler { screen = Screen.HOME }
@@ -383,7 +388,7 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         seniorName = profile.name() // may have been changed in "Réglages famille"
-        needsSetup = !FamilyLock(this).isSet()
+        needsSetup = profile.setupHintVisible(System.currentTimeMillis(), FamilyLock(this).isSet())
         uiConfig = uiConfigStore.load()
         if (granted(Manifest.permission.READ_CONTACTS)) {
             contactsVm.refresh()
@@ -537,7 +542,8 @@ class MainActivity : ComponentActivity() {
                 smsRoleLater = false
                 screen = Screen.SMS_ROLE
             }
-            else -> LauncherActions.messages(this)
+            // Never another app: say plainly that this is still being set up by the family.
+            else -> screen = Screen.WRITE_NOT_READY
         }
     }
 

@@ -58,6 +58,11 @@ class ContactsViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** Forgets the full list (kept only while the call screen needs it). */
+    fun clearAll() {
+        _all.value = emptyList()
+    }
+
     /** The family shows or hides one person. */
     fun toggle(id: Long) {
         viewModelScope.launch(Dispatchers.IO) {

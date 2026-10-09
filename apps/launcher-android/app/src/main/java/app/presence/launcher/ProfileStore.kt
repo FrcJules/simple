@@ -36,7 +36,21 @@ class ProfileStore(context: Context) {
         prefs.edit().putBoolean("feedback", enabled).apply()
     }
 
+    /**
+     * The "pour la famille" button on the home screen is offered for [SETUP_WINDOW_MS] after it first appears, and only while no family
+     * code exists: afterwards the code can still be chosen from the "Réglages" icon, but not from Jean-Pierre's home screen.
+     */
+    fun setupHintVisible(now: Long, codeSet: Boolean): Boolean {
+        if (codeSet) return false
+        val first = prefs.getLong("setup_hint_first", 0L).takeIf { it > 0 } ?: now.also { prefs.edit().putLong("setup_hint_first", it).apply() }
+        return now - first in 0..SETUP_WINDOW_MS
+    }
+
     fun saveName(name: String) {
         prefs.edit().putString("name", name.trim().take(40)).apply()
+    }
+
+    private companion object {
+        const val SETUP_WINDOW_MS = 30 * 60 * 1000L
     }
 }

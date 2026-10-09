@@ -40,7 +40,7 @@ class CallScreenTabsTest {
         var called: Contact? = null
         rule.setContent { CallScreen(favorites = listOf(marie), all = listOf(jules, marie, paul), onBack = {}, onCall = { called = it }) }
         rule.onNodeWithText("Chercher").performClick()
-        rule.onNodeWithText("Écrivez le début du prénom").assertIsDisplayed()
+        rule.onNodeWithText("Touchez les premières lettres du prénom").assertIsDisplayed()
         rule.onNodeWithText("P").performScrollTo().performClick()
         rule.onNodeWithText("Paul Martin").assertIsDisplayed()
         rule.onNodeWithText("Marie").assertDoesNotExist()
@@ -55,7 +55,7 @@ class CallScreenTabsTest {
         rule.onNodeWithText("Chercher").performClick()
         rule.onNodeWithText("Z").performScrollTo().performClick()
         rule.onNodeWithText("Personne ne correspond.").assertIsDisplayed()
-        rule.onNodeWithText("Tout effacer").performScrollTo().performClick()
+        rule.onNodeWithText("Recommencer").performScrollTo().performClick()
         rule.onNodeWithText("Personne ne correspond.").assertDoesNotExist()
     }
 }

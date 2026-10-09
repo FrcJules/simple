@@ -20,8 +20,8 @@ import androidx.compose.material.icons.filled.BatteryFull
 import androidx.compose.runtime.remember
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -70,7 +70,7 @@ fun HomeScreen(
             }
             // Until the family has chosen a code: the one visible way in to the settings (afterwards only the hidden gesture and the "Réglages" icon).
             if (showSetupHint) {
-                Button(onClick = onSetup, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
+                OutlinedButton(onClick = onSetup, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
                     Text(stringResource(R.string.home_setup_hint), fontSize = 24.sp, textAlign = TextAlign.Center)
                 }
             }

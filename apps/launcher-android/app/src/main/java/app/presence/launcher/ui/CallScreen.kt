@@ -8,8 +8,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.material.icons.automirrored.filled.Backspace
 import app.presence.launcher.ContactSearch
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.semantics.selected
@@ -159,61 +166,82 @@ private fun TabButton(label: String, selected: Boolean, modifier: Modifier, onCl
         }
         Text(label, fontSize = 28.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
     }
-    val tabModifier = modifier.heightIn(min = 72.dp).semantics { this.selected = selected }
+    val tabModifier = modifier.heightIn(min = 72.dp).semantics { this.selected = selected; role = Role.Tab }
     if (selected) Button(onClick, tabModifier) { content() } else OutlinedButton(onClick, tabModifier) { content() }
 }
 
 private const val SEARCH_KEY_COLUMNS = 5
-private const val SEARCH_MAX_RESULTS = 3
+private const val SEARCH_SLOTS = 2
 private val SEARCH_LETTERS = ('A'..'Z').toList()
 
-/** Typed letters, the people they match (at most [SEARCH_MAX_RESULTS], above the keys so they stay in view) and a big keyboard. */
+/**
+ * Typed letters and the people they match stay fixed at the top (their place never moves while typing); only the keys scroll.
+ * At most [SEARCH_SLOTS] people are shown, with the count of the others.
+ */
 @Composable
 private fun SearchPanel(all: List<Contact>, query: String, onQuery: (String) -> Unit, onPick: (Contact) -> Unit, onClose: () -> Unit) {
     val matches = remember(all, query) { ContactSearch.filter(all, query) }
-    Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 8.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text(stringResource(R.string.call_search_title), fontSize = 28.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-        Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
-            Box(contentAlignment = Alignment.Center) {
-                Text(query.ifEmpty { "…" }, fontSize = 40.sp, fontWeight = FontWeight.Bold, letterSpacing = 4.sp)
-            }
-        }
-        if (query.isNotEmpty() && matches.isEmpty()) {
-            Text(stringResource(R.string.call_search_none), fontSize = 24.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp))
-        }
-        if (query.isNotEmpty()) matches.take(SEARCH_MAX_RESULTS).forEach { c -> ResultRow(c) { onPick(c) } }
-        if (query.isNotEmpty() && matches.size > SEARCH_MAX_RESULTS) {
-            Text(stringResource(R.string.call_search_more), fontSize = 24.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-        }
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            SEARCH_LETTERS.chunked(SEARCH_KEY_COLUMNS).forEachIndexed { index, row ->
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxWidth()) {
-                    row.forEach { letter ->
-                        SearchKey(letter.toString(), Modifier.weight(1f)) { onQuery(query + letter) }
-                    }
-                    if (index == SEARCH_LETTERS.chunked(SEARCH_KEY_COLUMNS).lastIndex) {
-                        // The last row: Z, then the two keys that take letters away.
-                        SearchKey(stringResource(R.string.call_search_erase), Modifier.weight(2f), small = true) { onQuery(query.dropLast(1)) }
-                        SearchKey(stringResource(R.string.call_search_clear), Modifier.weight(2f), small = true) { onQuery("") }
-                    }
-                }
-            }
-        }
-        OutlinedButton(onClick = onClose, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
+    val haptic = LocalHapticFeedback.current
+    val type: (String) -> Unit = { haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove); onQuery(it) }
+    Column(Modifier.fillMaxSize().padding(horizontal = 4.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        OutlinedButton(onClick = onClose, modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)) {
             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
             Spacer(Modifier.width(12.dp))
-            Text(stringResource(R.string.call_search_close), fontSize = 28.sp)
+            Text(stringResource(R.string.call_search_close), fontSize = 24.sp)
+        }
+        val typedLabel = stringResource(R.string.call_search_typed, query.ifEmpty { "-" })
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp).semantics { contentDescription = typedLabel; liveRegion = LiveRegionMode.Polite },
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                if (query.isEmpty()) Text(stringResource(R.string.call_search_title), fontSize = 24.sp, textAlign = TextAlign.Center)
+                else Text(query, fontSize = 40.sp, fontWeight = FontWeight.Bold, letterSpacing = 4.sp)
+            }
+        }
+        // A fixed zone: one slot per person shown, empty slots keep the keys where the finger expects them.
+        Column(Modifier.fillMaxWidth().height((SEARCH_SLOTS * 80 + 36).dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            if (query.isNotEmpty()) {
+                matches.take(SEARCH_SLOTS).forEach { c -> ResultRow(c) { onPick(c) } }
+                val extra = matches.size - SEARCH_SLOTS
+                val note = when {
+                    matches.isEmpty() -> stringResource(R.string.call_search_none)
+                    extra > 0 -> pluralStringResource(R.plurals.call_search_more, extra, extra)
+                    else -> null
+                }
+                if (note != null) Text(note, fontSize = 24.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+            }
+        }
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            SEARCH_LETTERS.chunked(SEARCH_KEY_COLUMNS).forEach { row ->
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                    row.forEach { letter -> SearchKey(letter.toString(), Modifier.weight(1f)) { type(query + letter) } }
+                    repeat(SEARCH_KEY_COLUMNS - row.size) { Spacer(Modifier.weight(1f)) } // the last row (Z) keeps the same key width
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                SearchAction(stringResource(R.string.call_search_erase), Icons.AutoMirrored.Filled.Backspace, Modifier.weight(1f)) { type(query.dropLast(1)) }
+                SearchAction(stringResource(R.string.call_search_clear), Icons.Filled.Close, Modifier.weight(1f)) { type("") }
+            }
         }
     }
 }
 
 @Composable
-private fun SearchKey(label: String, modifier: Modifier, small: Boolean = false, onClick: () -> Unit) {
-    OutlinedButton(onClick = onClick, modifier = modifier.heightIn(min = 64.dp), contentPadding = PaddingValues(horizontal = 2.dp)) {
-        Text(label, fontSize = if (small) 24.sp else 30.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, maxLines = 2)
+private fun SearchAction(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier, onClick: () -> Unit) {
+    Button(onClick = onClick, modifier = modifier.heightIn(min = 72.dp), contentPadding = PaddingValues(horizontal = 4.dp)) {
+        Icon(icon, contentDescription = null)
+        Spacer(Modifier.width(6.dp))
+        Text(label, fontSize = 24.sp, fontWeight = FontWeight.Bold, maxLines = 2, textAlign = TextAlign.Center)
+    }
+}
+
+@Composable
+private fun SearchKey(label: String, modifier: Modifier, onClick: () -> Unit) {
+    val spoken = stringResource(R.string.call_search_letter, label)
+    OutlinedButton(onClick = onClick, modifier = modifier.heightIn(min = 72.dp).semantics { contentDescription = spoken }, contentPadding = PaddingValues(0.dp)) {
+        Text(label, fontSize = 30.sp, fontWeight = FontWeight.Bold)
     }
 }
 

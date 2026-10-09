@@ -47,8 +47,8 @@ Je ne peux pas accéder à votre téléphone par défaut. Si vous le souhaitez, 
 Installation du Pi : [docs/pi-install.md](pi-install.md).
 
 ## Ouvrir les réglages de la famille
-- **Première installation** : tant qu'aucun code famille n'existe, un gros bouton « Première installation, pour la famille » apparaît en bas de l'accueil. Il mène au choix du code (notez-le !). Il disparaît ensuite.
+- **Première installation** : tant qu'aucun code famille n'existe, un bouton « Pour la famille : choisir le code de Présence » apparaît en bas de l'accueil pendant **30 minutes** après le premier affichage. Il mène au choix du code (notez-le !). Il disparaît dès que le code existe. Passé ce délai, choisissez le code depuis l'icône « Réglages ».
 - **Ensuite** : touchez 7 fois de suite l'heure sur l'accueil, ou ouvrez l'icône « Réglages » de Présence dans la liste des applications (si Présence est le lanceur : Réglages Android › Applications › Présence › Ouvrir). Les deux demandent le code.
 - Dans les réglages : « Qui voulez-vous appeler ? » affiche deux onglets, **Favoris** (les personnes choisies ici) et **Général** (tous les contacts du téléphone), plus un bouton **Chercher** avec un gros clavier pour trouver une personne par les premières lettres de son prénom.
-- « Écrire un message » : si Présence n'est pas encore l'application SMS par défaut, la question est reposée (au lieu d'ouvrir Google Messages).
+- « Écrire un message » : si Présence n'est pas encore l'application SMS par défaut, la question est reposée ; si elle n'est pas disponible dans cette version, un message simple s'affiche (jamais Google Messages).
 
