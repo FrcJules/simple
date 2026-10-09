@@ -76,6 +76,15 @@ sudo -u presence PRESENCE_DATA_DIR=/var/lib/presence npm run reminders -w @prese
 ```
 Sans `--date` ni `--days`, le rappel revient tous les jours. L'écran le montre en plein écran à l'heure dite pendant 5 minutes (avec un bouton « OK »), puis en petit sous la date jusqu'à une heure après ou jusqu'à « OK ». Un titre ne peut pas contenir de dose (« 2 comprimés », « 500 mg ») : le rappel dit quoi, jamais combien. Les rappels de la même heure sont sur la même carte.
 
+## 5 quinquies. Météo (facultative)
+
+Désactivée par défaut ([ADR 0006](adr/0006-meteo-open-meteo.md)). Pour l'activer, ajoutez dans `/etc/presence/hub.env` les coordonnées de **votre ville** (pas de votre maison : elles sont arrondies à 0,1°, soit environ 11 km, avant d'être envoyées) :
+```
+PRESENCE_WEATHER_LAT=48.9
+PRESENCE_WEATHER_LON=2.4
+```
+puis `sudo systemctl restart presence-hub`. Le Pi interroge Open-Meteo toutes les 30 minutes au plus ; l'écran affiche « Grand soleil, 18° (de 11° à 21°) ». Pour la désactiver, videz les deux lignes.
+
 ## 5 ter. Photos de famille
 
 Le diaporama utilise **un dossier du Pi choisi par la famille**, jamais la photothèque d'un téléphone :
