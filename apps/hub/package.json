@@ -12,7 +12,8 @@
     "pair": "tsx src/pair.ts",
     "devices": "tsx src/revoke.ts",
     "revoke": "tsx src/revoke.ts",
-    "rotate-cert": "tsx src/rotate-cert.ts"
+    "rotate-cert": "tsx src/rotate-cert.ts",
+    "reminders": "tsx src/reminders-cli.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.3.0",

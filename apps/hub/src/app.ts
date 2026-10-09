@@ -5,6 +5,7 @@ import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { DeviceRegistry } from "./devices";
 import { FailureLimiter } from "./limiter";
+import type { RemindersStore } from "./reminders";
 
 const pairBody = z.object({ claim: z.string().min(16).max(200) }).strict();
 const LOOPBACK = new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1"]);
@@ -25,6 +26,8 @@ export interface HubOptions {
   maxStreams?: number;
   /** Paired phones (one-time claim → device token). Without it, only [pairingToken] writes and /pair is off. */
   devices?: DeviceRegistry;
+  /** The family's reminders for the display (`GET /reminders`, display token). Without it the route does not exist. */
+  reminders?: RemindersStore;
   /**
    * Starts a pairing from the home display: makes a one-time claim and returns the link for the QR code and the grouped fingerprint
    * shown beside it. Throws if the hub has no home-network address. Without it, `/pairing/start` does not exist.
@@ -148,6 +151,14 @@ export function buildApp(opts: HubOptions): FastifyInstance {
     if (authFailures.blocked(req.ip)) return tooMany(reply);
     if (!canRead(req)) return unauthorized(req.ip, reply);
     return { events };
+  });
+
+  app.get("/reminders", async (req, reply) => {
+    if (!opts.reminders) return reply.code(404).send({ error: "not_found" });
+    if (authFailures.blocked(req.ip)) return tooMany(reply);
+    if (!canRead(req)) return unauthorized(req.ip, reply);
+    void reply.header("Cache-Control", "no-store");
+    return { reminders: opts.reminders.list() };
   });
 
   app.get("/events/stream", (req, reply) => {

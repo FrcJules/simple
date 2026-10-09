@@ -66,6 +66,16 @@ Sur l'écran maison, touchez **5 fois de suite l'heure** : un QR code s'affiche 
 
 Liste et retrait des téléphones : mêmes variables, `npm run devices -w @presence/hub` et `npm run revoke -w @presence/hub -- <identifiant>`. Pour changer de certificat (carte SD perdue) : arrêtez le hub, `npm run rotate-cert -w @presence/hub`, redémarrez, appairez de nouveau.
 
+## 5 bis. Rappels
+
+```sh
+cd /opt/presence && sudo -u presence PRESENCE_DATA_DIR=/var/lib/presence npm run reminders -w @presence/hub -- add "Prendre le médicament" --at 08:00
+sudo -u presence PRESENCE_DATA_DIR=/var/lib/presence npm run reminders -w @presence/hub -- add "Rendez-vous médecin" --at 14:30 --date 2026-10-12
+sudo -u presence PRESENCE_DATA_DIR=/var/lib/presence npm run reminders -w @presence/hub -- add "Marché" --at 09:00 --days mar,sam
+sudo -u presence PRESENCE_DATA_DIR=/var/lib/presence npm run reminders -w @presence/hub -- list
+```
+Sans `--date` ni `--days`, le rappel revient tous les jours. L'écran le montre en plein écran à l'heure dite pendant 5 minutes (avec un bouton « OK »), puis en petit sous la date jusqu'à une heure après ou jusqu'à « OK ». Un titre ne peut pas contenir de dose (« 2 comprimés », « 500 mg ») : le rappel dit quoi, jamais combien. Les rappels de la même heure sont sur la même carte.
+
 ## 6. Mises à jour
 
 - **Système** : automatiques (étape 1).
