@@ -286,7 +286,10 @@ class MainActivity : ComponentActivity() {
                     }
                     Screen.PICK_RECIPIENT -> {
                         BackHandler { screen = Screen.MESSAGES }
-                        PickContactScreen(R.string.write_to_title, contacts, onPick = { startNewConversation(it) }, onBack = { screen = Screen.MESSAGES })
+                        val everybody by contactsVm.allContacts.collectAsStateWithLifecycle()
+                        LaunchedEffect(Unit) { contactsVm.loadAll() } // the "Général" tab and the search need every contact
+                        androidx.compose.runtime.DisposableEffect(Unit) { onDispose { contactsVm.clearAll() } }
+                        PickContactScreen(R.string.write_to_title, favorites = contacts, all = everybody, onPick = { startNewConversation(it) }, onBack = { screen = Screen.MESSAGES })
                     }
                     Screen.MESSAGE -> {
                         BackHandler { closeConversation() }

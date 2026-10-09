@@ -68,3 +68,7 @@ Une version « release » ne propose pas encore le rôle SMS (voir le commentair
 
 ### Revenir à l'accueil depuis une application
 Présence est l'application d'**accueil** du téléphone (choisissez-la dans Android : Réglages › Applications › Applications par défaut › Application d'accueil). Depuis n'importe quelle application ouverte par une case, le bouton **Accueil** d'Android (la maison, ou le geste « glisser vers le haut ») ramène sur l'accueil de Jean-Pierre. Gardez de préférence la **navigation à 3 boutons** (Réglages › Système › Navigation) : le bouton maison est toujours visible. Une case dont l'application a été désinstallée affiche un triangle d'avertissement et « Application absente ».
+
+## Écrire un message à quelqu'un
+« Messages › Écrire un message » ouvre le même choix que pour appeler : **Favoris**, **Général** (tous les contacts du téléphone) et **Chercher** (clavier de lettres : le début du prénom suffit). « Reculer » et « Recommencer » restent à côté des lettres tapées.
+

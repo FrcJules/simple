@@ -2,6 +2,7 @@ package app.presence.launcher
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -55,7 +56,34 @@ class CallScreenTabsTest {
         rule.onNodeWithText("Chercher").performClick()
         rule.onNodeWithText("Z").performScrollTo().performClick()
         rule.onNodeWithText("Personne ne correspond.").assertIsDisplayed()
-        rule.onNodeWithText("Recommencer").performScrollTo().performClick()
+        rule.onNodeWithContentDescription("Recommencer").performClick()
         rule.onNodeWithText("Personne ne correspond.").assertDoesNotExist()
+    }
+
+    @Test
+    fun theCorrectionKeysStayInViewAndWorkWithoutScrolling() {
+        rule.setContent { CallScreen(favorites = listOf(marie), all = listOf(jules, marie, paul), onBack = {}, onCall = {}) }
+        rule.onNodeWithText("Chercher").performClick()
+        rule.onNodeWithText("M").performScrollTo().performClick()
+        rule.onNodeWithText("A").performScrollTo().performClick()
+        rule.onNodeWithContentDescription("Reculer").assertIsDisplayed() // no scrolling needed to reach it
+        rule.onNodeWithContentDescription("Recommencer").assertIsDisplayed()
+        rule.onNodeWithContentDescription("Reculer").performClick()
+        rule.onNodeWithContentDescription("Vous avez écrit : M").assertIsDisplayed()
+        rule.onNodeWithContentDescription("Recommencer").performClick()
+        rule.onNodeWithContentDescription("Vous avez écrit : -").assertIsDisplayed()
+    }
+
+    @Test
+    fun writingToSomeoneOffersTheSameFavouritesGeneralAndSearch() {
+        var picked: Contact? = null
+        rule.setContent { app.presence.launcher.ui.PickContactScreen(R.string.write_to_title, listOf(marie), listOf(jules, marie, paul), onPick = { picked = it }, onBack = {}) }
+        rule.onNodeWithText("Favoris").assertIsDisplayed()
+        rule.onNodeWithText("Général").performClick()
+        rule.onNodeWithText("Paul Martin").assertIsDisplayed()
+        rule.onNodeWithText("Chercher").performClick()
+        rule.onNodeWithText("J").performScrollTo().performClick()
+        rule.onNodeWithText("Jules").performClick()
+        assertEquals(jules, picked)
     }
 }

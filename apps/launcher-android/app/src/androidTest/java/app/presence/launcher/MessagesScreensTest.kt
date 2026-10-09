@@ -182,7 +182,7 @@ class MessagesScreensTest {
     @Test
     fun pickingARecipientReportsTheContact() {
         var picked: Contact? = null
-        rule.setContent { PickContactScreen(R.string.write_to_title, listOf(marie), onPick = { picked = it }, onBack = {}) }
+        rule.setContent { PickContactScreen(R.string.write_to_title, listOf(marie), listOf(marie), onPick = { picked = it }, onBack = {}) }
         rule.onNodeWithText("À qui voulez-vous écrire ?").assertIsDisplayed()
         rule.onNodeWithText("Marie").performClick()
         assertEquals(marie, picked)
