@@ -42,4 +42,30 @@ class SensitiveTextTest {
         assertTrue(SensitiveText.looksSensitive("Achat de 59 EUR chez X : saisissez 482913 pour valider"))
         assertTrue(SensitiveText.looksSensitive("Pour votre securite, le CVV temporaire est 4821"))
     }
+
+    @Test
+    fun everydayWordsAndNumbersAreNotMistakenForCodes() {
+        assertFalse(SensitiveText.looksSensitive("Mon lapin a mangé 2026 carottes")) // "pin" inside a word
+        assertFalse(SensitiveText.looksSensitive("Regarde sur Pinterest, j'ai trouvé 12345 idées"))
+        assertFalse(SensitiveText.looksSensitive("Rendez-vous confirmé à 1530, je viens te chercher"))
+        assertFalse(SensitiveText.looksSensitive("Confirmation du rdv de 2026, à bientôt"))
+        assertFalse(SensitiveText.looksSensitive("Appelle-moi au 0612345678 c'est urgent"))
+        assertFalse(SensitiveText.looksSensitive("Le colis expire bientôt, rendez-vous en 2026"))
+        assertFalse(SensitiveText.looksSensitive("J'ai fait 4500 pas aujourd'hui, et un bon achat"))
+    }
+
+    @Test
+    fun aCodeNextToANumberIsStillCaughtEvenIfItLooksLikeAYearOrATime() {
+        assertTrue(SensitiveText.looksSensitive("Le code du portail est 1234"))
+        assertTrue(SensitiveText.looksSensitive("Votre code : 2026"))
+        assertTrue(SensitiveText.looksSensitive("Mot de passe temporaire 1530"))
+        assertTrue(SensitiveText.looksSensitive("Votre code de vérification est 482913"))
+    }
+
+    @Test
+    fun aMoneyWordNeedsALongNumber() {
+        assertTrue(SensitiveText.looksSensitive("Virement de 250 EUR reçu, référence 78451239"))
+        assertFalse(SensitiveText.looksSensitive("Virement de 250 EUR reçu"))
+        assertFalse(SensitiveText.looksSensitive("Paiement accepté : 1530")) // a 4-digit number alone, no code word
+    }
 }
