@@ -21,6 +21,7 @@ import androidx.compose.material.icons.automirrored.filled.Backspace
 import app.presence.launcher.ContactSearch
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.semantics.selected
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.foundation.verticalScroll
@@ -40,6 +41,7 @@ import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -179,38 +181,43 @@ private const val SEARCH_SLOTS = 2
 private val SEARCH_LETTERS = ('A'..'Z').toList()
 
 /**
- * Everything the person needs stays in view on a normal phone: "Retour", the typed letters with their two correction keys, the people
- * they match (a fixed zone, so the keys never move while typing) and the 26 keys, 64 dp each. Only the keys can scroll, on a small screen.
+ * Everything the person needs stays in view on a normal phone (about 650 dp of the 700 available): one line with "back", the typed
+ * letters and the two correction keys, the people they match (a fixed zone, so the keys never move while typing) and the 26 keys,
+ * 64 dp each. "Reculer" (one letter) and "Recommencer" (all) are far apart and look different: a slip cannot wipe the typing.
  */
 @Composable
 private fun SearchPanel(all: List<Contact>, query: String, onQuery: (String) -> Unit, onPick: (Contact) -> Unit, onClose: () -> Unit) {
     val matches = remember(all, query) { ContactSearch.filter(all, query) }
     val haptic = LocalHapticFeedback.current
-    val type: (String) -> Unit = { haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove); onQuery(it) }
-    Column(Modifier.fillMaxSize().padding(horizontal = 4.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        OutlinedButton(onClick = onClose, modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-            Spacer(Modifier.width(12.dp))
-            Text(stringResource(R.string.call_search_close), fontSize = 24.sp)
-        }
+    val type: (String) -> Unit = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onQuery(it) }
+    Column(Modifier.fillMaxSize().padding(horizontal = 6.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         val typedLabel = stringResource(R.string.call_search_typed, query.ifEmpty { "-" })
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        val closeText = stringResource(R.string.call_search_close)
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            // The arrow is the usual "back"; it leaves the search and keeps nothing.
+            OutlinedButton(
+                onClick = onClose,
+                modifier = Modifier.size(64.dp).semantics { contentDescription = closeText },
+                contentPadding = PaddingValues(0.dp),
+            ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(32.dp)) }
+            Spacer(Modifier.width(12.dp))
             Surface(
                 shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier.weight(1f).heightIn(min = 64.dp).semantics { contentDescription = typedLabel; liveRegion = LiveRegionMode.Polite },
             ) {
-                Box(Modifier.padding(horizontal = 8.dp), contentAlignment = Alignment.Center) {
-                    if (query.isEmpty()) Text(stringResource(R.string.call_search_title), fontSize = 24.sp, textAlign = TextAlign.Center)
-                    else Text(query, fontSize = 36.sp, fontWeight = FontWeight.Bold, letterSpacing = 4.sp)
+                Box(Modifier.padding(horizontal = 6.dp), contentAlignment = Alignment.Center) {
+                    if (query.isEmpty()) Text(stringResource(R.string.call_search_title), fontSize = 24.sp, textAlign = TextAlign.Center, maxLines = 2)
+                    else Text(query, fontSize = 32.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp, maxLines = 1, overflow = TextOverflow.Clip)
                 }
             }
-            // Always in view, right beside what was typed: one letter back, or start again.
-            EditKey(Icons.AutoMirrored.Filled.Backspace, stringResource(R.string.call_search_erase)) { type(query.dropLast(1)) }
-            EditKey(Icons.Filled.Close, stringResource(R.string.call_search_clear)) { type("") }
+            Spacer(Modifier.width(12.dp))
+            EditKey(Icons.AutoMirrored.Filled.Backspace, stringResource(R.string.call_search_erase), filled = true) { type(query.dropLast(1)) }
+            Spacer(Modifier.width(24.dp)) // wide gap: "one letter back" and "start again" are never confused
+            EditKey(Icons.Filled.Refresh, stringResource(R.string.call_search_clear), filled = false) { type("") }
         }
-        // A fixed zone: one slot per person shown, empty slots keep the keys where the finger expects them.
-        Column(Modifier.fillMaxWidth().height((SEARCH_SLOTS * 68 + 30).dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        // A fixed zone: two rows of 64 dp and a line for "and N others" / "nobody", so the keys do not move while typing.
+        Column(Modifier.fillMaxWidth().height((SEARCH_SLOTS * 64 + 3 * 4 + 32).dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             if (query.isNotEmpty()) {
                 matches.take(SEARCH_SLOTS).forEach { c -> ResultRow(c) { onPick(c) } }
                 val extra = matches.size - SEARCH_SLOTS
@@ -219,7 +226,7 @@ private fun SearchPanel(all: List<Contact>, query: String, onQuery: (String) -> 
                     extra > 0 -> pluralStringResource(R.plurals.call_search_more, extra, extra)
                     else -> null
                 }
-                if (note != null) Text(note, fontSize = 24.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                if (note != null) Text(note, fontSize = 24.sp, textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth())
             }
         }
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -233,18 +240,21 @@ private fun SearchPanel(all: List<Contact>, query: String, onQuery: (String) -> 
     }
 }
 
-/** A correction key: an icon (and its spoken name), 64 dp square, filled so it stands out from the letters. */
+/** A correction key: an icon (and its spoken name), 64 dp square. Backspace is filled (the usual one), "start again" is only outlined. */
 @Composable
-private fun EditKey(icon: androidx.compose.ui.graphics.vector.ImageVector, name: String, onClick: () -> Unit) {
-    Button(onClick = onClick, modifier = Modifier.size(64.dp).semantics { contentDescription = name }, contentPadding = PaddingValues(0.dp)) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(32.dp))
+private fun EditKey(icon: androidx.compose.ui.graphics.vector.ImageVector, name: String, filled: Boolean, onClick: () -> Unit) {
+    val modifier = Modifier.size(64.dp).semantics { contentDescription = name }
+    if (filled) {
+        Button(onClick = onClick, modifier = modifier, contentPadding = PaddingValues(0.dp)) { Icon(icon, contentDescription = null, modifier = Modifier.size(32.dp)) }
+    } else {
+        OutlinedButton(onClick = onClick, modifier = modifier, contentPadding = PaddingValues(0.dp)) { Icon(icon, contentDescription = null, modifier = Modifier.size(32.dp)) }
     }
 }
 
 @Composable
 private fun SearchKey(label: String, modifier: Modifier, onClick: () -> Unit) {
     val spoken = stringResource(R.string.call_search_letter, label)
-    OutlinedButton(onClick = onClick, modifier = modifier.heightIn(min = 64.dp).semantics { contentDescription = spoken }, contentPadding = PaddingValues(0.dp)) {
+    FilledTonalButton(onClick = onClick, modifier = modifier.heightIn(min = 64.dp).semantics { contentDescription = spoken }, contentPadding = PaddingValues(0.dp)) {
         Text(label, fontSize = 28.sp, fontWeight = FontWeight.Bold)
     }
 }
@@ -252,7 +262,7 @@ private fun SearchKey(label: String, modifier: Modifier, onClick: () -> Unit) {
 @Composable
 private fun ResultRow(contact: Contact, onClick: () -> Unit) {
     Card(Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onClick).semantics(mergeDescendants = true) {}) {
-        Row(Modifier.padding(4.dp).heightIn(min = 64.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(Modifier.padding(horizontal = 4.dp).heightIn(min = 64.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Avatar(contact, Modifier.size(56.dp), initialSize = 28.sp)
             Text(contact.name, fontSize = 28.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
         }
