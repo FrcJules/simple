@@ -3,6 +3,7 @@ package app.presence.launcher
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
@@ -48,6 +49,7 @@ import app.presence.launcher.config.UiConfigParser
 import app.presence.launcher.config.UiConfigStore
 import app.presence.launcher.messages.MessageStore
 import app.presence.launcher.security.FamilyLock
+import app.presence.launcher.sms.SmsRole
 import app.presence.launcher.ui.EnterFamilyCodeScreen
 import app.presence.launcher.ui.FamilyCodeNotSetScreen
 import app.presence.launcher.ui.PairingOfferCard
@@ -107,6 +109,42 @@ class SetupActivity : ComponentActivity() {
     }
 
     private val lock by lazy { FamilyLock(this) }
+
+    /** Whether Présence is the phone's SMS app; refreshed when this screen comes back from the system dialog. */
+    private var smsHeld by mutableStateOf(false)
+
+    /** The last answer of the system dialog: true = accepted, false = refused, null = not asked yet. */
+    private var smsRoleAnswer by mutableStateOf<Boolean?>(null)
+
+    /** Installed by hand (not from a store) on a phone that restricts such apps (Android 13+): some switches stay greyed out until allowed. */
+    private val sideloaded: Boolean by lazy {
+        Build.VERSION.SDK_INT >= 33 && try {
+            packageManager.getInstallSourceInfo(packageName).installingPackageName == null
+        } catch (e: PackageManager.NameNotFoundException) {
+            false
+        }
+    }
+
+    private val smsRoleResult = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        smsHeld = SmsRole.isHeld(this)
+        smsRoleAnswer = smsHeld
+        if (smsHeld) ProfileStore(this).setSmsRoleDeclined(false)
+    }
+
+    private fun requestSmsRole() {
+        val intent = SmsRole.requestIntent(this) ?: return
+        openingChild = true // the system dialog is not "leaving" the settings
+        try {
+            smsRoleResult.launch(intent)
+        } catch (e: android.content.ActivityNotFoundException) {
+            smsRoleAnswer = false
+        }
+    }
+
+    private fun openAppInfo() {
+        openingChild = true
+        startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.fromParts("package", packageName, null)))
+    }
     private var unlocked by mutableStateOf(false)
 
     /** Set just before this screen deliberately opens another one (photo or file picker, Android's notification settings). */
@@ -138,6 +176,7 @@ class SetupActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        smsHeld = SmsRole.isHeld(this)
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
             contactsVm.refresh()
         }
@@ -325,13 +364,26 @@ class SetupActivity : ComponentActivity() {
                         contactsVm.refresh()
                         erased = true
                     }
-                    if (BuildConfig.SMS_ROLE_OFFERED) {
-                        var offered by remember { mutableStateOf(false) }
-                        OutlinedButton(onClick = {
-                            profile.setSmsRoleDeclined(false)
-                            offered = true
-                        }) { Text(stringResource(R.string.setup_sms_offer)) }
-                        if (offered) Text(stringResource(R.string.setup_sms_offered))
+                    // Messages: what is missing, and a button for each fix (the family reads this, Jean-Pierre does not).
+                    Text(stringResource(R.string.setup_messages_title), fontSize = 28.sp)
+                    Text(stringResource(if (smsHeld) R.string.setup_sms_held else R.string.setup_sms_not_held), fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                    Text(stringResource(if (access) R.string.setup_access_on else R.string.setup_access_off), fontSize = 24.sp)
+                    if (!smsHeld) {
+                        if (BuildConfig.SMS_ROLE_OFFERED && SmsRole.requestIntent(this@SetupActivity) != null) {
+                            Button(onClick = { requestSmsRole() }, modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)) {
+                                Text(stringResource(R.string.setup_sms_offer), fontSize = 24.sp)
+                            }
+                            if (smsRoleAnswer == false) Text(stringResource(R.string.setup_sms_refused), fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                        } else {
+                            Text(stringResource(R.string.setup_sms_unavailable), fontSize = 24.sp)
+                        }
+                    }
+                    if (sideloaded) {
+                        // Android 13+ blocks some access for an app that was not installed from a store until it is allowed by hand.
+                        Text(stringResource(R.string.setup_restricted_hint), fontSize = 24.sp)
+                        OutlinedButton(onClick = { openAppInfo() }, modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)) {
+                            Text(stringResource(R.string.setup_open_app_info), fontSize = 24.sp)
+                        }
                     }
                     if (erased) Text(stringResource(R.string.setup_erased))
 
