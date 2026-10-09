@@ -13,6 +13,14 @@
         <intent><action android:name="android.speech.action.RECOGNIZE_SPEECH" /></intent>
     </queries>
 
+    <!-- The family chooses apps for home tiles: the launcher needs to see which apps have a launcher icon (no broad "all packages" permission). -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
     <!-- To open WhatsApp when its notification (our way to answer) is gone. -->
     <queries>
         <package android:name="com.whatsapp" />
