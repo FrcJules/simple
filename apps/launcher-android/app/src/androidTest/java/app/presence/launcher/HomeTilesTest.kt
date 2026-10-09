@@ -15,6 +15,9 @@ import app.presence.launcher.config.TileIcon
 import app.presence.launcher.config.UiConfig
 import app.presence.launcher.ui.HomeScreen
 import app.presence.launcher.ui.HomeTilesEditor
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -39,15 +42,13 @@ class HomeTilesTest {
 
     @Test
     fun theEditorMovesRemovesAndAddsAndNeverEmptiesTheHomeScreen() {
-        var tiles = UiConfig.Default.home.tiles
+        var tiles by mutableStateOf(UiConfig.Default.home.tiles) // a Compose state: the editor redraws when the list changes
         rule.setContent {
-            androidx.compose.runtime.key(tiles) {
-                HomeTilesEditor(
-                    tiles = tiles, appInfo = { null },
-                    loadApps = { listOf(AppEntry("com.whatsapp", "WhatsApp"), AppEntry("org.videolan.vlc", "VLC")) },
-                    onChange = { tiles = it }, onReset = { tiles = UiConfig.Default.home.tiles },
-                )
-            }
+            HomeTilesEditor(
+                tiles = tiles, appInfo = { null },
+                loadApps = { listOf(AppEntry("com.whatsapp", "WhatsApp"), AppEntry("org.videolan.vlc", "VLC")) },
+                onChange = { tiles = it }, onReset = { tiles = UiConfig.Default.home.tiles },
+            )
         }
         rule.onNodeWithContentDescription("Descendre Appeler").performClick()
         assertEquals(listOf("messages", "call", "camera", "gallery"), tiles.map { it.id })
