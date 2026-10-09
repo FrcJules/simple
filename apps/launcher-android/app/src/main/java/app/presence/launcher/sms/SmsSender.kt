@@ -64,9 +64,9 @@ class SmsSender(
         if (body.isEmpty()) return SendResult.EmptyText
         if (body.length > MAX_CHARS) return SendResult.TooLong
 
-        val id = "out-${UUID.randomUUID()}"
         val now = clock()
         val providerId = gateway.insertOutgoing(address, body, now, subId)
+        val id = providerId?.let { "sms-$it" } ?: "out-${UUID.randomUUID()}" // same id as the history copy when the system has a row
         addMessage(StoredMessage(id, name, Channel.SMS, body, now, read = true, outgoing = true, address = address, status = MessageStatus.SENDING))
 
         val parts = try {

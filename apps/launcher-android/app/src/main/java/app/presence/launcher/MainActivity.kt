@@ -70,7 +70,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
-    private enum class Screen { HOME, RATIONALE, DENIED, CALL, SMS_ROLE, MESSAGES, PICK_RECIPIENT, MESSAGE, REPLY, PHOTO_CHOICE, PHOTO_CONFIRM, WRITE_NOT_READY }
+    private enum class Screen { HOME, RATIONALE, DENIED, CALL, SMS_ROLE, MESSAGES, PICK_RECIPIENT, MESSAGE, REPLY, PHOTO_CHOICE, PHOTO_CONFIRM, WRITE_NOT_READY, SMS_DENIED }
 
     private val contactsVm: ContactsViewModel by viewModels()
     private val messagesVm: MessagesViewModel by viewModels()
@@ -255,12 +255,16 @@ class MainActivity : ComponentActivity() {
                         androidx.compose.runtime.DisposableEffect(Unit) { onDispose { contactsVm.clearAll() } } // and they are forgotten when the screen is left
                         CallScreen(favorites = contacts, all = everybody, onBack = { screen = Screen.HOME }, onCall = { calling = it })
                     }
+                    Screen.SMS_DENIED -> {
+                        BackHandler { screen = Screen.HOME }
+                        MessageScreen(R.string.sms_denied, onBack = { screen = Screen.HOME })
+                    }
                     Screen.WRITE_NOT_READY -> {
                         BackHandler { screen = Screen.MESSAGES }
                         MessageScreen(R.string.write_not_ready, onBack = { screen = Screen.MESSAGES })
                     }
                     Screen.SMS_ROLE -> {
-                        BackHandler { screen = Screen.HOME }
+                        BackHandler { pendingWrite = false; screen = Screen.HOME }
                         SmsRoleScreen(onContinue = { requestSmsRole() }, onLater = { declineSmsRole() })
                     }
                     Screen.MESSAGES -> {
@@ -495,12 +499,17 @@ class MainActivity : ComponentActivity() {
     private fun onSmsPermissionsAnswered() {
         val write = pendingWrite
         pendingWrite = false
+        if (!SmsAccess.canRead(this) && !SmsAccess.canSend(this)) {
+            screen = Screen.SMS_DENIED // said plainly: an empty list would look like "nothing happened"
+            return
+        }
         if (SmsAccess.canRead(this)) {
             importing = !profile.smsImported() // the first copy of the old messages can take a moment
             lifecycleScope.launch {
-                withContext(Dispatchers.IO) { runCatching { SmsComponents.syncNew(this@MainActivity) } }
-                profile.markSmsImported()
+                val ok = withContext(Dispatchers.IO) { runCatching { SmsComponents.syncNew(this@MainActivity) }.isSuccess }
+                if (ok) profile.markSmsImported() // a failed copy is tried again at the next opening
                 importing = false
+                feedback.sent()
             }
         }
         screen = if (write && SmsAccess.direct(this)) Screen.PICK_RECIPIENT else Screen.MESSAGES
@@ -508,6 +517,7 @@ class MainActivity : ComponentActivity() {
 
     private fun declineSmsRole() {
         smsRoleLater = true // not remembered: the family can still choose it later, and it is offered again next time the app starts
+        pendingWrite = false
         screen = Screen.MESSAGES
     }
 
@@ -523,6 +533,7 @@ class MainActivity : ComponentActivity() {
                     val ok = withContext(Dispatchers.IO) {
                         try {
                             SmsComponents.importer(this@MainActivity).importAll()
+                            SmsComponents.markHistoryCopied(this@MainActivity)
                             true
                         } catch (e: RuntimeException) {
                             false // try again next time: the history is only copied, never moved
