@@ -33,7 +33,7 @@ object SmsComponents {
             gateway = TelephonyGateway(app.contentResolver),
             addMessage = store::add,
             setStatus = store::setStatus,
-            isDefaultApp = { SmsRole.isHeld(app) },
+            maySend = { SmsAccess.canSend(app) },
             transport = SmsManagerTransport(app),
         )
     }
@@ -42,6 +42,20 @@ object SmsComponents {
         val app = context.applicationContext
         val store = MessageStore.get(app)
         return SendProgress(store::status, store::setStatus, TelephonyGateway(app.contentResolver))
+    }
+
+    /**
+     * Copies new system SMS into our history when we are NOT the default SMS app but may read them (direct mode). Starts from the last row
+     * already copied; the very first run copies the whole history, all marked read. Returns how many messages were added.
+     */
+    fun syncNew(context: Context): Int {
+        val app = context.applicationContext
+        if (SmsRole.isHeld(app) || !SmsAccess.canRead(app)) return 0 // as the default app, receivers keep the history up to date
+        val profile = app.getSharedPreferences("profile", Context.MODE_PRIVATE)
+        val last = profile.getLong("sms_synced_up_to", 0L)
+        val result = importer(app).syncSince(last, keepReadFlag = last > 0)
+        if (result.lastId > last) profile.edit().putLong("sms_synced_up_to", result.lastId).apply()
+        return result.count
     }
 
     fun importer(context: Context): SmsHistoryImporter {

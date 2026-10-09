@@ -108,3 +108,6 @@ Seule fonction de l'écran maison qui appelle Internet, décidée dans l'[ADR 00
 ## Anniversaires de l'écran maison
 Les anniversaires (prénom, jour, année facultative) sont saisis **sur le Pi** (`npm run birthdays -w @presence/hub -- add …`) et gardés dans `data/birthdays.json` (droits 0600). Ce sont des données sur d'autres personnes : elles ne quittent pas le Pi, ne sont pas journalisées et sont lues seulement par l'écran (jeton d'affichage, boucle locale, absent du port HTTPS du réseau). Présence **ne lit pas** les anniversaires des contacts du téléphone (aucune permission en plus) ; un import depuis les contacts reste possible plus tard, après décision explicite (nouvelle permission, ADR).
 
+## SMS en mode direct (versions de test)
+Si Android n'accorde pas à Présence le rôle d'application SMS, [ADR 0007](adr/0007-sms-mode-direct.md) : avec les permissions `READ_SMS` et `SEND_SMS` (demandées à ce moment, debug seulement), Présence **copie** les SMS du téléphone dans son historique local (sans rien supprimer dans l'autre application), récupère les nouveaux à l'ouverture et à chaque notification de SMS, et envoie directement. Rien ne quitte le téléphone ; les codes à usage unique et alertes bancaires restent masqués et n'atteignent jamais l'écran maison. « Réglages famille › Effacer les messages » supprime la copie.
+

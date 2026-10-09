@@ -52,6 +52,9 @@ Installation du Pi : [docs/pi-install.md](pi-install.md).
 - Dans les réglages : « Qui voulez-vous appeler ? » affiche deux onglets, **Favoris** (les personnes choisies ici) et **Général** (tous les contacts du téléphone), plus un bouton **Chercher** avec un gros clavier pour trouver une personne par les premières lettres de son prénom.
 - « Écrire un message » : si Présence n'est pas encore l'application SMS par défaut, la question est reposée ; si elle n'est pas disponible dans cette version, un message simple s'affiche (jamais Google Messages).
 
+## Messages en mode direct
+Si Android ne propose pas de faire de Présence l'application SMS (cas fréquent d'une application installée à la main), touchez « Continuer » dans « Messages » : après la question du rôle, Présence demande les permissions **SMS** (autorisez-les) et **copie vos SMS existants** dans son historique ; les nouveaux sont copiés à chaque ouverture. « Écrire un message » envoie ensuite directement. Les SMS envoyés ainsi n'apparaissent pas dans l'autre application de messages. Si les permissions SMS sont grisées : voir l'aide « paramètres restreints » ci-dessous.
+
 ## Les messages ne marchent pas ?
 Ouvrez « Réglages famille » : la section **Messages** dit en clair où ça bloque.
 1. **« Application SMS du téléphone : une autre »** → touchez **Faire de Présence l'application SMS** et acceptez la question d'Android. Sans cela, Présence ne voit que les SMS annoncés par les notifications, et ne peut pas écrire elle-même.

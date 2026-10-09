@@ -44,20 +44,21 @@ class SmsManagerTransport(private val context: Context) : SmsTransport {
 }
 
 /**
- * Sends an SMS (only when we are the default SMS app), keeps it in the system outbox and in our history, and follows its
- * progress through [SmsStatusReceiver] so a failure is shown instead of being silent.
+ * Sends an SMS (as the default SMS app, or directly with the SEND_SMS permission), keeps it in our history, in the system outbox when
+ * we are the default app, and follows its progress through [SmsStatusReceiver] so a failure is shown instead of being silent.
  */
 class SmsSender(
     private val context: Context,
     private val gateway: SmsProviderGateway,
     private val addMessage: (StoredMessage) -> Unit,
     private val setStatus: (String, MessageStatus) -> Unit,
-    private val isDefaultApp: () -> Boolean,
+    /** True when we may send: we are the default SMS app, or the phone gave us the SEND_SMS permission (direct mode). */
+    private val maySend: () -> Boolean,
     private val transport: SmsTransport,
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
     fun send(address: String, text: String, name: String, subId: Int = -1): SendResult {
-        if (!isDefaultApp()) return SendResult.NotDefaultApp
+        if (!maySend()) return SendResult.NotDefaultApp // "not allowed": neither the default SMS app nor holder of SEND_SMS
         if (!isDialable(address)) return SendResult.InvalidNumber
         val body = text.trim()
         if (body.isEmpty()) return SendResult.EmptyText

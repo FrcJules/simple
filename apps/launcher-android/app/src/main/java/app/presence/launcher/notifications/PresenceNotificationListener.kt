@@ -6,6 +6,8 @@ import android.service.notification.StatusBarNotification
 import app.presence.launcher.messages.MessageStore
 import app.presence.launcher.messages.StoredMessage
 import app.presence.launcher.messages.ThreadKey
+import app.presence.launcher.sms.SmsAccess
+import app.presence.launcher.sms.SmsComponents
 import app.presence.launcher.sms.SmsRole
 import java.util.UUID
 
@@ -24,6 +26,12 @@ class PresenceNotificationListener : NotificationListenerService() {
         val incoming = NotificationParser.parse(raw) ?: return
         // When we are the SMS app we receive SMS directly (SmsDeliverReceiver); a copy via another app's notification would double it.
         if (incoming is Incoming.Message && incoming.channel == Channel.SMS && SmsRole.isHeld(applicationContext)) return
+        // Direct mode: the SMS themselves are copied from the system database (a copy made from this notification would double them).
+        if (incoming is Incoming.Message && incoming.channel == Channel.SMS && SmsAccess.canRead(applicationContext)) {
+            SmsComponents.syncNew(applicationContext)
+            HubForwarder.forward(applicationContext, incoming, sbn.postTime)
+            return
+        }
         // Registered before the duplicate filter: WhatsApp often re-posts a notification with a fresh PendingIntent.
         if (incoming is Incoming.Message && incoming.channel == Channel.WHATSAPP && !isGroupConversation(extras)) {
             ReplyRegistry.findReplyAction(sbn.notification)?.let { (action, inputs) ->
