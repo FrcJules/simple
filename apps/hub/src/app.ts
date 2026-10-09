@@ -7,6 +7,7 @@ import { DeviceRegistry } from "./devices";
 import { FailureLimiter } from "./limiter";
 import type { BirthdaysStore } from "./birthdays";
 import type { PhotosStore } from "./photos";
+import type { WeatherService } from "./weather";
 import type { RemindersStore } from "./reminders";
 
 const pairBody = z.object({ claim: z.string().min(16).max(200) }).strict();
@@ -32,6 +33,8 @@ export interface HubOptions {
   reminders?: RemindersStore;
   /** The family photos folder for the display slideshow (`GET /photos`, `GET /photos/<name>`). Without it the routes do not exist. */
   photos?: PhotosStore;
+  /** The day's weather (`GET /weather`, display token), asked by the hub itself (ADR 0006). Without it the route does not exist. */
+  weather?: WeatherService;
   /** The loved ones' birthdays for the display (`GET /birthdays`, display token). Without it the route does not exist. */
   birthdays?: BirthdaysStore;
   /**
@@ -165,6 +168,13 @@ export function buildApp(opts: HubOptions): FastifyInstance {
     if (!canRead(req)) return unauthorized(req.ip, reply);
     void reply.header("Cache-Control", "no-store");
     return { reminders: opts.reminders.list() };
+  });
+
+  app.get("/weather", async (req, reply) => {
+    if (!opts.weather) return reply.code(404).send({ error: "not_found" });
+    const refused = displayGuard(req, reply);
+    if (refused) return refused;
+    return { weather: await opts.weather.get() };
   });
 
   app.get("/birthdays", async (req, reply) => {

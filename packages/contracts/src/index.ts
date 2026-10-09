@@ -85,6 +85,17 @@ export const remindersResponse = z.object({ reminders: z.array(reminder).max(50)
 
 export type Reminder = z.infer<typeof reminder>;
 
+/** The day's weather for the display (from the hub, which asks the weather service; see ADR 0006). */
+export const weather = z.object({
+  /** Current temperature in °C. */
+  temperature: z.number().min(-90).max(70),
+  /** WMO weather code (0 = clear sky … 99 = thunderstorm with hail). */
+  code: z.number().int().min(0).max(99),
+  min: z.number().min(-90).max(70),
+  max: z.number().min(-90).max(70),
+});
+
+export type Weather = z.infer<typeof weather>;
 /**
  * A loved one's birthday, entered on the Pi by the family. `day` is "MM-DD" (29 February counts on 28 February in other years);
  * `year` is optional and only used to say how old the person turns. Kept on the Pi only.

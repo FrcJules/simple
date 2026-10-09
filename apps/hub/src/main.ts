@@ -3,6 +3,7 @@ import { buildApp } from "./app";
 import { DeviceRegistry } from "./devices";
 import { BirthdaysStore } from "./birthdays";
 import { PhotosStore } from "./photos";
+import { WeatherService } from "./weather";
 import { RemindersStore } from "./reminders";
 import { buildPairingLink, groupFingerprint, lanAddress } from "./pairing";
 import { loadOrCreateTls } from "./tls";
@@ -27,6 +28,7 @@ const app = buildApp({
   displayOrigin: process.env.PRESENCE_DISPLAY_ORIGIN,
   devices,
   reminders: new RemindersStore(process.env.PRESENCE_DATA_DIR ?? "./data"),
+  weather: WeatherService.fromEnv(process.env.PRESENCE_WEATHER_LAT, process.env.PRESENCE_WEATHER_LON), // off unless configured (ADR 0006)
   birthdays: new BirthdaysStore(process.env.PRESENCE_DATA_DIR ?? "./data"),
   photos: new PhotosStore(process.env.PRESENCE_PHOTOS_DIR ?? "./data/photos"),
   startPairing: () => {
