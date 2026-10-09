@@ -15,12 +15,16 @@ sealed interface ParseResult {
  */
 object UiConfigParser {
     const val MAX_CHARS = 20_000
-    const val MAX_TILES = 6
+    const val MAX_TILES = 8
     const val MAX_LABEL = 24
+    const val MAX_PACKAGE = 150
     const val MIN_CONTRAST = 4.5
     const val MAX_FONT_SCALE = 1.6
 
     private val colorRegex = Regex("^#[0-9A-Fa-f]{6}$")
+
+    /** An Android package name: dotted segments of letters, digits and underscores (so nothing else can ride along in a launch request). */
+    private val packageRegex = Regex("^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)+$")
     private class Invalid(message: String) : Exception(message)
 
     fun parse(json: String): ParseResult =
@@ -106,7 +110,14 @@ object UiConfigParser {
                 TileIcon.fromWire(t.opt("icon") as? String ?: "")
                     ?: throw Invalid("Tuile \"$id\" : \"icon\" doit être l'une de ${TileIcon.entries.joinToString { it.wire }}.")
             } else action.defaultIcon
-            TileConfig(id, action, label, icon)
+            val app = if (t.has("package")) {
+                val p = (t.opt("package") as? String)?.trim().orEmpty()
+                if (p.length > MAX_PACKAGE || !packageRegex.matches(p)) throw Invalid("Tuile \"$id\" : \"package\" doit être un nom d'application Android (par exemple com.whatsapp).")
+                p
+            } else null
+            if (action == TileAction.APP && app == null) throw Invalid("Tuile \"$id\" : l'action \"app\" demande un \"package\".")
+            if (action != TileAction.APP && app != null) throw Invalid("Tuile \"$id\" : \"package\" n'est permis que pour l'action \"app\".")
+            TileConfig(id, action, label, icon, app)
         }
     }
 }

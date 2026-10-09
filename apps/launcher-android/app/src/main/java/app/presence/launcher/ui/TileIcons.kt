@@ -1,6 +1,7 @@
 package app.presence.launcher.ui
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
@@ -25,4 +26,5 @@ fun TileIcon.vector(): ImageVector = when (this) {
     TileIcon.MUSIC -> Icons.Filled.MusicNote
     TileIcon.TV -> Icons.Filled.Tv
     TileIcon.SUN -> Icons.Filled.WbSunny
+    TileIcon.APPS -> Icons.Filled.Apps
 }

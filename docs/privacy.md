@@ -111,3 +111,6 @@ Les anniversaires (prénom, jour, année facultative) sont saisis **sur le Pi** 
 ## SMS en mode direct (versions de test)
 Si Android n'accorde pas à Présence le rôle d'application SMS, [ADR 0007](adr/0007-sms-mode-direct.md) : avec les permissions `READ_SMS` et `SEND_SMS` (demandées à ce moment, debug seulement), Présence **copie** les SMS du téléphone dans son historique local (sans rien supprimer dans l'autre application), récupère les nouveaux à l'ouverture et à chaque notification de SMS, et envoie directement. Rien ne quitte le téléphone ; les codes à usage unique et alertes bancaires restent masqués et n'atteignent jamais l'écran maison. « Réglages famille › Effacer les messages » supprime la copie.
 
+## Cases « application » de l'accueil
+Pour proposer les applications du téléphone, le launcher déclare qu'il veut voir celles qui ont une icône de lancement (`<queries>` MAIN/LAUNCHER) : **pas** la permission « toutes les applications ». La liste n'est affichée que dans « Réglages famille », derrière le code ; seul le nom de l'application choisie (son identifiant Android) est mémorisé, sur le téléphone, dans le fichier d'apparence. Une case ne lance que l'application choisie, par son point d'entrée habituel.
+

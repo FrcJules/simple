@@ -46,6 +46,12 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import app.presence.launcher.apps.AppInfo
+import app.presence.launcher.apps.InstalledApps
+import app.presence.launcher.config.HomeConfig
+import app.presence.launcher.config.TileConfig
+import app.presence.launcher.config.UiConfigJson
+import app.presence.launcher.ui.HomeTilesEditor
 import app.presence.launcher.config.ParseResult
 import app.presence.launcher.config.UiConfigParser
 import app.presence.launcher.config.UiConfigStore
@@ -110,6 +116,16 @@ class SetupActivity : ComponentActivity() {
                 is ParseResult.Error -> getString(R.string.setup_appearance_error, r.message)
             }
         }
+    }
+
+    /** App names and icons looked up for the editor, once each. */
+    private val tileApps = HashMap<String, AppInfo?>()
+
+    /** Stores the new rubriques, keeping the colours and text size as they are. False if the result were refused (it never should be). */
+    private fun saveTiles(tiles: List<TileConfig>): Boolean {
+        val current = uiStore.load()
+        val updated = current.copy(home = current.home.copy(tiles = tiles))
+        return uiStore.import(UiConfigJson.write(updated)) is ParseResult.Ok
     }
 
     private val lock by lazy { FamilyLock(this) }
@@ -354,6 +370,15 @@ class SetupActivity : ComponentActivity() {
                         access = hasNotificationAccess()
                     }) { Text(stringResource(R.string.setup_open_access)) }
                     OutlinedButton(onClick = { access = hasNotificationAccess() }) { Text(stringResource(R.string.setup_refresh)) }
+
+                    var tiles by remember { mutableStateOf(uiStore.load().home.tiles) }
+                    HomeTilesEditor(
+                        tiles = tiles,
+                        appInfo = { pkg -> tileApps.getOrPut(pkg) { InstalledApps.info(packageManager, pkg) } },
+                        loadApps = { InstalledApps.launchable(packageManager, packageName) },
+                        onChange = { new -> if (saveTiles(new)) tiles = new },
+                        onReset = { saveTiles(HomeConfig.Default.tiles); tiles = HomeConfig.Default.tiles },
+                    )
 
                     Text(stringResource(R.string.setup_appearance_title), fontSize = 28.sp)
                     OutlinedButton(onClick = { openingChild = true; configPicker.launch(arrayOf("*/*")) }) { Text(stringResource(R.string.setup_appearance_import)) }

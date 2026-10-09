@@ -63,3 +63,6 @@ Ouvrez « Réglages famille » : la section **Messages** dit en clair où ça bl
 4. **Rien de tout cela** → notez le texte exact affiché dans cette section et le modèle du téléphone, et ouvrez une issue.
 Une version « release » ne propose pas encore le rôle SMS (voir le commentaire de `src/debug/AndroidManifest.xml`) : utilisez l'APK debug de la CI pour ces essais.
 
+## Changer les cases de l'accueil
+« Réglages famille › Cases de l'accueil » : montez, descendez ou retirez une case, remettez une case d'origine, ou **ajoutez une application du téléphone** (WhatsApp, une application de vidéos…) : la case reprend le nom et l'icône de l'application. De 1 à 8 cases. Vérifiez sur l'accueil que chaque case ouvre bien ce qu'elle annonce.
+
