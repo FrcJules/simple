@@ -4,27 +4,32 @@ import app.presence.launcher.notifications.Channel
 import kotlin.math.abs
 
 /**
- * The same SMS can reach our history twice: the phone itself records a message sent by a non-default app in the system database (we
- * then copy that row), and a message announced by a notification can also be copied from the system database. These rules tell a
- * copy from a genuinely new message: same direction, same text, same number (or none known), a few minutes apart.
+ * The phone itself records an SMS sent by a non-default app in the system database, and the sync then copies that row next to our own
+ * record of the same send. These rules tell that copy from a genuinely different message: same text, same number, a few minutes
+ * apart, and the copy must be a plain system row (`sms-<number>`), never a picture message or a message made some other way.
+ * Only our own sends are ever matched: a received message has no reliable sender here, so received messages are never merged.
  */
 object SmsTwins {
     const val SENT_WINDOW_MS = 5 * 60_000L
-    const val RECEIVED_WINDOW_MS = 3 * 60_000L
+    private val systemRow = Regex("sms-\\d+")
 
-    /** Messages we sent ourselves get a random "out-" id; the system's row, once copied, is "sms-<row>". */
-    fun isLocalSent(m: StoredMessage) = m.outgoing && m.id.startsWith("out-")
+    /** A message we sent ourselves (random "out-" id). */
+    fun isLocalSent(m: StoredMessage) = m.channel == Channel.SMS && m.outgoing && !m.mms && m.id.startsWith("out-")
 
-    fun isCopyOfSent(copy: StoredMessage, local: StoredMessage) =
-        copy.channel == Channel.SMS && copy.outgoing && local.outgoing && copy.text.trim() == local.text.trim() &&
-            sameNumber(copy.address, local.address) && abs(copy.receivedAtMs - local.receivedAtMs) <= SENT_WINDOW_MS
+    /** A sent SMS as the system database holds it, once copied ("sms-<row id>"). */
+    fun isSystemSent(m: StoredMessage) = m.channel == Channel.SMS && m.outgoing && !m.mms && systemRow.matches(m.id)
 
-    /** A notification-made message (random id, no number) and the system's row for the same SMS. */
-    fun isNotificationTwin(row: StoredMessage, notification: StoredMessage) =
-        row.channel == Channel.SMS && notification.channel == Channel.SMS && !row.outgoing && !notification.outgoing &&
-            row.id.startsWith("sms-") && !notification.id.startsWith("sms-") && !notification.id.startsWith("out-") &&
-            row.text.trim() == notification.text.trim() && abs(row.receivedAtMs - notification.receivedAtMs) <= RECEIVED_WINDOW_MS
+    /** Same text, same number: the key under which a send and its system record meet (no number, no match: never guessed). */
+    fun key(m: StoredMessage): Pair<String, String>? {
+        val tail = m.address.orEmpty().filter { it.isDigit() }.takeLast(9)
+        return if (tail.isEmpty()) null else tail to m.text.trim()
+    }
 
-    private fun tail(address: String?) = address.orEmpty().filter { it.isDigit() }.takeLast(9)
-    private fun sameNumber(a: String?, b: String?) = tail(a).isNotEmpty() && tail(a) == tail(b)
+    /** The local send that [copy] records, the closest in time among [locals] (not yet paired), or null. */
+    fun twinOf(copy: StoredMessage, locals: List<StoredMessage>): StoredMessage? {
+        val k = key(copy) ?: return null
+        if (!isSystemSent(copy)) return null
+        return locals.filter { key(it) == k && abs(it.receivedAtMs - copy.receivedAtMs) <= SENT_WINDOW_MS }
+            .minByOrNull { abs(it.receivedAtMs - copy.receivedAtMs) }
+    }
 }

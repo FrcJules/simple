@@ -139,17 +139,20 @@ class MessageStoreTest {
     fun toStringHidesTheText() = assertEquals("StoredMessage(id=a)", msg("a", 1).toString())
 
     @Test
-    fun removeSmsTwinsKeepsOurOwnSendAndTheSystemRowOfAReceivedSms() {
+    fun removeSmsTwinsDeletesOnlyTheSystemCopyOfOurOwnSend() {
         val s = store()
         s.add(StoredMessage("out-1", "Marie", Channel.SMS, "Salut", 9_000, read = true, outgoing = true, address = "0611223344", status = MessageStatus.SENT))
         s.add(StoredMessage("sms-5", "Marie", Channel.SMS, "Salut", 9_020, read = true, outgoing = true, address = "+33611223344")) // the system's record of it
-        s.add(StoredMessage("uuid-n", "Marie", Channel.SMS, "Bonjour", 20_000)) // announced by a notification
-        s.add(StoredMessage("sms-6", "Marie", Channel.SMS, "Bonjour", 20_500, address = "+33611223344")) // and copied from the system database
-        s.add(StoredMessage("sms-7", "Marie", Channel.SMS, "Bonjour", 400_000, address = "+33611223344")) // a later, genuinely new one
-        assertEquals(2, s.removeSmsTwins())
-        assertEquals(listOf("out-1", "sms-6", "sms-7"), s.messages.value.map { it.id }.sorted())
-        assertEquals(MessageStatus.SENT, s.status("out-1")) // the copy with the real send status stays
-        assertEquals(0, s.removeSmsTwins()) // nothing more the second time
+        s.add(StoredMessage("sms-6", "Marie", Channel.SMS, "Salut", 9_030, read = true, outgoing = true, address = "+33611223344")) // a second identical send from elsewhere
+        // received messages are never touched, even with the same text: two people can say "Ok"
+        s.add(StoredMessage("uuid-n", "Marie", Channel.SMS, "Ok", 20_000))
+        s.add(StoredMessage("sms-7", "Paul", Channel.SMS, "Ok", 20_500, address = "+33699999999"))
+        // a picture message with the same text and number is not an SMS copy
+        s.add(StoredMessage("mms-9", "Marie", Channel.SMS, "Salut", 9_010, read = true, outgoing = true, address = "0611223344", mms = true))
+        assertEquals(1, s.removeSmsTwins()) // one send, one copy: not both rows
+        assertEquals(listOf("mms-9", "out-1", "sms-6", "sms-7", "uuid-n"), s.messages.value.map { it.id }.sorted())
+        assertEquals(MessageStatus.SENT, s.status("out-1")) // our record, with the real status, stays
+        // Not meant to be run again on the same data (the app runs it once): our own record would pair with the next identical row.
     }
 
     @Test
