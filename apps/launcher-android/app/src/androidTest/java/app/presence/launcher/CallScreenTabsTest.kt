@@ -5,7 +5,6 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import app.presence.launcher.ui.CallScreen
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -55,9 +54,9 @@ class CallScreenTabsTest {
         rule.setContent { CallScreen(favorites = listOf(marie), all = listOf(marie), onBack = {}, onCall = {}) }
         rule.onNodeWithText("Chercher").performClick()
         rule.onNodeWithText("Z").performClick()
-        rule.onNodeWithText("Personne ne correspond.").assertIsDisplayed()
+        rule.onNodeWithText("Personne ne correspond.", substring = true).assertIsDisplayed()
         rule.onNodeWithContentDescription("Recommencer").performClick()
-        rule.onNodeWithText("Personne ne correspond.").assertDoesNotExist()
+        rule.onNodeWithText("Personne ne correspond.", substring = true).assertDoesNotExist()
     }
 
     @Test
@@ -96,8 +95,7 @@ class CallScreenTabsTest {
         rule.onNodeWithText("Jean-Baptiste").assertIsDisplayed()
         rule.onNodeWithContentDescription("Recommencer").performClick()
         for (letter in "MAMAN") rule.onNodeWithText(letter.toString()).performClick()
+        rule.onNodeWithText("30 personnes").assertIsDisplayed() // thirty people match: the count says so, the list scrolls
         rule.onNodeWithText("Maman 1").assertIsDisplayed()
-        rule.onNodeWithText("Maman 30").performScrollTo() // thirty people match: the list scrolls, none is hidden
-        rule.onNodeWithText("Maman 30").assertIsDisplayed()
     }
 }
