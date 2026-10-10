@@ -285,6 +285,39 @@ class MessageStore(
         helper.readableDatabase.rawQuery("SELECT COUNT(*) FROM messages WHERE read = 0 AND outgoing = 0", null)
             .use { it.moveToFirst(); it.getInt(0) }
 
+    /** The messages we sent ourselves (random "out-" id) since [sinceMs], oldest first. */
+    @Synchronized
+    fun sentSince(sinceMs: Long): List<StoredMessage> =
+        query("outgoing = 1 AND id LIKE 'out-%' AND at >= ?", arrayOf(sinceMs.toString()), "at ASC", null)
+
+    /**
+     * Deletes the second copy of SMS that reached the history twice (see [SmsTwins]); the copy that keeps the real send status or the
+     * system's row stays. Returns how many were removed.
+     */
+    @Synchronized
+    fun removeSmsTwins(): Int {
+        val sms = query("channel = ?", arrayOf(Channel.SMS.wire), "at ASC", null)
+        val doomed = HashSet<String>()
+        val rows = sms.filter { it.id.startsWith("sms-") }
+        for (local in sms.filter(SmsTwins::isLocalSent)) {
+            rows.firstOrNull { it.id !in doomed && SmsTwins.isCopyOfSent(it, local) }?.let { doomed += it.id }
+        }
+        for (row in rows.filter { !it.outgoing }) {
+            sms.firstOrNull { it.id !in doomed && SmsTwins.isNotificationTwin(row, it) }?.let { doomed += it.id }
+        }
+        if (doomed.isEmpty()) return 0
+        val db = helper.writableDatabase
+        db.beginTransaction()
+        try {
+            doomed.chunked(500).forEach { chunk -> db.delete("messages", "id IN (${chunk.joinToString(",") { "?" }})", chunk.toTypedArray()) }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+        publish()
+        return doomed.size
+    }
+
     /** One conversation by its [ThreadKey], oldest first. */
     @Synchronized
     fun thread(key: String): List<StoredMessage> = query("thread = ?", arrayOf(key), "at ASC", null)

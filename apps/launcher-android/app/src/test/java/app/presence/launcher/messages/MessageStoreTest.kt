@@ -137,4 +137,29 @@ class MessageStoreTest {
 
     @Test
     fun toStringHidesTheText() = assertEquals("StoredMessage(id=a)", msg("a", 1).toString())
+
+    @Test
+    fun removeSmsTwinsKeepsOurOwnSendAndTheSystemRowOfAReceivedSms() {
+        val s = store()
+        s.add(StoredMessage("out-1", "Marie", Channel.SMS, "Salut", 9_000, read = true, outgoing = true, address = "0611223344", status = MessageStatus.SENT))
+        s.add(StoredMessage("sms-5", "Marie", Channel.SMS, "Salut", 9_020, read = true, outgoing = true, address = "+33611223344")) // the system's record of it
+        s.add(StoredMessage("uuid-n", "Marie", Channel.SMS, "Bonjour", 20_000)) // announced by a notification
+        s.add(StoredMessage("sms-6", "Marie", Channel.SMS, "Bonjour", 20_500, address = "+33611223344")) // and copied from the system database
+        s.add(StoredMessage("sms-7", "Marie", Channel.SMS, "Bonjour", 400_000, address = "+33611223344")) // a later, genuinely new one
+        assertEquals(2, s.removeSmsTwins())
+        assertEquals(listOf("out-1", "sms-6", "sms-7"), s.messages.value.map { it.id }.sorted())
+        assertEquals(MessageStatus.SENT, s.status("out-1")) // the copy with the real send status stays
+        assertEquals(0, s.removeSmsTwins()) // nothing more the second time
+    }
+
+    @Test
+    fun sentSinceListsOnlyOurOwnSendsAfterThatTime() {
+        val s = store()
+        s.add(StoredMessage("out-1", "M", Channel.SMS, "a", 1_000, outgoing = true, address = "0611223344"))
+        s.add(StoredMessage("out-2", "M", Channel.SMS, "b", 5_000, outgoing = true, address = "0611223344"))
+        s.add(StoredMessage("sms-3", "M", Channel.SMS, "c", 6_000, outgoing = true, address = "0611223344"))
+        s.add(StoredMessage("x", "M", Channel.SMS, "d", 7_000))
+        assertEquals(listOf("out-2"), s.sentSince(2_000).map { it.id })
+    }
 }
+

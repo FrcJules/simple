@@ -212,6 +212,10 @@ Vos messages ne sont pas effacés.</string>
     <string name="messages_empty">Pas encore de messages.</string>
     <string name="messages_write">Écrire un message</string>
     <string name="message_new">Nouveau</string>
+    <plurals name="message_new_count">
+        <item quantity="one">%1$d nouveau message</item>
+        <item quantity="other">%1$d nouveaux messages</item>
+    </plurals>
     <string name="message_listen">Écouter</string>
     <string name="message_reply">Répondre</string>
     <string name="reply_to">Répondre à %1$s</string>
