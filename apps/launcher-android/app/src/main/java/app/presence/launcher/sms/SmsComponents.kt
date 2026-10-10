@@ -75,6 +75,14 @@ object SmsComponents {
         val profile = app.getSharedPreferences("profile", Context.MODE_PRIVATE)
         val last = profile.getLong("sms_synced_up_to", 0L)
         // "First copy" is its own flag: an empty inbox leaves the marker at 0, and the first SMS after that must still count as new.
+        if (!profile.getBoolean("sms_twins_cleaned", false)) {
+            // Once: SMS we sent that an earlier version also copied from the system's record of them.
+            // Once, and only if it worked: a failure is tried again at the next sync instead of blocking it.
+            runCatching { MessageStore.get(app).removeSmsTwins() }.onSuccess { removed ->
+                profile.edit().putBoolean("sms_twins_cleaned", true).apply()
+                if (removed > 0) MessageDiagnostics.record(app, "Doublons de SMS envoyés supprimés : $removed")
+            }
+        }
         val firstDone = profile.getBoolean("sms_first_copy_done", false)
         if (!firstDone && !allowFirstCopy) {
             // A broadcast receiver has about ten seconds: the whole history is copied when the app is opened or from the settings.
@@ -100,6 +108,7 @@ object SmsComponents {
 
     fun importer(context: Context): SmsHistoryImporter {
         val app = context.applicationContext
-        return SmsHistoryImporter(TelephonyGateway(app.contentResolver), MessageStore.get(app)::addAll, nameFor(app))
+        val store = MessageStore.get(app)
+        return SmsHistoryImporter(TelephonyGateway(app.contentResolver), store::addAll, nameFor(app), sentSince = store::sentSince)
     }
 }

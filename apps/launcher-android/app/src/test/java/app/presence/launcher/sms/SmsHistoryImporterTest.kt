@@ -103,4 +103,29 @@ class SmsHistoryImporterTest {
         sync(listOf(row(1, Telephony.Sms.MESSAGE_TYPE_SENT, read = false)), 0, keepRead = true, out)
         assertTrue(out.single().read)
     }
+
+    @Test
+    fun theSystemRecordOfAMessageWeSentOurselvesIsNotAddedAgain() {
+        val mine = StoredMessage("out-1", "Jean-Baptiste", app.presence.launcher.notifications.Channel.SMS, "Salut", 5_000L, read = true, outgoing = true, address = "0611223344")
+        val rows = listOf(row(1, Telephony.Sms.MESSAGE_TYPE_SENT, body = "Salut").copy(dateMs = 5_100L), row(2, Telephony.Sms.MESSAGE_TYPE_INBOX, body = "Reçu").copy(dateMs = 6_000L))
+        val out = mutableListOf<StoredMessage>()
+        val result = SmsHistoryImporter(FakeGateway(rows), { out += it }, { null }, sentSince = { listOf(mine) }).syncSince(0, keepReadFlag = true)
+        assertEquals(listOf("sms-2"), out.map { it.id }) // the sent row is our own message; the received one is new
+        assertEquals(1, result.count)
+        assertEquals(2L, result.lastId) // but both rows are behind us now
+    }
+
+    @Test
+    fun twoIdenticalSendsStayTwoOneRecordHidesOnlyOne() {
+        fun mine(id: String, at: Long) = StoredMessage(id, "X", app.presence.launcher.notifications.Channel.SMS, "Ok", at, read = true, outgoing = true, address = "0611223344")
+        val rows = listOf(
+            row(1, Telephony.Sms.MESSAGE_TYPE_SENT, body = "Ok").copy(dateMs = 5_000L),
+            row(2, Telephony.Sms.MESSAGE_TYPE_SENT, body = "Ok").copy(dateMs = 6_000L),
+            row(3, Telephony.Sms.MESSAGE_TYPE_SENT, body = "Ok").copy(dateMs = 7_000L),
+        )
+        val out = mutableListOf<StoredMessage>()
+        SmsHistoryImporter(FakeGateway(rows), { out += it }, { null }, sentSince = { listOf(mine("out-a", 5_000L), mine("out-b", 6_000L)) }).syncSince(0, keepReadFlag = true)
+        assertEquals(listOf("sms-3"), out.map { it.id }) // two of the three rows are our own two sends
+    }
 }
+
