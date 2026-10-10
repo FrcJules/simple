@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.IBinder
 import android.provider.Telephony
 import android.telephony.TelephonyManager
+import app.presence.launcher.messages.MessageDiagnostics
 import app.presence.launcher.mms.MmsComponents
 import app.presence.launcher.mms.MmsInbox
 import app.presence.launcher.mms.MmsSender
@@ -34,6 +35,42 @@ class SmsDeliverReceiver : BroadcastReceiver() {
                 pending?.finish()
             }
         }
+    }
+}
+
+/**
+ * Direct mode: the phone's own messaging app is still the default SMS app and writes the SMS to the system database; every app with
+ * the RECEIVE_SMS permission is told as well. We then copy the new SMS into our history at once, whether or not Présence is open and
+ * whether or not notification access works. Nothing here when we are the default app ([SmsDeliverReceiver] does the work).
+ */
+class SmsReceivedReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action != Telephony.Sms.Intents.SMS_RECEIVED_ACTION || SmsRole.isHeld(context)) return
+        val parts = Telephony.Sms.Intents.getMessagesFromIntent(intent)?.filterNotNull().orEmpty()
+        val address = parts.firstOrNull()?.originatingAddress.orEmpty()
+        val body = parts.joinToString("") { it.messageBody.orEmpty() }
+        MessageDiagnostics.record(context, "SMS reçu (diffusion du système)")
+        val pending: PendingResult? = goAsync()
+        thread(name = "sms-received") {
+            try {
+                // The display first, on its own: it does not depend on the copy below.
+                try {
+                    if (address.isNotEmpty() && body.isNotEmpty()) SmsComponents.forwardToDisplay(context, address, body)
+                } catch (e: RuntimeException) {
+                    MessageDiagnostics.record(context, "SMS reçu : envoi à l'écran maison en erreur")
+                }
+                Thread.sleep(WRITE_DELAY_MS) // the messaging app writes the row to the system database first
+                SmsComponents.syncNew(context, allowFirstCopy = false)
+            } catch (e: RuntimeException) {
+                MessageDiagnostics.record(context, "SMS reçu : copie en erreur")
+            } finally {
+                pending?.finish()
+            }
+        }
+    }
+
+    private companion object {
+        const val WRITE_DELAY_MS = 2_000L
     }
 }
 

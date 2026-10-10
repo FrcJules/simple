@@ -22,6 +22,11 @@ class ContactsViewModel(app: Application) : AndroidViewModel(app) {
     /** Every contact: the family's picker in the settings, and the "Général" tab of the call screen. Loaded on demand. */
     val allContacts: StateFlow<List<Contact>> = _all.asStateFlow()
 
+    private val _allLoaded = MutableStateFlow(false)
+
+    /** False until the full list was read once: "nobody matches" must not be said while it is still loading. */
+    val allLoaded: StateFlow<Boolean> = _allLoaded.asStateFlow()
+
     private val _chosen = MutableStateFlow<Set<Long>>(emptySet())
 
     /** Ids chosen by the family. */
@@ -47,7 +52,7 @@ class ContactsViewModel(app: Application) : AndroidViewModel(app) {
 
     fun loadAll() {
         viewModelScope.launch {
-            _all.value = withContext(Dispatchers.IO) {
+            val list = withContext(Dispatchers.IO) {
                 try {
                     val photos = ContactPhotoStore(getApplication())
                     ContactsRepository(getApplication<Application>().contentResolver).all().map { c -> c.copy(photoUri = photos.uriFor(c.id) ?: c.photoUri) }
@@ -55,12 +60,15 @@ class ContactsViewModel(app: Application) : AndroidViewModel(app) {
                     emptyList()
                 }
             }
+            _all.value = list
+            _allLoaded.value = true
         }
     }
 
     /** Forgets the full list (kept only while the call screen needs it). */
     fun clearAll() {
         _all.value = emptyList()
+        _allLoaded.value = false
     }
 
     /** The family shows or hides one person. */
