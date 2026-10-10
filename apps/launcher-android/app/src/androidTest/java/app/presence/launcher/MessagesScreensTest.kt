@@ -57,7 +57,7 @@ class MessagesScreensTest {
         rule.onNodeWithText("Marie").assertIsDisplayed()
         rule.onNodeWithText("il y a 20 minutes").assertIsDisplayed()
         rule.onNodeWithText("il y a 3 heures").assertIsDisplayed()
-        rule.onNodeWithText("Nouveau").assertIsDisplayed()
+        rule.onAllNodesWithText("nouveau", substring = true, ignoreCase = true)[0].assertIsDisplayed() // "1 nouveau message": a count and words, in a tinted framed card
         shot("20_messages_list")
     }
 

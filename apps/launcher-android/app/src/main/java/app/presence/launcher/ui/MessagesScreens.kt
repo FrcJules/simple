@@ -1,6 +1,8 @@
 package app.presence.launcher.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,6 +32,8 @@ import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Badge
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -123,12 +127,27 @@ private fun preview(item: MessageItem): String {
 
 @Composable
 private fun MessageRow(item: MessageItem, nowMs: Long, onOpen: (MessageItem) -> Unit) {
-    Card(Modifier.fillMaxWidth().clickable(role = Role.Button) { onOpen(item) }.semantics(mergeDescendants = true) {}) {
+    val unread = item.unread > 0
+    // A conversation with something new does not look like the others: tinted card, thick frame, a count on the picture and the words
+    // (never colour alone). Read conversations stay plain.
+    Card(
+        Modifier.fillMaxWidth().clickable(role = Role.Button) { onOpen(item) }.semantics(mergeDescendants = true) {},
+        colors = if (unread) CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer) else CardDefaults.cardColors(),
+        border = if (unread) BorderStroke(4.dp, MaterialTheme.colorScheme.primary) else null,
+    ) {
         Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Avatar(item.displayContact, Modifier.size(80.dp), initialSize = 40.sp)
+            BadgedBox(badge = {
+                if (unread) Badge(containerColor = MaterialTheme.colorScheme.primary) { Text("${item.unread}", fontSize = 24.sp, modifier = Modifier.padding(horizontal = 6.dp)) }
+            }) {
+                Avatar(item.displayContact, Modifier.size(80.dp), initialSize = 40.sp)
+            }
             Column(Modifier.weight(1f)) {
-                // Not colour alone: unread messages also carry a word, above the name so the text keeps the full width.
-                if (item.unread > 0) Text(stringResource(R.string.message_new), fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                if (unread) {
+                    Text(
+                        pluralStringResource(R.plurals.message_new_count, item.unread, item.unread),
+                        fontSize = 28.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary,
+                    )
+                }
                 Text(item.message.from, fontSize = 28.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(preview(item), fontSize = 24.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
                 Text(agoText(item.message.receivedAtMs, nowMs), fontSize = 24.sp, maxLines = 1)
