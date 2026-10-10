@@ -3,6 +3,11 @@ package app.presence.launcher.ui
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -128,27 +133,30 @@ private fun preview(item: MessageItem): String {
 @Composable
 private fun MessageRow(item: MessageItem, nowMs: Long, onOpen: (MessageItem) -> Unit) {
     val unread = item.unread > 0
-    // A conversation with something new does not look like the others: tinted card, thick frame, a count on the picture and the words
-    // (never colour alone). Read conversations stay plain.
+    val scheme = MaterialTheme.colorScheme
+    // Two clearly different cards. Something new: a solid dark card with light text, a count on the picture and the words
+    // "N nouveaux messages". Already read: a plain card with a thin outline. The difference never rests on the tint alone.
     Card(
         Modifier.fillMaxWidth().clickable(role = Role.Button) { onOpen(item) }.semantics(mergeDescendants = true) {},
-        colors = if (unread) CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer) else CardDefaults.cardColors(),
-        border = if (unread) BorderStroke(4.dp, MaterialTheme.colorScheme.primary) else null,
+        colors = if (unread) CardDefaults.cardColors(containerColor = scheme.primary, contentColor = scheme.onPrimary)
+        else CardDefaults.cardColors(containerColor = scheme.surface, contentColor = scheme.onSurface),
+        border = if (unread) null else BorderStroke(1.dp, scheme.outline),
     ) {
         Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            BadgedBox(badge = {
-                if (unread) Badge(containerColor = MaterialTheme.colorScheme.primary) { Text("${item.unread}", fontSize = 24.sp, modifier = Modifier.padding(horizontal = 6.dp)) }
-            }) {
+            Box {
                 Avatar(item.displayContact, Modifier.size(80.dp), initialSize = 40.sp)
+                if (unread) {
+                    // Inside the picture's corner (never cut by the card); hidden from TalkBack, the words say the number once.
+                    Box(
+                        Modifier.align(Alignment.TopEnd).clip(CircleShape).background(scheme.onPrimary).defaultMinSize(32.dp, 32.dp)
+                            .clearAndSetSemantics {},
+                        contentAlignment = Alignment.Center,
+                    ) { Text("${item.unread}", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = scheme.primary, modifier = Modifier.padding(horizontal = 6.dp)) }
+                }
             }
             Column(Modifier.weight(1f)) {
-                if (unread) {
-                    Text(
-                        pluralStringResource(R.plurals.message_new_count, item.unread, item.unread),
-                        fontSize = 28.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-                Text(item.message.from, fontSize = 28.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(item.message.from, fontSize = 28.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                if (unread) Text(pluralStringResource(R.plurals.message_new_count, item.unread, item.unread), fontSize = 28.sp, fontWeight = FontWeight.Bold)
                 Text(preview(item), fontSize = 24.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
                 Text(agoText(item.message.receivedAtMs, nowMs), fontSize = 24.sp, maxLines = 1)
             }

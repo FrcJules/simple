@@ -26,7 +26,7 @@ class SmsHistoryImporter(
         val locals = sentSince(sentRows.minOf { it.receivedAtMs } - SmsTwins.SENT_WINDOW_MS).filter(SmsTwins::isLocalSent).toMutableList()
         if (locals.isEmpty()) return messages
         return messages.filterNot { row ->
-            val twin = if (row.outgoing) locals.firstOrNull { SmsTwins.isCopyOfSent(row, it) } else null
+            val twin = if (row.outgoing) SmsTwins.twinOf(row, locals) else null // the closest one in time; each send hides one row only
             twin?.let { locals.remove(it) } != null
         }
     }

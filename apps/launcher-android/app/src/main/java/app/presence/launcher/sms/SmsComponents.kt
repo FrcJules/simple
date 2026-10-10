@@ -76,10 +76,12 @@ object SmsComponents {
         val last = profile.getLong("sms_synced_up_to", 0L)
         // "First copy" is its own flag: an empty inbox leaves the marker at 0, and the first SMS after that must still count as new.
         if (!profile.getBoolean("sms_twins_cleaned", false)) {
-            // Once: SMS that an earlier version copied twice (its own send, then the system's record of it; a notification, then the row).
-            val removed = MessageStore.get(app).removeSmsTwins()
-            profile.edit().putBoolean("sms_twins_cleaned", true).apply()
-            if (removed > 0) MessageDiagnostics.record(app, "Doublons de SMS supprimés : $removed")
+            // Once: SMS we sent that an earlier version also copied from the system's record of them.
+            // Once, and only if it worked: a failure is tried again at the next sync instead of blocking it.
+            runCatching { MessageStore.get(app).removeSmsTwins() }.onSuccess { removed ->
+                profile.edit().putBoolean("sms_twins_cleaned", true).apply()
+                if (removed > 0) MessageDiagnostics.record(app, "Doublons de SMS envoyés supprimés : $removed")
+            }
         }
         val firstDone = profile.getBoolean("sms_first_copy_done", false)
         if (!firstDone && !allowFirstCopy) {
