@@ -72,3 +72,13 @@ Présence est l'application d'**accueil** du téléphone (choisissez-la dans And
 ## Écrire un message à quelqu'un
 « Messages › Écrire un message » ouvre le même choix que pour appeler : **Favoris**, **Général** (tous les contacts du téléphone) et **Chercher** (clavier de lettres : le début du prénom suffit). « Reculer » et « Recommencer » restent à côté des lettres tapées.
 
+## Message pas reçu ? Le journal de Réglages famille
+« Réglages famille › Messages » montre « Ce qui s'est passé ces derniers temps » : une ligne par message vu par Présence, avec la raison quand il est écarté (« catégorie … : pas un message », « sans expéditeur », « ressemble à un code »…), et quand les SMS sont copiés. Envoyez-vous un message WhatsApp et un SMS, attendez quelques secondes, touchez « Actualiser » :
+- **aucune ligne « Notification WhatsApp »** → l'accès aux notifications est coupé ou bloqué (bouton « Ouvrir l'accès aux notifications » juste au-dessus ; voir « paramètres restreints ») ;
+- **« Notification … : ignorée (…) »** → la raison est écrite : envoyez-la moi ;
+- **aucune ligne « SMS reçu »** → la permission de réception des SMS n'est pas accordée (touchez « Autoriser la lecture et l'envoi des SMS »).
+Le journal ne contient ni nom, ni numéro, ni texte de message.
+
+## Un contact est introuvable ?
+« Réglages famille » indique, dans « Qui apparaît sur l'accueil », **combien de contacts Présence voit**. Seuls les contacts qui ont un **numéro de téléphone** enregistré sont listés (un contact créé seulement par WhatsApp, sans numéro dans le carnet du téléphone, n'en fait pas partie). Dans la recherche, tapez les lettres **sans tiret ni espace** : « JEANB » trouve « Jean-Baptiste », « MAMAN » trouve « Maman », « Grand-maman » et « Paul Maman ». Si l'écran dit « Je vois N contacts », comparez avec votre carnet.
+

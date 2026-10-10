@@ -14,15 +14,26 @@ object ContactSearch {
     private fun words(name: String) = normalize(name).split(' ').filter { it.isNotEmpty() }
 
     /**
-     * The contacts whose name has a word starting with [query] (typed letters, no spaces). People whose *first* word matches come first,
-     * then the others, each group in the order given (the phone's alphabetical order).
+     * The contacts matching the typed letters (no spaces, no hyphens: the keyboard has none), best matches first, each group in the
+     * order given (the phone's alphabetical order):
+     * 1. the name starts with them, hyphens and spaces ignored ("JEANB" finds "Jean-Baptiste", "MARIED" finds "Marie Dupont");
+     * 2. another word of the name starts with them ("BAPTISTE" finds "Jean-Baptiste");
+     * 3. from three letters on, they appear anywhere in the name ("APTIS" finds "Jean-Baptiste").
      */
     fun filter(contacts: List<Contact>, query: String): List<Contact> {
         val q = normalize(query).replace(" ", "")
         if (q.isEmpty()) return contacts
-        val (first, others) = contacts
-            .filter { c -> words(c.name).any { it.startsWith(q) } }
-            .partition { c -> words(c.name).firstOrNull()?.startsWith(q) == true }
-        return first + others
+        val ranked = contacts.mapNotNull { c ->
+            val w = words(c.name)
+            val compact = w.joinToString("")
+            val rank = when {
+                compact.startsWith(q) -> 0
+                w.any { it.startsWith(q) } -> 1
+                q.length >= 3 && compact.contains(q) -> 2
+                else -> return@mapNotNull null
+            }
+            rank to c
+        }
+        return ranked.sortedBy { it.first }.map { it.second } // sortedBy is stable: the phone's order is kept inside each group
     }
 }

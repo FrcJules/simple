@@ -6,6 +6,13 @@ import app.presence.launcher.Contact
 
 /** Who to write to: the same picker as for calling (favourites, everybody, search by letters). */
 @Composable
-fun PickContactScreen(@StringRes title: Int, favorites: List<Contact>, all: List<Contact>, onPick: (Contact) -> Unit, onBack: () -> Unit) {
-    PersonPicker(title, favorites, all, onBack, onPick)
+fun PickContactScreen(
+    @StringRes title: Int,
+    favorites: List<Contact>,
+    all: List<Contact>,
+    onPick: (Contact) -> Unit,
+    onBack: () -> Unit,
+    allLoaded: Boolean = true,
+) {
+    PersonPicker(title, favorites, all, onBack, allLoaded, onPick)
 }

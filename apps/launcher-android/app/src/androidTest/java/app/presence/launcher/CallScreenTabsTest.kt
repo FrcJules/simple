@@ -5,7 +5,6 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import app.presence.launcher.ui.CallScreen
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -42,7 +41,7 @@ class CallScreenTabsTest {
         rule.setContent { CallScreen(favorites = listOf(marie), all = listOf(jules, marie, paul), onBack = {}, onCall = { called = it }) }
         rule.onNodeWithText("Chercher").performClick()
         rule.onNodeWithText("Touchez les premières lettres du prénom").assertIsDisplayed()
-        rule.onNodeWithText("P").performScrollTo().performClick()
+        rule.onNodeWithText("P").performClick()
         rule.onNodeWithText("Paul Martin").assertIsDisplayed()
         rule.onNodeWithText("Marie").assertDoesNotExist()
         rule.onNodeWithText("Paul Martin").performClick()
@@ -54,18 +53,18 @@ class CallScreenTabsTest {
     fun aSearchWithNoMatchSaysSo() {
         rule.setContent { CallScreen(favorites = listOf(marie), all = listOf(marie), onBack = {}, onCall = {}) }
         rule.onNodeWithText("Chercher").performClick()
-        rule.onNodeWithText("Z").performScrollTo().performClick()
-        rule.onNodeWithText("Personne ne correspond.").assertIsDisplayed()
+        rule.onNodeWithText("Z").performClick()
+        rule.onNodeWithText("Personne ne correspond.", substring = true).assertIsDisplayed()
         rule.onNodeWithContentDescription("Recommencer").performClick()
-        rule.onNodeWithText("Personne ne correspond.").assertDoesNotExist()
+        rule.onNodeWithText("Personne ne correspond.", substring = true).assertDoesNotExist()
     }
 
     @Test
     fun theCorrectionKeysStayInViewAndWorkWithoutScrolling() {
         rule.setContent { CallScreen(favorites = listOf(marie), all = listOf(jules, marie, paul), onBack = {}, onCall = {}) }
         rule.onNodeWithText("Chercher").performClick()
-        rule.onNodeWithText("M").performScrollTo().performClick()
-        rule.onNodeWithText("A").performScrollTo().performClick()
+        rule.onNodeWithText("M").performClick()
+        rule.onNodeWithText("A").performClick()
         rule.onNodeWithContentDescription("Reculer").assertIsDisplayed() // no scrolling needed to reach it
         rule.onNodeWithContentDescription("Recommencer").assertIsDisplayed()
         rule.onNodeWithContentDescription("Reculer").performClick()
@@ -82,8 +81,21 @@ class CallScreenTabsTest {
         rule.onNodeWithText("Général").performClick()
         rule.onNodeWithText("Paul Martin").assertIsDisplayed()
         rule.onNodeWithText("Chercher").performClick()
-        rule.onNodeWithText("J").performScrollTo().performClick()
+        rule.onNodeWithText("J").performClick()
         rule.onNodeWithText("Jules").performClick()
         assertEquals(jules, picked)
+    }
+
+    @Test
+    fun aCompoundNameIsFoundWithoutAHyphenAndAllMatchesCanBeScrolled() {
+        val many = (1..30).map { Contact(100L + it, "Maman $it", "06000000$it", null) } + Contact(1, "Jean-Baptiste", "0611111111", null)
+        rule.setContent { CallScreen(favorites = emptyList(), all = many, onBack = {}, onCall = {}) }
+        rule.onNodeWithText("Chercher").performClick()
+        for (letter in "JEANB") rule.onNodeWithContentDescription("lettre $letter").performClick() // by name: result rows also show an initial
+        rule.onNodeWithText("Jean-Baptiste").assertIsDisplayed()
+        rule.onNodeWithContentDescription("Recommencer").performClick()
+        for (letter in "MAMAN") rule.onNodeWithContentDescription("lettre $letter").performClick()
+        rule.onNodeWithText("30 personnes").assertIsDisplayed() // thirty people match: the count says so, the list scrolls
+        rule.onNodeWithText("Maman 1").assertIsDisplayed()
     }
 }
