@@ -2,7 +2,12 @@ package app.presence.launcher.sms
 
 import android.content.Context
 import app.presence.launcher.ContactsRepository
+import app.presence.launcher.messages.MessageDiagnostics
 import app.presence.launcher.messages.MessageStore
+import app.presence.launcher.messages.TextSafety
+import app.presence.launcher.notifications.Channel
+import app.presence.launcher.notifications.Incoming
+import app.presence.launcher.notifications.SensitiveText
 import app.presence.launcher.notifications.HubForwarder
 
 /** Wires the SMS pieces to the real system (receivers and services have no dependency injection). */
@@ -50,7 +55,11 @@ object SmsComponents {
      */
     fun syncNew(context: Context): Int {
         val app = context.applicationContext
-        if (SmsRole.isHeld(app) || !SmsAccess.canRead(app)) return 0 // as the default app, receivers keep the history up to date
+        if (SmsRole.isHeld(app)) return 0 // as the default app, receivers keep the history up to date
+        if (!SmsAccess.canRead(app)) {
+            MessageDiagnostics.record(app, "Copie des SMS : impossible, la permission de lecture des SMS n'est pas accordée")
+            return 0
+        }
         return syncLocked(app)
     }
 
@@ -68,10 +77,20 @@ object SmsComponents {
         // "First copy" is its own flag: an empty inbox leaves the marker at 0, and the first SMS after that must still count as new.
         val firstDone = profile.getBoolean("sms_first_copy_done", false)
         val result = importer(app).syncSince(last, keepReadFlag = firstDone)
+        MessageDiagnostics.record(app, "Copie des SMS : ${result.count} nouveau(x)" + if (!firstDone) " (première copie)" else "")
         val edit = profile.edit().putBoolean("sms_first_copy_done", true)
         if (result.lastId > last) edit.putLong("sms_synced_up_to", result.lastId)
         edit.apply()
         if (onlyMarker) 0 else result.count
+    }
+
+    /** The home display shows an SMS only from a known contact and never a code (same rule as when we are the SMS app). */
+    fun forwardToDisplay(context: Context, address: String, body: String) {
+        val app = context.applicationContext
+        val clean = TextSafety.clean(body)
+        if (SensitiveText.looksSensitive(clean)) return
+        val name = runCatching { ContactsRepository(app.contentResolver).byNumber(address)?.name }.getOrNull()?.takeIf { it.isNotBlank() } ?: return
+        HubForwarder.forward(app, Incoming.Message(name.take(60), Channel.SMS, clean.take(500)), System.currentTimeMillis())
     }
 
     fun importer(context: Context): SmsHistoryImporter {

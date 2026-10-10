@@ -524,7 +524,7 @@ class MainActivity : ComponentActivity() {
             onSmsPermissionsAnswered()
             return
         }
-        smsPermissions.launch(arrayOf(Manifest.permission.READ_SMS, Manifest.permission.SEND_SMS))
+        smsPermissions.launch(arrayOf(Manifest.permission.READ_SMS, Manifest.permission.SEND_SMS, Manifest.permission.RECEIVE_SMS))
     }
 
     private fun onSmsPermissionsAnswered() {

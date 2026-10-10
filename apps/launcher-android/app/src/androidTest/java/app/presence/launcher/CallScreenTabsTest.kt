@@ -42,7 +42,7 @@ class CallScreenTabsTest {
         rule.setContent { CallScreen(favorites = listOf(marie), all = listOf(jules, marie, paul), onBack = {}, onCall = { called = it }) }
         rule.onNodeWithText("Chercher").performClick()
         rule.onNodeWithText("Touchez les premières lettres du prénom").assertIsDisplayed()
-        rule.onNodeWithText("P").performScrollTo().performClick()
+        rule.onNodeWithText("P").performClick()
         rule.onNodeWithText("Paul Martin").assertIsDisplayed()
         rule.onNodeWithText("Marie").assertDoesNotExist()
         rule.onNodeWithText("Paul Martin").performClick()
@@ -54,7 +54,7 @@ class CallScreenTabsTest {
     fun aSearchWithNoMatchSaysSo() {
         rule.setContent { CallScreen(favorites = listOf(marie), all = listOf(marie), onBack = {}, onCall = {}) }
         rule.onNodeWithText("Chercher").performClick()
-        rule.onNodeWithText("Z").performScrollTo().performClick()
+        rule.onNodeWithText("Z").performClick()
         rule.onNodeWithText("Personne ne correspond.").assertIsDisplayed()
         rule.onNodeWithContentDescription("Recommencer").performClick()
         rule.onNodeWithText("Personne ne correspond.").assertDoesNotExist()
@@ -64,8 +64,8 @@ class CallScreenTabsTest {
     fun theCorrectionKeysStayInViewAndWorkWithoutScrolling() {
         rule.setContent { CallScreen(favorites = listOf(marie), all = listOf(jules, marie, paul), onBack = {}, onCall = {}) }
         rule.onNodeWithText("Chercher").performClick()
-        rule.onNodeWithText("M").performScrollTo().performClick()
-        rule.onNodeWithText("A").performScrollTo().performClick()
+        rule.onNodeWithText("M").performClick()
+        rule.onNodeWithText("A").performClick()
         rule.onNodeWithContentDescription("Reculer").assertIsDisplayed() // no scrolling needed to reach it
         rule.onNodeWithContentDescription("Recommencer").assertIsDisplayed()
         rule.onNodeWithContentDescription("Reculer").performClick()
@@ -82,8 +82,22 @@ class CallScreenTabsTest {
         rule.onNodeWithText("Général").performClick()
         rule.onNodeWithText("Paul Martin").assertIsDisplayed()
         rule.onNodeWithText("Chercher").performClick()
-        rule.onNodeWithText("J").performScrollTo().performClick()
+        rule.onNodeWithText("J").performClick()
         rule.onNodeWithText("Jules").performClick()
         assertEquals(jules, picked)
+    }
+
+    @Test
+    fun aCompoundNameIsFoundWithoutAHyphenAndAllMatchesCanBeScrolled() {
+        val many = (1..30).map { Contact(100L + it, "Maman $it", "06000000$it", null) } + Contact(1, "Jean-Baptiste", "0611111111", null)
+        rule.setContent { CallScreen(favorites = emptyList(), all = many, onBack = {}, onCall = {}) }
+        rule.onNodeWithText("Chercher").performClick()
+        for (letter in "JEANB") rule.onNodeWithText(letter.toString()).performClick()
+        rule.onNodeWithText("Jean-Baptiste").assertIsDisplayed()
+        rule.onNodeWithContentDescription("Recommencer").performClick()
+        for (letter in "MAMAN") rule.onNodeWithText(letter.toString()).performClick()
+        rule.onNodeWithText("Maman 1").assertIsDisplayed()
+        rule.onNodeWithText("Maman 30").performScrollTo() // thirty people match: the list scrolls, none is hidden
+        rule.onNodeWithText("Maman 30").assertIsDisplayed()
     }
 }
