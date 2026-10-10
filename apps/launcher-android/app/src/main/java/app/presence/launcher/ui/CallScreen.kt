@@ -41,6 +41,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
@@ -82,14 +83,21 @@ private enum class PickTab { FAVORITES, ALL }
  * the caller asks for the confirmation. With no favourite yet, everybody is shown at once.
  */
 @Composable
-fun PersonPicker(@StringRes title: Int, favorites: List<Contact>, all: List<Contact>, onBack: () -> Unit, onPick: (Contact) -> Unit) {
+fun PersonPicker(
+    @StringRes title: Int,
+    favorites: List<Contact>,
+    all: List<Contact>,
+    onBack: () -> Unit,
+    allLoaded: Boolean = true,
+    onPick: (Contact) -> Unit,
+) {
     var chosenTab by remember { mutableStateOf<PickTab?>(null) }
     var searching by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
     val tab = chosenTab ?: if (favorites.isEmpty()) PickTab.ALL else PickTab.FAVORITES
     PresenceTheme {
         if (searching) {
-            SearchPanel(all = all, query = query, onQuery = { query = it }, onPick = onPick, onClose = { searching = false; query = "" })
+            SearchPanel(all = all, allLoaded = allLoaded, query = query, onQuery = { query = it }, onPick = onPick, onClose = { searching = false; query = "" })
         } else {
             val shown = if (tab == PickTab.FAVORITES) favorites else all
             Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -128,11 +136,11 @@ fun PersonPicker(@StringRes title: Int, favorites: List<Contact>, all: List<Cont
 
 /** Who to call: the picker, then a confirmation; nothing is dialled before "Oui, appeler". */
 @Composable
-fun CallScreen(favorites: List<Contact>, all: List<Contact>, onBack: () -> Unit, onCall: (Contact) -> Unit) {
+fun CallScreen(favorites: List<Contact>, all: List<Contact>, onBack: () -> Unit, allLoaded: Boolean = true, onCall: (Contact) -> Unit) {
     var selected by remember { mutableStateOf<Contact?>(null) }
     val haptic = LocalHapticFeedback.current
     PresenceTheme {
-        PersonPicker(R.string.call_title, favorites, all, onBack) { selected = it }
+        PersonPicker(R.string.call_title, favorites, all, onBack, allLoaded) { selected = it }
         selected?.let { c ->
             Dialog(onDismissRequest = { selected = null }) {
                 Surface(shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surface) {
@@ -178,21 +186,21 @@ private fun TabButton(label: String, selected: Boolean, modifier: Modifier, onCl
     if (selected) Button(onClick, tabModifier) { content() } else OutlinedButton(onClick, tabModifier) { content() }
 }
 
-private const val SEARCH_KEY_COLUMNS = 5
+private const val SEARCH_KEY_COLUMNS = 6
 private val SEARCH_LETTERS = ('A'..'Z').toList()
 
 /** Height of one letter key: smaller than the 64 dp of buttons elsewhere on purpose (26 keys must leave room for the results). */
-private val SEARCH_KEY_HEIGHT = 52.dp
+private val SEARCH_KEY_HEIGHT = 48.dp
 
 /**
  * Top: back, the letters typed, and the two correction keys. Middle: every person who matches, as a list that scrolls (all of them,
  * not two). Bottom, in reach of the thumb: the 26 letter keys, 5 per row, compact so that the results keep most of the screen.
  */
 @Composable
-private fun SearchPanel(all: List<Contact>, query: String, onQuery: (String) -> Unit, onPick: (Contact) -> Unit, onClose: () -> Unit) {
+private fun SearchPanel(all: List<Contact>, allLoaded: Boolean, query: String, onQuery: (String) -> Unit, onPick: (Contact) -> Unit, onClose: () -> Unit) {
     val matches = remember(all, query) { if (query.isEmpty()) emptyList() else ContactSearch.filter(all, query) }
     val haptic = LocalHapticFeedback.current
-    val type: (String) -> Unit = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onQuery(it) }
+    val type: (String) -> Unit = { haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove); onQuery(it) }
     Column(Modifier.fillMaxSize().padding(horizontal = 6.dp, vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         val typedLabel = stringResource(R.string.call_search_typed, query.ifEmpty { "-" })
         val closeText = stringResource(R.string.call_search_close)
@@ -210,13 +218,13 @@ private fun SearchPanel(all: List<Contact>, query: String, onQuery: (String) -> 
                 modifier = Modifier.weight(1f).heightIn(min = 64.dp).semantics { contentDescription = typedLabel; liveRegion = LiveRegionMode.Polite },
             ) {
                 Box(Modifier.padding(horizontal = 6.dp), contentAlignment = Alignment.Center) {
-                    Text(query.ifEmpty { "…" }, fontSize = 32.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp, maxLines = 1, overflow = TextOverflow.Clip)
+                    Text(query.ifEmpty { "…" }, fontSize = if (query.length > 9) 24.sp else 32.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
             Spacer(Modifier.width(12.dp))
             EditKey(Icons.AutoMirrored.Filled.Backspace, stringResource(R.string.call_search_erase), filled = true) { type(query.dropLast(1)) }
             Spacer(Modifier.width(24.dp)) // wide gap: "one letter back" and "start again" are never confused
-            EditKey(Icons.Filled.Refresh, stringResource(R.string.call_search_clear), filled = false) { type("") }
+            EditKey(Icons.Filled.Delete, stringResource(R.string.call_search_clear), filled = false) { type("") }
         }
         Box(Modifier.weight(1f).fillMaxWidth()) {
             when {
@@ -224,11 +232,21 @@ private fun SearchPanel(all: List<Contact>, query: String, onQuery: (String) -> 
                     stringResource(R.string.call_search_title), fontSize = 24.sp, textAlign = TextAlign.Center,
                     modifier = Modifier.align(Alignment.Center).padding(horizontal = 16.dp),
                 )
+                !allLoaded -> Text(
+                    stringResource(R.string.call_search_loading), fontSize = 24.sp, textAlign = TextAlign.Center,
+                    modifier = Modifier.align(Alignment.Center).padding(horizontal = 16.dp),
+                )
+                all.isEmpty() -> Text(
+                    stringResource(R.string.call_search_no_contacts), fontSize = 24.sp, textAlign = TextAlign.Center,
+                    modifier = Modifier.align(Alignment.Center).padding(horizontal = 16.dp),
+                )
                 matches.isEmpty() -> Text(
-                    stringResource(R.string.call_search_none), fontSize = 24.sp, textAlign = TextAlign.Center,
+                    pluralStringResource(R.plurals.call_search_none_of, all.size, all.size), fontSize = 24.sp, textAlign = TextAlign.Center,
                     modifier = Modifier.align(Alignment.Center).padding(horizontal = 16.dp),
                 )
                 else -> LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    // With more people than fit, the count says there are more below.
+                    if (matches.size > 3) item { Text(pluralStringResource(R.plurals.call_search_count, matches.size, matches.size), fontSize = 24.sp, fontWeight = FontWeight.Bold) }
                     items(matches.take(SEARCH_MAX_RESULTS), key = { it.id }) { c -> ResultRow(c) { onPick(c) } }
                 }
             }

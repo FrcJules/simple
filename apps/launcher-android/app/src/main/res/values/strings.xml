@@ -47,6 +47,16 @@
     <string name="call_tab_all">Général</string>
     <string name="call_search">Chercher</string>
     <string name="call_search_title">Touchez les premières lettres du prénom</string>
+    <string name="call_search_loading">Je cherche vos contacts…</string>
+    <string name="call_search_no_contacts">Je ne vois aucun contact sur ce téléphone.\n\nDemandez à un proche d\'autoriser les contacts.</string>
+    <plurals name="call_search_none_of">
+        <item quantity="one">Personne ne correspond.\n(Je vois %1$d contact sur ce téléphone.)</item>
+        <item quantity="other">Personne ne correspond.\n(Je vois %1$d contacts sur ce téléphone.)</item>
+    </plurals>
+    <plurals name="call_search_count">
+        <item quantity="one">%1$d personne</item>
+        <item quantity="other">%1$d personnes</item>
+    </plurals>
     <string name="call_search_none">Personne ne correspond.</string>
     <string name="call_search_typed">Vous avez écrit : %1$s</string>
     <string name="call_search_letter">lettre %1$s</string>
@@ -89,6 +99,10 @@
     <string name="setup_trail_help">Une ligne par message vu par Présence (sans nom ni texte). Envoyez-vous un message, puis touchez «&#160;Actualiser&#160;».</string>
     <string name="setup_trail_empty">Rien pour l\'instant : aucun message n\'est arrivé jusqu\'à Présence.</string>
     <string name="setup_trail_refresh">Actualiser</string>
+    <plurals name="setup_contacts_read">
+        <item quantity="one">Présence voit %1$d contact avec un numéro de téléphone.</item>
+        <item quantity="other">Présence voit %1$d contacts avec un numéro de téléphone.</item>
+    </plurals>
     <string name="setup_sms_offer">Faire de Présence l\'application SMS</string>
     <string name="setup_messages_title">Messages</string>
     <string name="setup_sms_held">SMS : gérés par Présence</string>

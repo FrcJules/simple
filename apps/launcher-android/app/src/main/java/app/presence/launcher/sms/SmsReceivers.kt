@@ -53,9 +53,14 @@ class SmsReceivedReceiver : BroadcastReceiver() {
         val pending: PendingResult? = goAsync()
         thread(name = "sms-received") {
             try {
+                // The display first, on its own: it does not depend on the copy below.
+                try {
+                    if (address.isNotEmpty() && body.isNotEmpty()) SmsComponents.forwardToDisplay(context, address, body)
+                } catch (e: RuntimeException) {
+                    MessageDiagnostics.record(context, "SMS reçu : envoi à l'écran maison en erreur")
+                }
                 Thread.sleep(WRITE_DELAY_MS) // the messaging app writes the row to the system database first
-                SmsComponents.syncNew(context)
-                if (address.isNotEmpty() && body.isNotEmpty()) SmsComponents.forwardToDisplay(context, address, body)
+                SmsComponents.syncNew(context, allowFirstCopy = false)
             } catch (e: RuntimeException) {
                 MessageDiagnostics.record(context, "SMS reçu : copie en erreur")
             } finally {

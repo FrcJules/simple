@@ -256,7 +256,8 @@ class MainActivity : ComponentActivity() {
                         val everybody by contactsVm.allContacts.collectAsStateWithLifecycle()
                         LaunchedEffect(Unit) { contactsVm.loadAll() } // the "Général" tab and the search need every contact
                         androidx.compose.runtime.DisposableEffect(Unit) { onDispose { contactsVm.clearAll() } } // and they are forgotten when the screen is left
-                        CallScreen(favorites = contacts, all = everybody, onBack = { screen = Screen.HOME }, onCall = { calling = it })
+                        val everybodyLoaded by contactsVm.allLoaded.collectAsStateWithLifecycle()
+                        CallScreen(favorites = contacts, all = everybody, onBack = { screen = Screen.HOME }, allLoaded = everybodyLoaded, onCall = { calling = it })
                     }
                     Screen.APP_MISSING -> {
                         BackHandler { screen = Screen.HOME }
@@ -289,7 +290,8 @@ class MainActivity : ComponentActivity() {
                         val everybody by contactsVm.allContacts.collectAsStateWithLifecycle()
                         LaunchedEffect(Unit) { contactsVm.loadAll() } // the "Général" tab and the search need every contact
                         androidx.compose.runtime.DisposableEffect(Unit) { onDispose { contactsVm.clearAll() } }
-                        PickContactScreen(R.string.write_to_title, favorites = contacts, all = everybody, onPick = { startNewConversation(it) }, onBack = { screen = Screen.MESSAGES })
+                        val everybodyLoaded by contactsVm.allLoaded.collectAsStateWithLifecycle()
+                        PickContactScreen(R.string.write_to_title, favorites = contacts, all = everybody, allLoaded = everybodyLoaded, onPick = { startNewConversation(it) }, onBack = { screen = Screen.MESSAGES })
                     }
                     Screen.MESSAGE -> {
                         BackHandler { closeConversation() }
