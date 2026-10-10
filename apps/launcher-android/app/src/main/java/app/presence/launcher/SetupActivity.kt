@@ -119,6 +119,9 @@ class SetupActivity : ComponentActivity() {
         }
     }
 
+    /** Bumped to redraw the messages trail after a refresh or an erase. */
+    private var trailVersion by mutableStateOf(0)
+
     /** App names and icons looked up for the editor, once each. */
     private val tileApps = HashMap<String, AppInfo?>()
 
@@ -408,6 +411,7 @@ class SetupActivity : ComponentActivity() {
                     ConfirmedButton(stringResource(R.string.setup_erase_messages), stringResource(R.string.setup_erase_confirm)) {
                         MessageStore.get(this@SetupActivity).clear()
                         MessageDiagnostics.clear(this@SetupActivity)
+                        trailVersion++
                         erased = true
                     }
                     ConfirmedButton(stringResource(R.string.setup_erase_photos), stringResource(R.string.setup_erase_confirm)) {
@@ -445,12 +449,12 @@ class SetupActivity : ComponentActivity() {
                             Text(stringResource(R.string.setup_sms_unavailable), fontSize = 24.sp)
                         }
                     }
-                    var trail by remember { mutableStateOf(MessageDiagnostics.lines(this@SetupActivity)) }
+                    val trail = remember(trailVersion) { MessageDiagnostics.lines(this@SetupActivity) }
                     Text(stringResource(R.string.setup_trail_title), fontSize = 24.sp, fontWeight = FontWeight.Bold)
                     Text(stringResource(R.string.setup_trail_help), fontSize = 24.sp)
                     if (trail.isEmpty()) Text(stringResource(R.string.setup_trail_empty), fontSize = 24.sp)
                     trail.take(12).forEach { Text(it, fontSize = 24.sp) }
-                    OutlinedButton(onClick = { trail = MessageDiagnostics.lines(this@SetupActivity) }, modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)) {
+                    OutlinedButton(onClick = { trailVersion++ }, modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)) {
                         Text(stringResource(R.string.setup_trail_refresh), fontSize = 24.sp)
                     }
                     if (smsRoleAnswer == true) Text(stringResource(R.string.setup_sms_done), fontSize = 24.sp, fontWeight = FontWeight.Bold)
@@ -478,6 +482,7 @@ class SetupActivity : ComponentActivity() {
 
                     Text(stringResource(R.string.setup_favorites), fontSize = 28.sp)
                     Text(stringResource(R.string.setup_favorites_help), fontSize = 24.sp)
+                    if (granted) Text(resources.getQuantityString(R.plurals.setup_contacts_read, all.size, all.size), fontSize = 24.sp, fontWeight = FontWeight.Bold)
                     if (!granted) {
                         Button(onClick = { askContacts.launch(Manifest.permission.READ_CONTACTS) }, modifier = Modifier.heightIn(min = 64.dp)) {
                             Text(stringResource(R.string.setup_contacts_allow), fontSize = 24.sp)

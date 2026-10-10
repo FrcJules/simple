@@ -50,7 +50,8 @@ class PresenceNotificationListener : NotificationListenerService() {
             // Direct mode: the SMS themselves are copied from the system database (a copy made from this notification would double them).
             if (SmsAccess.canRead(applicationContext)) {
                 worker.execute { runCatching { SmsComponents.syncNew(applicationContext) } } // never on the main thread: the first copy reads the whole history
-                if (known) HubForwarder.forward(applicationContext, incoming, sbn.postTime)
+                // One path to the display per SMS: the broadcast receiver sends it when RECEIVE_SMS is granted, this notification otherwise.
+                if (known && !SmsAccess.canReceive(applicationContext)) HubForwarder.forward(applicationContext, incoming, sbn.postTime)
                 return
             }
             if (!known) {

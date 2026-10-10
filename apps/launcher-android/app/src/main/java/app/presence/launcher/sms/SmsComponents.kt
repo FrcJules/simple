@@ -53,14 +53,14 @@ object SmsComponents {
      * Copies new system SMS into our history when we are NOT the default SMS app but may read them (direct mode). Starts from the last row
      * already copied; the very first run copies the whole history, all marked read. Returns how many messages were added.
      */
-    fun syncNew(context: Context): Int {
+    fun syncNew(context: Context, allowFirstCopy: Boolean = true): Int {
         val app = context.applicationContext
         if (SmsRole.isHeld(app)) return 0 // as the default app, receivers keep the history up to date
         if (!SmsAccess.canRead(app)) {
             MessageDiagnostics.record(app, "Copie des SMS : impossible, la permission de lecture des SMS n'est pas accordée")
             return 0
         }
-        return syncLocked(app)
+        return syncLocked(app, allowFirstCopy = allowFirstCopy)
     }
 
     /** After the full history was copied in default-app mode: the marker moves, so leaving that mode later does not read everything again. */
@@ -71,11 +71,16 @@ object SmsComponents {
     // One sync at a time (opening the app, a notification, the settings): the marker only ever moves forward.
     private val syncLock = Any()
 
-    private fun syncLocked(app: Context, onlyMarker: Boolean = false): Int = synchronized(syncLock) {
+    private fun syncLocked(app: Context, onlyMarker: Boolean = false, allowFirstCopy: Boolean = true): Int = synchronized(syncLock) {
         val profile = app.getSharedPreferences("profile", Context.MODE_PRIVATE)
         val last = profile.getLong("sms_synced_up_to", 0L)
         // "First copy" is its own flag: an empty inbox leaves the marker at 0, and the first SMS after that must still count as new.
         val firstDone = profile.getBoolean("sms_first_copy_done", false)
+        if (!firstDone && !allowFirstCopy) {
+            // A broadcast receiver has about ten seconds: the whole history is copied when the app is opened or from the settings.
+            MessageDiagnostics.record(app, "Copie des SMS : première copie à faire en ouvrant Présence")
+            return@synchronized 0
+        }
         val result = importer(app).syncSince(last, keepReadFlag = firstDone)
         MessageDiagnostics.record(app, "Copie des SMS : ${result.count} nouveau(x)" + if (!firstDone) " (première copie)" else "")
         val edit = profile.edit().putBoolean("sms_first_copy_done", true)

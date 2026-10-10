@@ -79,3 +79,6 @@ Présence est l'application d'**accueil** du téléphone (choisissez-la dans And
 - **aucune ligne « SMS reçu »** → la permission de réception des SMS n'est pas accordée (touchez « Autoriser la lecture et l'envoi des SMS »).
 Le journal ne contient ni nom, ni numéro, ni texte de message.
 
+## Un contact est introuvable ?
+« Réglages famille » indique, dans « Qui apparaît sur l'accueil », **combien de contacts Présence voit**. Seuls les contacts qui ont un **numéro de téléphone** enregistré sont listés (un contact créé seulement par WhatsApp, sans numéro dans le carnet du téléphone, n'en fait pas partie). Dans la recherche, tapez les lettres **sans tiret ni espace** : « JEANB » trouve « Jean-Baptiste », « MAMAN » trouve « Maman », « Grand-maman » et « Paul Maman ». Si l'écran dit « Je vois N contacts », comparez avec votre carnet.
+

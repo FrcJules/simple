@@ -50,12 +50,19 @@ object NotificationParser {
         return when {
             n.packageName in dialerPackages -> "not a missed call"
             n.packageName in whatsappPackages && title.equals("WhatsApp", ignoreCase = true) -> "WhatsApp summary (no sender)"
-            n.category != "msg" -> "category is ${n.category ?: "empty"}, not a message"
+            n.category != "msg" -> "category ${knownCategory(n.category)}, not a message"
             title.isEmpty() -> "no sender"
             text.isEmpty() -> "no text"
             SensitiveText.looksSensitive(text) -> "looks like a code (kept private)"
             else -> "not understood"
         }
+    }
+
+    /** The category comes from another app: only a closed list of Android's own names is ever written down. */
+    private fun knownCategory(category: String?): String = when (category) {
+        null, "" -> "empty"
+        "call", "email", "event", "msg", "promo", "recommendation", "social", "status", "sys", "transport", "progress", "reminder", "alarm", "err", "service" -> category
+        else -> "other"
     }
 
     private fun isMissedCallLabel(s: String) = missedKeywords.any { s.contains(it, ignoreCase = true) }
