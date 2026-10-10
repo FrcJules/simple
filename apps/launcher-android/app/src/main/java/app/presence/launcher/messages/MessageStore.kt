@@ -285,6 +285,41 @@ class MessageStore(
         helper.readableDatabase.rawQuery("SELECT COUNT(*) FROM messages WHERE read = 0 AND outgoing = 0", null)
             .use { it.moveToFirst(); it.getInt(0) }
 
+    /** The messages we sent ourselves (random "out-" id) since [sinceMs], oldest first. */
+    @Synchronized
+    fun sentSince(sinceMs: Long): List<StoredMessage> =
+        query("outgoing = 1 AND substr(id, 1, 4) = 'out-' AND at >= ?", arrayOf(sinceMs.toString()), "at ASC", null)
+
+    /**
+     * Deletes the system's copy of SMS that we sent ourselves and that an earlier version copied next to our own record (see [SmsTwins]);
+     * our own record, which carries the real send status, stays. One to one, the closest in time; only plain SMS rows of ours are ever
+     * candidates, never a received message nor a picture message. Returns how many were removed.
+     */
+    @Synchronized
+    fun removeSmsTwins(): Int {
+        val sent = query("channel = ? AND outgoing = 1 AND mms = 0", arrayOf(Channel.SMS.wire), "at ASC", null)
+        val locals = sent.filter(SmsTwins::isLocalSent).groupBy { SmsTwins.key(it) }.filterKeys { it != null }.mapValues { it.value.toMutableList() }
+        if (locals.isEmpty()) return 0
+        val doomed = ArrayList<String>()
+        for (row in sent.filter(SmsTwins::isSystemSent)) {
+            val group = locals[SmsTwins.key(row)] ?: continue
+            val twin = SmsTwins.twinOf(row, group) ?: continue
+            group.remove(twin)
+            doomed += row.id
+        }
+        if (doomed.isEmpty()) return 0
+        val db = helper.writableDatabase
+        db.beginTransaction()
+        try {
+            doomed.chunked(500).forEach { chunk -> db.delete("messages", "id IN (${chunk.joinToString(",") { "?" }})", chunk.toTypedArray()) }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+        publish()
+        return doomed.size
+    }
+
     /** One conversation by its [ThreadKey], oldest first. */
     @Synchronized
     fun thread(key: String): List<StoredMessage> = query("thread = ?", arrayOf(key), "at ASC", null)
