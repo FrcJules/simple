@@ -91,10 +91,10 @@ class CallScreenTabsTest {
         val many = (1..30).map { Contact(100L + it, "Maman $it", "06000000$it", null) } + Contact(1, "Jean-Baptiste", "0611111111", null)
         rule.setContent { CallScreen(favorites = emptyList(), all = many, onBack = {}, onCall = {}) }
         rule.onNodeWithText("Chercher").performClick()
-        for (letter in "JEANB") rule.onNodeWithText(letter.toString()).performClick()
+        for (letter in "JEANB") rule.onNodeWithContentDescription("lettre $letter").performClick() // by name: result rows also show an initial
         rule.onNodeWithText("Jean-Baptiste").assertIsDisplayed()
         rule.onNodeWithContentDescription("Recommencer").performClick()
-        for (letter in "MAMAN") rule.onNodeWithText(letter.toString()).performClick()
+        for (letter in "MAMAN") rule.onNodeWithContentDescription("lettre $letter").performClick()
         rule.onNodeWithText("30 personnes").assertIsDisplayed() // thirty people match: the count says so, the list scrolls
         rule.onNodeWithText("Maman 1").assertIsDisplayed()
     }
