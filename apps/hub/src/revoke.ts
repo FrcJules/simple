@@ -1,6 +1,6 @@
 import { DeviceRegistry } from "./devices";
 
-// `npm run devices -w @presence/hub` lists the paired phones; `npm run revoke -w @presence/hub -- <id>` forgets one, `-- --all` forgets all.
+// `npm run devices -w @simple/hub` lists the paired phones; `npm run revoke -w @simple/hub -- <id>` forgets one, `-- --all` forgets all.
 const devices = new DeviceRegistry(process.env.PRESENCE_DATA_DIR ?? "./data");
 const arg = process.argv[2];
 
@@ -10,7 +10,7 @@ if (arg === "--all") {
 } else if (arg) {
   if (devices.revoke(arg)) console.log(`Téléphone ${arg} oublié.`);
   else {
-    console.error(`Aucun téléphone (ou plusieurs) ne correspond à « ${arg} ». Lancez « npm run devices -w @presence/hub » pour voir la liste.`);
+    console.error(`Aucun téléphone (ou plusieurs) ne correspond à « ${arg} ». Lancez « npm run devices -w @simple/hub » pour voir la liste.`);
     process.exit(1);
   }
 } else {

@@ -1,5 +1,5 @@
 {
-  "name": "@presence/hub",
+  "name": "@simple/hub",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@fastify/cors": "^11.3.0",
-    "@presence/contracts": "*",
+    "@simple/contracts": "*",
     "fastify": "^5.0.0",
     "qrcode": "^1.5.4",
     "zod": "^4.6.5"

@@ -1,4 +1,4 @@
-import type { PresenceEvent } from "@presence/contracts";
+import type { PresenceEvent } from "@simple/contracts";
 
 const fmtDate = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" });
 const fmtTime = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" });

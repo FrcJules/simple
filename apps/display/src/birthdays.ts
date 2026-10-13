@@ -1,4 +1,4 @@
-import { birthdaysResponse, type Birthday } from "@presence/contracts";
+import { birthdaysResponse, type Birthday } from "@simple/contracts";
 
 const HUB = import.meta.env.VITE_HUB_URL ?? "http://localhost:8787";
 const TOKEN = import.meta.env.VITE_DISPLAY_TOKEN ?? "";

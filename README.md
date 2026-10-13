@@ -1,9 +1,7 @@
-# Présence
+# Simple
 
 > Une couche d'accessibilité et de présence autour des outils que la famille utilise déjà,
 > pour aider une personne âgée à rester connectée à ses proches et lutter contre la solitude.
-
-*(« Présence » est un nom de travail ; le nom du produit pourra changer.)*
 
 [![CI](https://github.com/FrcJules/presence/actions/workflows/ci.yml/badge.svg)](https://github.com/FrcJules/presence/actions/workflows/ci.yml)
 [![Licence](https://img.shields.io/badge/licence-Apache--2.0-blue.svg)](LICENSE)
@@ -17,7 +15,7 @@ Deux principes guident tout :
 1. **La technologie s'adapte à Jean-Pierre**, pas l'inverse.
 2. **La famille ne change aucune habitude** : WhatsApp, téléphone et SMS restent ses outils.
 
-Présence ne crée pas une nouvelle messagerie : il **rend visibles les interactions qui existent déjà**.
+Simple ne crée pas une nouvelle messagerie : il **rend visibles les interactions qui existent déjà**.
 Voir [docs/vision.md](docs/vision.md).
 
 ## Composants

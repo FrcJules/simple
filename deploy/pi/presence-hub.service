@@ -1,6 +1,6 @@
-# Hub Présence : reçoit les événements du téléphone, les diffuse à l'écran. Installé par docs/pi-install.md.
+# Hub Simple : reçoit les événements du téléphone, les diffuse à l'écran. Installé par docs/pi-install.md.
 [Unit]
-Description=Présence hub
+Description=Simple hub
 After=network-online.target
 Wants=network-online.target
 

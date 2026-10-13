@@ -10,7 +10,7 @@ import android.provider.Telephony
 object SmsRole {
     fun isHeld(context: Context): Boolean = Telephony.Sms.getDefaultSmsPackage(context) == context.packageName
 
-    /** The system screen that asks "Use Présence as your SMS app?"; null if this phone cannot do SMS. */
+    /** The system screen that asks "Use Simple as your SMS app?"; null if this phone cannot do SMS. */
     fun requestIntent(context: Context): Intent? {
         if (Build.VERSION.SDK_INT >= 29) {
             val rm = context.getSystemService(RoleManager::class.java) ?: return null

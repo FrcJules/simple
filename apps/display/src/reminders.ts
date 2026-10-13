@@ -1,4 +1,4 @@
-import { remindersResponse, type Reminder } from "@presence/contracts";
+import { remindersResponse, type Reminder } from "@simple/contracts";
 
 const HUB = import.meta.env.VITE_HUB_URL ?? "http://localhost:8787";
 const TOKEN = import.meta.env.VITE_DISPLAY_TOKEN ?? "";

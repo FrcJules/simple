@@ -6,7 +6,7 @@ package app.presence.launcher.config
  * list of apps is built and when a tile is opened.
  */
 object AppPolicy {
-    /** Présence itself (opening it from its own home screen would open the family's settings). */
+    /** Simple itself (opening it from its own home screen would open the family's settings). */
     private const val SELF = "app.simple.launcher"
 
     private val exact = setOf(
