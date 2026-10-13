@@ -113,3 +113,17 @@ Ajoutez dans `/etc/simple/hub.env` : `SIMPLE_PHOTOS_DIR=/var/lib/simple/photos` 
 - Sauvegardez `/var/lib/simple` (appareils appairés, certificat) et `/etc/simple/hub.env` ailleurs que sur la carte SD. Le dossier contient des empreintes et le nom des téléphones : gardez la sauvegarde privée.
 - Ne mettez **pas de proxy inverse** devant le hub et n'exposez jamais le port 8787 ou 5173 (voir `docs/privacy.md`).
 - Le jeton d'affichage est dans les fichiers de `apps/display/dist` : c'est pourquoi Chromium est verrouillé et le dossier appartient à l'utilisateur `simple`.
+
+## Migration depuis une installation « presence »
+
+Si votre Pi a été installé avant le renommage en Simple, une fois :
+
+```bash
+sudo systemctl stop presence-hub presence-display
+sudo mv /opt/presence /opt/simple && sudo mv /var/lib/presence /var/lib/simple && sudo mv /etc/presence /etc/simple
+sudo sed -i 's/PRESENCE_/SIMPLE_/g; s#/presence#/simple#g' /etc/simple/hub.env
+sudo rm /etc/systemd/system/presence-*.service
+sudo /opt/simple/deploy/pi/update.sh   # réinstalle les services simple-hub et simple-display
+```
+
+Le certificat est celui de `presence.local` : régénérez-le pour `simple.local` (voir « Certificat ») puis ré-appairez le téléphone avec le nouveau QR.
