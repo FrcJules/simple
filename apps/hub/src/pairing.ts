@@ -18,7 +18,7 @@ export function isPrivateIPv4(host: string): boolean {
 }
 
 /**
- * The link a camera app opens in Simple: `presence://pair?u=…&s=…&f=…`. The phone validates it again and shows what it contains for
+ * The link a camera app opens in Simple: `simple://pair?u=…&s=…&f=…`. The phone validates it again and shows what it contains for
  * the family to verify; this only refuses to build something obviously wrong.
  */
 export function buildPairingLink({ address, claim, fingerprint }: PairingInfo): string {
@@ -29,7 +29,7 @@ export function buildPairingLink({ address, claim, fingerprint }: PairingInfo): 
   if (claim.length < 16) throw new Error("the claim must be at least 16 characters");
   if (!/^[0-9A-Fa-f]{64}$/.test(fingerprint)) throw new Error("the fingerprint must be 64 hexadecimal characters");
   const q = new URLSearchParams({ u: url.origin, s: claim, f: fingerprint.toUpperCase() });
-  return `presence://pair?${q.toString()}`;
+  return `simple://pair?${q.toString()}`;
 }
 
 /** `88A2 899B 9DF0 0490 …`: the fingerprint in groups of four, easy to compare by eye. */

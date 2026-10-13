@@ -8,7 +8,7 @@ kotlin {
 }
 
 android {
-    namespace = "app.presence.launcher"
+    namespace = "app.simple.launcher"
     compileSdk = 37
 
     defaultConfig {

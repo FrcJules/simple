@@ -6,7 +6,7 @@ import { buildApp } from "./app";
 import { RemindersStore } from "./reminders";
 
 let dir: string;
-beforeEach(() => { dir = mkdtempSync(join(tmpdir(), "presence-rem-")); });
+beforeEach(() => { dir = mkdtempSync(join(tmpdir(), "simple-rem-")); });
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
 describe("RemindersStore", () => {

@@ -6,7 +6,7 @@ import { buildApp } from "./app";
 import { BirthdaysStore } from "./birthdays";
 
 let dir: string;
-beforeEach(() => { dir = mkdtempSync(join(tmpdir(), "presence-bd-")); });
+beforeEach(() => { dir = mkdtempSync(join(tmpdir(), "simple-bd-")); });
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
 describe("BirthdaysStore", () => {

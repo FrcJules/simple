@@ -1,0 +1,33 @@
+# Hub Simple : reçoit les événements du téléphone, les diffuse à l'écran. Installé par docs/pi-install.md.
+[Unit]
+Description=Simple hub
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=simple
+Group=simple
+WorkingDirectory=/opt/simple
+EnvironmentFile=/etc/simple/hub.env
+Environment=SIMPLE_DATA_DIR=/var/lib/simple
+Environment=SIMPLE_TLS_DIR=/var/lib/simple/tls
+ExecStart=/usr/bin/node apps/hub/dist/main.js
+Restart=on-failure
+RestartSec=5
+# Durcissement : le hub n'écrit que dans /var/lib/simple et n'a besoin d'aucun droit particulier.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ReadWritePaths=/var/lib/simple
+StateDirectory=simple
+StateDirectoryMode=0700
+UMask=0077
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+ProtectKernelTunables=true
+ProtectControlGroups=true
+
+[Install]
+WantedBy=multi-user.target

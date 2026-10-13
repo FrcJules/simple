@@ -7,12 +7,12 @@ import { afterAll, describe, expect, it } from "vitest";
 import { buildApp } from "./app";
 import { loadOrCreateTls, rotateTls } from "./tls";
 
-const dir = mkdtempSync(join(tmpdir(), "presence-tls-"));
+const dir = mkdtempSync(join(tmpdir(), "simple-tls-"));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
 describe("tls", () => {
   it("rotates to a different certificate", () => {
-    const rotDir = mkdtempSync(join(tmpdir(), "presence-rot-"));
+    const rotDir = mkdtempSync(join(tmpdir(), "simple-rot-"));
     try {
       const before = loadOrCreateTls(rotDir);
       const after = rotateTls(rotDir);

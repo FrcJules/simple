@@ -7,7 +7,7 @@ import { DeviceRegistry } from "./devices";
 
 let dir: string;
 let now = 1_000_000;
-beforeEach(() => { dir = mkdtempSync(join(tmpdir(), "presence-dev-")); now = 1_000_000; });
+beforeEach(() => { dir = mkdtempSync(join(tmpdir(), "simple-dev-")); now = 1_000_000; });
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
 const registry = () => new DeviceRegistry(dir, () => now);
 
@@ -244,7 +244,7 @@ describe("hub pairing", () => {
     const reg = registry();
     const app = buildApp({
       displayToken: DISPLAY, devices: reg,
-      startPairing: () => ({ link: `presence://pair?s=${reg.createClaim()}`, fingerprint: "AAAA BBBB", expiresInSeconds: 120 }),
+      startPairing: () => ({ link: `simple://pair?s=${reg.createClaim()}`, fingerprint: "AAAA BBBB", expiresInSeconds: 120 }),
     });
     const go = (headers: Record<string, string>) => app.inject({ method: "POST", url: "/pairing/start", headers });
     expect((await go({})).statusCode).toBe(401);
@@ -257,7 +257,7 @@ describe("hub pairing", () => {
 
   it("/pairing/start refuses a foreign Host or Origin, a token in the URL, and the QR code can be cancelled", async () => {
     const reg = registry();
-    const app = buildApp({ displayToken: DISPLAY, devices: reg, displayOrigin: "http://localhost:5173", startPairing: () => ({ link: `presence://pair?s=${reg.createClaim()}`, fingerprint: "A", expiresInSeconds: 120 }) });
+    const app = buildApp({ displayToken: DISPLAY, devices: reg, displayOrigin: "http://localhost:5173", startPairing: () => ({ link: `simple://pair?s=${reg.createClaim()}`, fingerprint: "A", expiresInSeconds: 120 }) });
     const auth = { authorization: `Bearer ${DISPLAY}` };
     const post = (url: string, headers: Record<string, string>) => app.inject({ method: "POST", url, headers });
     expect((await post("/pairing/start", { ...auth, host: "evil.example:8787" })).statusCode).toBe(404);

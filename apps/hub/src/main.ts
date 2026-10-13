@@ -18,21 +18,21 @@ function required(name: string, hint: string): string {
 }
 
 // The phone reaches the hub over the home network: HTTPS with a self-signed certificate pinned at pairing.
-const tls = loadOrCreateTls(process.env.PRESENCE_TLS_DIR ?? "./data/tls");
-const tlsPort = Number(process.env.PRESENCE_TLS_PORT ?? 8788);
-const devices = new DeviceRegistry(process.env.PRESENCE_DATA_DIR ?? "./data");
+const tls = loadOrCreateTls(process.env.SIMPLE_TLS_DIR ?? "./data/tls");
+const tlsPort = Number(process.env.SIMPLE_TLS_PORT ?? 8788);
+const devices = new DeviceRegistry(process.env.SIMPLE_DATA_DIR ?? "./data");
 
 const app = buildApp({
-  pairingToken: process.env.PRESENCE_PAIRING_TOKEN || undefined, // optional: phones normally pair with the QR code
-  displayToken: required("PRESENCE_DISPLAY_TOKEN", "min 16 chars, different from the pairing token if any"),
-  displayOrigin: process.env.PRESENCE_DISPLAY_ORIGIN,
+  pairingToken: process.env.SIMPLE_PAIRING_TOKEN || undefined, // optional: phones normally pair with the QR code
+  displayToken: required("SIMPLE_DISPLAY_TOKEN", "min 16 chars, different from the pairing token if any"),
+  displayOrigin: process.env.SIMPLE_DISPLAY_ORIGIN,
   devices,
-  reminders: new RemindersStore(process.env.PRESENCE_DATA_DIR ?? "./data"),
-  weather: WeatherService.fromEnv(process.env.PRESENCE_WEATHER_LAT, process.env.PRESENCE_WEATHER_LON), // off unless configured (ADR 0006)
-  birthdays: new BirthdaysStore(process.env.PRESENCE_DATA_DIR ?? "./data"),
-  photos: new PhotosStore(process.env.PRESENCE_PHOTOS_DIR ?? "./data/photos"),
+  reminders: new RemindersStore(process.env.SIMPLE_DATA_DIR ?? "./data"),
+  weather: WeatherService.fromEnv(process.env.SIMPLE_WEATHER_LAT, process.env.SIMPLE_WEATHER_LON), // off unless configured (ADR 0006)
+  birthdays: new BirthdaysStore(process.env.SIMPLE_DATA_DIR ?? "./data"),
+  photos: new PhotosStore(process.env.SIMPLE_PHOTOS_DIR ?? "./data/photos"),
   startPairing: () => {
-    const host = process.env.PRESENCE_HOST ?? lanAddress();
+    const host = process.env.SIMPLE_HOST ?? lanAddress();
     if (!host) throw new Error("no home-network address");
     const link = buildPairingLink({ address: `https://${host}:${tlsPort}`, claim: devices.createClaim(), fingerprint: tls.fingerprint });
     return { link, fingerprint: groupFingerprint(tls.fingerprint), expiresInSeconds: DeviceRegistry.CLAIM_TTL_MS / 1000 };

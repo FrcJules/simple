@@ -1,7 +1,7 @@
 import { DeviceRegistry } from "./devices";
 
 // `npm run devices -w @simple/hub` lists the paired phones; `npm run revoke -w @simple/hub -- <id>` forgets one, `-- --all` forgets all.
-const devices = new DeviceRegistry(process.env.PRESENCE_DATA_DIR ?? "./data");
+const devices = new DeviceRegistry(process.env.SIMPLE_DATA_DIR ?? "./data");
 const arg = process.argv[2];
 
 if (arg === "--all") {

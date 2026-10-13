@@ -8,7 +8,7 @@ import { PhotosStore } from "./photos";
 let root: string;
 let dir: string;
 beforeEach(() => {
-  root = mkdtempSync(join(tmpdir(), "presence-ph-"));
+  root = mkdtempSync(join(tmpdir(), "simple-ph-"));
   dir = join(root, "photos");
   mkdirSync(dir);
 });

@@ -19,7 +19,7 @@ package com.google.android.mms.pdu_alt;
 import android.content.Context;
 import android.text.TextUtils;
 
-import app.presence.launcher.mms.vendor.Log;
+import app.simple.launcher.mms.vendor.Log;
 
 import com.google.android.mms.InvalidHeaderValueException;
 
