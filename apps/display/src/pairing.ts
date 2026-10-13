@@ -4,7 +4,7 @@ const HUB = import.meta.env.VITE_HUB_URL ?? "http://localhost:8787";
 const TOKEN = import.meta.env.VITE_DISPLAY_TOKEN ?? "";
 
 export interface PairingOffer {
-  /** `presence://pair?…`, what the QR code holds: a one-time claim, never a long-lived secret. */
+  /** `simple://pair?…`, what the QR code holds: a one-time claim, never a long-lived secret. */
   link: string;
   /** The hub certificate fingerprint in groups of four, to compare with the one the phone shows. */
   fingerprint: string;
@@ -19,7 +19,7 @@ export async function startPairing(): Promise<PairingOffer | null> {
     const data: unknown = await res.json();
     if (typeof data !== "object" || data === null) return null;
     const { link, fingerprint, expiresInSeconds } = data as Record<string, unknown>;
-    if (typeof link !== "string" || !link.startsWith("presence://pair?") || typeof fingerprint !== "string") return null;
+    if (typeof link !== "string" || !link.startsWith("simple://pair?") || typeof fingerprint !== "string") return null;
     if (typeof expiresInSeconds !== "number" || !Number.isFinite(expiresInSeconds) || expiresInSeconds > 600) return null;
     return { link, fingerprint, expiresInSeconds };
   } catch {

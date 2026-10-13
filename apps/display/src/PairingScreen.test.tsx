@@ -6,7 +6,7 @@ vi.stubGlobal("EventSource", class { onmessage = null; close() {} });
 import { App, SECRET_TAPS } from "./App";
 import { PairingScreen } from "./PairingScreen";
 
-const LINK = "presence://pair?u=https%3A%2F%2F192.168.1.66%3A8788&s=claim-0123456789abcdef&f=" + "AB".repeat(32);
+const LINK = "simple://pair?u=https%3A%2F%2F192.168.1.66%3A8788&s=claim-0123456789abcdef&f=" + "AB".repeat(32);
 const offer = { link: LINK, fingerprint: "ABAB ABAB ABAB ABAB", expiresInSeconds: 3 };
 const okFetch = () => vi.fn().mockResolvedValue({ ok: true, json: async () => offer });
 
@@ -51,7 +51,7 @@ describe("PairingScreen", () => {
     expect(await screen.findByText(/Ça n'a pas marché/)).toBeTruthy();
   });
 
-  it("refuses an answer that is not a presence link", async () => {
+  it("refuses an answer that is not a simple link", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ...offer, link: "https://evil.example" }) }));
     render(<PairingScreen onClose={() => {}} />);
     expect(await screen.findByText(/Ça n'a pas marché/)).toBeTruthy();

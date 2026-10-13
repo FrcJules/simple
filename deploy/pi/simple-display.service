@@ -1,0 +1,21 @@
+# Sert l'écran maison (fichiers statiques) sur la boucle locale uniquement : http://127.0.0.1:5173
+[Unit]
+Description=Simple écran maison (fichiers statiques, boucle locale)
+After=network.target
+
+[Service]
+User=simple
+Group=simple
+WorkingDirectory=/opt/simple/apps/display/dist
+ExecStart=/usr/bin/python3 -m http.server 5173 --bind 127.0.0.1
+Restart=on-failure
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target

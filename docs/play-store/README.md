@@ -34,7 +34,7 @@ Pour un compte personnel créé après le 13 novembre 2023, Google exige avant l
 ## 6. Fiche et formulaires
 - *Simple sur le Store* → *Fiche principale* : copier les textes de `fastlane/metadata/android/fr-FR/`, icône 512×512 et visuel 1024×500 du même dossier.
 - **Captures d'écran téléphone (2 minimum) : à faire par vous** sur un vrai téléphone (accueil, liste de proches, « J'appelle… »). Format 16:9 ou 9:16, côté de 320 à 3840 px.
-- *Politique de confidentialité* : il faut une **URL publique**. Le dépôt est privé : soit le passer en public puis activer GitHub Pages (ou utiliser l'URL `https://github.com/FrcJules/presence/blob/main/docs/privacy-policy.md`), soit héberger la page ailleurs.
+- *Politique de confidentialité* : il faut une **URL publique**. Le dépôt est privé : soit le passer en public puis activer GitHub Pages (ou utiliser l'URL `https://github.com/FrcJules/simple/blob/main/docs/privacy-policy.md`), soit héberger la page ailleurs.
 - *Contenu de l'application* : suivre [declarations.md](declarations.md) et [data-safety.md](data-safety.md).
 
 ## 7. Mises à jour automatiques

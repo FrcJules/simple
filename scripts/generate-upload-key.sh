@@ -3,8 +3,8 @@
 # Run it on YOUR machine (needs a JDK). Never commit the .jks file or the passwords.
 set -euo pipefail
 
-OUT="${1:-$HOME/presence-upload-key.jks}"
-ALIAS="${2:-presence-upload}"
+OUT="${1:-$HOME/simple-upload-key.jks}"
+ALIAS="${2:-simple-upload}"
 
 [ -e "$OUT" ] && { echo "Refusing to overwrite existing $OUT" >&2; exit 1; }
 command -v keytool >/dev/null || { echo "keytool not found: install a JDK 17" >&2; exit 1; }

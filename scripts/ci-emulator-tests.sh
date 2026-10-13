@@ -14,7 +14,7 @@ if [ "$NUM_SHARDS" -gt 1 ]; then shard_args=(-e numShards "$NUM_SHARDS" -e shard
 gradle :app:installDebug :app:installDebugAndroidTest || exit 1
 
 RUNNER=app.simple.launcher.test/androidx.test.runner.AndroidJUnitRunner
-SMS_TEST=app.presence.launcher.SmsEndToEndTest
+SMS_TEST=app.simple.launcher.SmsEndToEndTest
 
 # 1. Every test except the SMS one, with the app as an ordinary app (becoming the SMS app also grants it the contacts
 #    permission, which would change what the other screens do).
