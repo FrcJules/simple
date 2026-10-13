@@ -21,6 +21,6 @@ object SmsAccess {
     /** Told of each received SMS (the broadcast receiver of the direct mode needs it). */
     fun canReceive(context: Context) = SmsRole.isHeld(context) || granted(context, Manifest.permission.RECEIVE_SMS)
 
-    /** Both: write a message inside Présence and see the conversation. */
+    /** Both: write a message inside Simple and see the conversation. */
     fun direct(context: Context) = canRead(context) && canSend(context)
 }

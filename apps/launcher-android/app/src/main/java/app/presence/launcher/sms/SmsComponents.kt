@@ -86,7 +86,7 @@ object SmsComponents {
         val firstDone = profile.getBoolean("sms_first_copy_done", false)
         if (!firstDone && !allowFirstCopy) {
             // A broadcast receiver has about ten seconds: the whole history is copied when the app is opened or from the settings.
-            MessageDiagnostics.record(app, "Copie des SMS : première copie à faire en ouvrant Présence")
+            MessageDiagnostics.record(app, "Copie des SMS : première copie à faire en ouvrant Simple")
             return@synchronized 0
         }
         val result = importer(app).syncSince(last, keepReadFlag = firstDone)

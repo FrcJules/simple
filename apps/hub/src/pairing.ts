@@ -18,7 +18,7 @@ export function isPrivateIPv4(host: string): boolean {
 }
 
 /**
- * The link a camera app opens in Présence: `presence://pair?u=…&s=…&f=…`. The phone validates it again and shows what it contains for
+ * The link a camera app opens in Simple: `presence://pair?u=…&s=…&f=…`. The phone validates it again and shows what it contains for
  * the family to verify; this only refuses to build something obviously wrong.
  */
 export function buildPairingLink({ address, claim, fingerprint }: PairingInfo): string {

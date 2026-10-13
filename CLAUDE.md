@@ -1,4 +1,4 @@
-# CLAUDE.md — Présence
+# CLAUDE.md — Simple
 
 Monorepo open source (Apache-2.0) d'un assistant numérique pour personne âgée. Lire `docs/vision.md` avant toute décision produit.
 

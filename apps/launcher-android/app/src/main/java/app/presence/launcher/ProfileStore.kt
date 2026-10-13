@@ -15,7 +15,7 @@ class ProfileStore(context: Context) {
         prefs.edit().putBoolean("contacts_asked", true).apply()
     }
 
-    /** The person (or family) said "Plus tard" to making Présence the SMS app: do not ask again by surprise. */
+    /** The person (or family) said "Plus tard" to making Simple the SMS app: do not ask again by surprise. */
     fun smsRoleDeclined(): Boolean = prefs.getBoolean("sms_role_declined", false)
 
     fun setSmsRoleDeclined(declined: Boolean) {

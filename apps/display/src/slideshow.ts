@@ -1,4 +1,4 @@
-import { photoList } from "@presence/contracts";
+import { photoList } from "@simple/contracts";
 import { useEffect, useState } from "react";
 
 const HUB = import.meta.env.VITE_HUB_URL ?? "http://localhost:8787";

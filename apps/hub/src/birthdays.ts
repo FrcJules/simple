@@ -1,4 +1,4 @@
-import { birthday, type Birthday } from "@presence/contracts";
+import { birthday, type Birthday } from "@simple/contracts";
 import { randomBytes } from "node:crypto";
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
