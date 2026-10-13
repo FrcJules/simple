@@ -4,11 +4,11 @@ Pour Jean-Pierre (ou n'importe quel proche qui lit peu et préfère les images) 
 • Quatre gros boutons : Appeler, Messages, Photo, Mes photos.
 • Les proches sont affichés par leur photo : on reconnaît la personne, on touche, on confirme, on appelle.
 • Une confirmation claire avant chaque appel, avec un bouton pour annuler.
-• Texte très grand, contraste élevé, aucun geste caché.
+• Texte très grand, contraste élevé, l'heure et la batterie toujours visibles.
 
 Pour la famille :
 • Rien à changer : vous continuez à utiliser le téléphone, les SMS et WhatsApp comme d'habitude.
-• Vous choisissez les proches à afficher en mettant une étoile sur leurs contacts dans le téléphone.
+• Vous choisissez les proches à afficher dans les réglages famille, protégés par un code que seule la famille connaît.
 • Facultatif : avec un écran maison (Raspberry Pi), Simple peut afficher « Marie vous a appelé » ou le dernier message reçu en grand sur l'écran du salon. Cela demande d'autoriser l'accès aux notifications (appels manqués, SMS, WhatsApp) dans les réglages famille.
 
 Vie privée :
