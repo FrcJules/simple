@@ -5,7 +5,7 @@ import { PairingScreen } from "./PairingScreen";
 import { degrees, describeWeather, fetchWeather } from "./weather";
 import { cardReminders, dismissKey, dueReminders, fetchReminders, formatAt, nextReminder } from "./reminders";
 import { homeText } from "./strings";
-import type { Birthday, Reminder, Weather } from "@presence/contracts";
+import type { Birthday, Reminder, Weather } from "@simple/contracts";
 import { useSlideshow } from "./slideshow";
 import { useEvents } from "./useEvents";
 import "./app.css";

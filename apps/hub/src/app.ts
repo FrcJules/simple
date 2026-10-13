@@ -1,5 +1,5 @@
 import cors from "@fastify/cors";
-import { presenceEvent, type PresenceEvent } from "@presence/contracts";
+import { presenceEvent, type PresenceEvent } from "@simple/contracts";
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
 import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";

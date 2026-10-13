@@ -1,4 +1,4 @@
-import type { Reminder } from "@presence/contracts";
+import type { Reminder } from "@simple/contracts";
 import { describe, expect, it } from "vitest";
 import { cardReminders, dismissKey, dueReminders, formatAt, nextReminder } from "./reminders";
 

@@ -1,4 +1,4 @@
-import { weather, type Weather } from "@presence/contracts";
+import { weather, type Weather } from "@simple/contracts";
 import { z } from "zod";
 
 const answer = z.object({

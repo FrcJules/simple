@@ -13,7 +13,7 @@ read -r -s -p "Keystore password (min 12 chars): " PASS; echo
 [ "${#PASS}" -ge 12 ] || { echo "Password too short" >&2; exit 1; }
 
 keytool -genkeypair -v -keystore "$OUT" -alias "$ALIAS" -keyalg RSA -keysize 4096 -validity 10000 \
-  -storepass "$PASS" -keypass "$PASS" -dname "CN=Presence, O=Presence, C=FR"
+  -storepass "$PASS" -keypass "$PASS" -dname "CN=Simple, O=Simple, C=FR"
 
 cat <<MSG
 

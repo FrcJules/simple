@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.presence.launcher.R
 
-/** Plain-language explanation shown before Android asks "Use Présence as your SMS app?", which would otherwise be refused out of fear. */
+/** Plain-language explanation shown before Android asks "Use Simple as your SMS app?", which would otherwise be refused out of fear. */
 @Composable
 fun SmsRoleScreen(onContinue: () -> Unit, onLater: () -> Unit) {
     PresenceTheme {

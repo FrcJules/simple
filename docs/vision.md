@@ -8,7 +8,7 @@ Jean-Pierre passe beaucoup de temps chez lui, utilise peu la technologie, n'empo
 
 ## Principes
 1. La technologie s'adapte à Jean-Pierre.
-2. La famille ne change pas ses habitudes (téléphone, WhatsApp, SMS). Présence fonctionne *autour* de ces outils et rend visibles les interactions existantes.
+2. La famille ne change pas ses habitudes (téléphone, WhatsApp, SMS). Simple fonctionne *autour* de ces outils et rend visibles les interactions existantes.
 
 ## Deux briques
 - **Launcher Android** : écran d'accueil radicalement simplifié (Appeler, Messages, Photos, Appareil photo), contacts représentés par leur photo, dictée vocale et lecture à voix haute (TTS).
