@@ -16,7 +16,7 @@
 
 package com.google.android.mms.pdu_alt;
 
-import app.presence.launcher.mms.vendor.Log;
+import app.simple.launcher.mms.vendor.Log;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

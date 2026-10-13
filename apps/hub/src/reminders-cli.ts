@@ -2,7 +2,7 @@ import { RemindersStore } from "./reminders";
 
 // `npm run reminders -w @simple/hub -- add "Prendre le médicament" --at 08:00 [--days lun,mer,ven | --date 2026-10-12]`
 //  `... -- list`   `... -- remove <identifiant>`
-const store = new RemindersStore(process.env.PRESENCE_DATA_DIR ?? "./data");
+const store = new RemindersStore(process.env.SIMPLE_DATA_DIR ?? "./data");
 const [command, ...rest] = process.argv.slice(2);
 const DAYS = ["dim", "lun", "mar", "mer", "jeu", "ven", "sam"];
 

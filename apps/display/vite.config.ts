@@ -19,7 +19,7 @@ function contentSecurityPolicy(hubUrl: string): Plugin {
     "form-action 'none'",
   ].join("; ");
   return {
-    name: "presence-csp",
+    name: "simple-csp",
     apply: "build",
     transformIndexHtml: () => [{ tag: "meta", attrs: { "http-equiv": "Content-Security-Policy", content: policy }, injectTo: "head-prepend" }],
   };

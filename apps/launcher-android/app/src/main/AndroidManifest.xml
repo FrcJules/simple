@@ -62,14 +62,14 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="presence" android:host="pair" />
+                <data android:scheme="simple" android:host="pair" />
             </intent-filter>
         </activity>
 
         <receiver android:name=".sms.SmsStatusReceiver" android:exported="false" />
 
         <service
-            android:name=".notifications.PresenceNotificationListener"
+            android:name=".notifications.SimpleNotificationListener"
             android:exported="true"
             android:label="@string/app_name"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
