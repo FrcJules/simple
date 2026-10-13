@@ -36,7 +36,7 @@ Vous pouvez effacer les messages conservés et les photos des proches dans « R�
 Présence ne s'adresse pas aux enfants.
 
 ## Contact
-Questions : ouvrez une issue sur https://github.com/FrcJules/presence ou écrivez à jules.francois@epitech.eu.
+Questions : ouvrez une issue sur https://github.com/FrcJules/presence ou écrivez à rateur42@gmail.com.
 
 Le code source est public : vous pouvez vérifier ces engagements.
 
