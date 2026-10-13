@@ -1,8 +1,8 @@
-# Politique de confidentialité — Présence
+# Politique de confidentialité — Simple
 
 *Dernière mise à jour : 7 octobre 2026*
 
-Présence est une application libre et gratuite. Elle n'a **ni compte, ni publicité, ni outil de mesure d'audience**. Le développeur ne reçoit **aucune donnée** vous concernant.
+Simple est une application libre et gratuite. Elle n'a **ni compte, ni publicité, ni outil de mesure d'audience**. Le développeur ne reçoit **aucune donnée** vous concernant.
 
 ## Ce que l'application utilise, et pourquoi
 
@@ -24,7 +24,7 @@ L'application ne lit que les notifications des applications Téléphone, Message
 ## Dictée et lecture à voix haute
 Ces deux fonctions sont **facultatives** et ne se déclenchent que lorsque vous touchez le bouton. Elles utilisent les services de reconnaissance et de synthèse vocales **de votre téléphone** (généralement ceux de Google). L'application demande un traitement hors ligne, mais votre téléphone peut envoyer l'audio à ces services selon ses réglages : consultez la politique de confidentialité de votre fournisseur. L'application ne reçoit que le texte dicté.
 
-Les messages qui ressemblent à un code à usage unique ou à une alerte bancaire ne sont ni lus à voix haute ni transmis à l'écran maison. Reçus par les notifications, ils sont ignorés ; reçus directement par SMS (si Présence est votre application de messages), ils sont conservés sur le téléphone mais masqués.
+Les messages qui ressemblent à un code à usage unique ou à une alerte bancaire ne sont ni lus à voix haute ni transmis à l'écran maison. Reçus par les notifications, ils sont ignorés ; reçus directement par SMS (si Simple est votre application de messages), ils sont conservés sur le téléphone mais masqués.
 
 ## Partage
 Aucune donnée n'est vendue, partagée ou transmise à un tiers.
@@ -33,18 +33,18 @@ Aucune donnée n'est vendue, partagée ou transmise à un tiers.
 Vous pouvez effacer les messages conservés et les photos des proches dans « Réglages famille ». Vous pouvez à tout moment retirer l'accès aux notifications ou aux contacts dans les réglages d'Android, ou désinstaller l'application, ce qui supprime toutes les données stockées sur le téléphone.
 
 ## Enfants
-Présence ne s'adresse pas aux enfants.
+Simple ne s'adresse pas aux enfants.
 
 ## Contact
 Questions : ouvrez une issue sur https://github.com/FrcJules/presence ou écrivez à rateur42@gmail.com.
 
 Le code source est public : vous pouvez vérifier ces engagements.
 
-## Si Présence devient votre application de messages (SMS)
-C'est un choix facultatif, fait dans l'application. Présence reçoit alors vos SMS : ils sont enregistrés dans la boîte de réception d'Android (comme avec toute application de messages) et copiés dans l'historique de Présence, **sur votre téléphone uniquement**, sans limite de durée tant que vous ne l'effacez pas (« Réglages famille »). Les messages existants sont copiés à l'activation. Les codes de sécurité sont masqués et jamais lus à voix haute. Aucun message n'est envoyé à Internet ni au développeur ; seuls les messages ordinaires peuvent être affichés sur votre écran maison, sur votre réseau Wi-Fi, de façon chiffrée.
+## Si Simple devient votre application de messages (SMS)
+C'est un choix facultatif, fait dans l'application. Simple reçoit alors vos SMS : ils sont enregistrés dans la boîte de réception d'Android (comme avec toute application de messages) et copiés dans l'historique de Simple, **sur votre téléphone uniquement**, sans limite de durée tant que vous ne l'effacez pas (« Réglages famille »). Les messages existants sont copiés à l'activation. Les codes de sécurité sont masqués et jamais lus à voix haute. Aucun message n'est envoyé à Internet ni au développeur ; seuls les messages ordinaires peuvent être affichés sur votre écran maison, sur votre réseau Wi-Fi, de façon chiffrée.
 
 ## Ce qui reste après une désinstallation ou un effacement
-« Effacer les messages » supprime l'historique de Présence. Les SMS enregistrés dans la boîte de réception d'Android (si Présence était votre application de messages) **restent** dans Android, comme avec toute application de messages, y compris après la désinstallation de Présence.
+« Effacer les messages » supprime l'historique de Simple. Les SMS enregistrés dans la boîte de réception d'Android (si Simple était votre application de messages) **restent** dans Android, comme avec toute application de messages, y compris après la désinstallation de Simple.
 
 ## Répondre à WhatsApp et protection des réglages
-Si vous répondez à un message WhatsApp avec Présence, votre texte est remis à WhatsApp par sa notification ; Présence ne se connecte pas à WhatsApp et ne partage rien d'autre. Les réglages de la famille sont protégés par un code et les données d'appairage sont chiffrées avec le coffre de clés d'Android.
+Si vous répondez à un message WhatsApp avec Simple, votre texte est remis à WhatsApp par sa notification ; Simple ne se connecte pas à WhatsApp et ne partage rien d'autre. Les réglages de la famille sont protégés par un code et les données d'appairage sont chiffrées avec le coffre de clés d'Android.
