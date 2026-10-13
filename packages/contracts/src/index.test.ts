@@ -1,40 +1,40 @@
 import { describe, expect, it } from "vitest";
-import { birthday, presenceEvent, reminder, weather } from "./index";
+import { birthday, simpleEvent, reminder, weather } from "./index";
 
 const base = { schemaVersion: 1, id: "e1", occurredAt: "2026-10-06T09:30:00+02:00" };
 
-describe("presenceEvent", () => {
+describe("simpleEvent", () => {
   it("accepts a missed call", () => {
-    const r = presenceEvent.safeParse({ ...base, type: "missed_call", from: { name: "Marie" } });
+    const r = simpleEvent.safeParse({ ...base, type: "missed_call", from: { name: "Marie" } });
     expect(r.success).toBe(true);
   });
 
   it("accepts a WhatsApp message and rejects an empty or oversized one", () => {
     const msg = { ...base, type: "new_message", from: { name: "Marie" }, channel: "whatsapp", text: "Bonjour !" };
-    expect(presenceEvent.safeParse(msg).success).toBe(true);
-    expect(presenceEvent.safeParse({ ...msg, text: "" }).success).toBe(false);
-    expect(presenceEvent.safeParse({ ...msg, text: "x".repeat(501) }).success).toBe(false);
-    expect(presenceEvent.safeParse({ ...msg, channel: "telegram" }).success).toBe(false);
+    expect(simpleEvent.safeParse(msg).success).toBe(true);
+    expect(simpleEvent.safeParse({ ...msg, text: "" }).success).toBe(false);
+    expect(simpleEvent.safeParse({ ...msg, text: "x".repeat(501) }).success).toBe(false);
+    expect(simpleEvent.safeParse({ ...msg, channel: "telegram" }).success).toBe(false);
   });
 
   it("rejects non-http photo URLs", () => {
     const e = { ...base, type: "new_photo", from: { name: "Jules" } };
-    expect(presenceEvent.safeParse({ ...e, photoUrl: "file:///etc/passwd" }).success).toBe(false);
-    expect(presenceEvent.safeParse({ ...e, photoUrl: "javascript:alert(1)" }).success).toBe(false);
-    expect(presenceEvent.safeParse({ ...e, photoUrl: "http://192.168.1.5/p.jpg" }).success).toBe(true);
+    expect(simpleEvent.safeParse({ ...e, photoUrl: "file:///etc/passwd" }).success).toBe(false);
+    expect(simpleEvent.safeParse({ ...e, photoUrl: "javascript:alert(1)" }).success).toBe(false);
+    expect(simpleEvent.safeParse({ ...e, photoUrl: "http://192.168.1.5/p.jpg" }).success).toBe(true);
   });
 
   it("rejects an unknown type", () => {
-    expect(presenceEvent.safeParse({ ...base, type: "nope" }).success).toBe(false);
+    expect(simpleEvent.safeParse({ ...base, type: "nope" }).success).toBe(false);
   });
 
   it("rejects a new photo without a photo URL", () => {
-    const r = presenceEvent.safeParse({ ...base, type: "new_photo", from: { name: "Jules" } });
+    const r = simpleEvent.safeParse({ ...base, type: "new_photo", from: { name: "Jules" } });
     expect(r.success).toBe(false);
   });
 
   it("rejects an unsupported schema version", () => {
-    const r = presenceEvent.safeParse({ ...base, schemaVersion: 2, type: "missed_call", from: { name: "Marie" } });
+    const r = simpleEvent.safeParse({ ...base, schemaVersion: 2, type: "missed_call", from: { name: "Marie" } });
     expect(r.success).toBe(false);
   });
 });

@@ -30,7 +30,7 @@ function generate(dir: string, keyPath: string, certPath: string): void {
     execFileSync(
       "openssl",
       ["req", "-x509", "-newkey", "ec", "-pkeyopt", "ec_paramgen_curve:prime256v1", "-nodes",
-        "-keyout", tmpKey, "-out", tmpCert, "-days", "3650", "-subj", "/CN=presence-hub"],
+        "-keyout", tmpKey, "-out", tmpCert, "-days", "3650", "-subj", "/CN=simple-hub"],
       { stdio: "ignore" },
     );
     chmodSync(tmpKey, 0o600);

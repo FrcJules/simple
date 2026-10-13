@@ -16,11 +16,11 @@
 
 package com.google.android.mms.pdu_alt;
 
-import app.presence.launcher.mms.vendor.ExternalLogger;
+import app.simple.launcher.mms.vendor.ExternalLogger;
 import com.google.android.mms.ContentType;
 import com.google.android.mms.InvalidHeaderValueException;
 
-import app.presence.launcher.mms.vendor.Log;
+import app.simple.launcher.mms.vendor.Log;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -856,7 +856,7 @@ public class PduParser {
         }
 
         int count = parseUnsignedInt(pduDataStream); // get the number of parts
-        // presence: a hostile message must not make us loop or allocate by an announced number.
+        // simple: a hostile message must not make us loop or allocate by an announced number.
         if (count < 0 || count > MAX_PARTS) {
             return null;
         }
@@ -865,7 +865,7 @@ public class PduParser {
         for (int i = 0 ; i < count ; i++) {
             int headerLength = parseUnsignedInt(pduDataStream);
             int dataLength = parseUnsignedInt(pduDataStream);
-            // presence: never trust a length that is larger than what is left in the message.
+            // simple: never trust a length that is larger than what is left in the message.
             if (headerLength < 0 || dataLength < 0 || headerLength > pduDataStream.available()
                     || dataLength > pduDataStream.available()) {
                 return null;
@@ -929,7 +929,7 @@ public class PduParser {
                 pduDataStream.read(partData, 0, dataLength);
                 if (partContentType.equalsIgnoreCase(ContentType.MULTIPART_ALTERNATIVE)) {
                     // parse "multipart/vnd.wap.multipart.alternative".
-                    // presence: bounded nesting, a hostile message must not exhaust the stack.
+                    // simple: bounded nesting, a hostile message must not exhaust the stack.
                     if (mAlternativeDepth >= MAX_ALTERNATIVE_DEPTH) {
                         return null;
                     }
@@ -1360,7 +1360,7 @@ public class PduParser {
      */
     protected static int skipWapValue(ByteArrayInputStream pduDataStream, int length) {
         assert(null != pduDataStream);
-        // presence: the length comes from the message; refuse one larger than what is left.
+        // simple: the length comes from the message; refuse one larger than what is left.
         if (length < 0 || length > pduDataStream.available()) {
             return -1;
         }
@@ -1743,7 +1743,7 @@ public class PduParser {
                                 if (thisStartPos - thisEndPos < len) {
                                     int last = len - (thisStartPos - thisEndPos);
                                     if (last > pduDataStream.available()) {
-                                        last = pduDataStream.available(); // presence: never allocate more than is left
+                                        last = pduDataStream.available(); // simple: never allocate more than is left
                                     }
                                     byte[] temp = new byte[last];
                                     pduDataStream.read(temp, 0, last);

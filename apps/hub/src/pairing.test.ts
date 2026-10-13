@@ -8,7 +8,7 @@ const base = { address: "https://192.168.1.66:8788", claim: "claim-0123456789abc
 describe("pairing link", () => {
   it("carries the address, the one-time claim and the fingerprint (never a long-lived token)", () => {
     const link = new URL(buildPairingLink(base));
-    expect(link.protocol).toBe("presence:");
+    expect(link.protocol).toBe("simple:");
     expect(link.host).toBe("pair");
     expect(link.searchParams.get("u")).toBe("https://192.168.1.66:8788");
     expect(link.searchParams.get("s")).toBe(base.claim);
@@ -34,7 +34,7 @@ describe("pairing link", () => {
   });
 
   it("accepts mDNS names and the three private ranges", () => {
-    for (const a of ["https://presence.local:8788", "https://10.0.0.5:8788", "https://172.16.4.2:8788"]) {
+    for (const a of ["https://simple.local:8788", "https://10.0.0.5:8788", "https://172.16.4.2:8788"]) {
       expect(() => buildPairingLink({ ...base, address: a })).not.toThrow();
     }
     expect(() => buildPairingLink({ ...base, address: "https://172.32.0.1:8788" })).toThrow();

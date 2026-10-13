@@ -3,7 +3,7 @@
 > Une couche d'accessibilité et de présence autour des outils que la famille utilise déjà,
 > pour aider une personne âgée à rester connectée à ses proches et lutter contre la solitude.
 
-[![CI](https://github.com/FrcJules/presence/actions/workflows/ci.yml/badge.svg)](https://github.com/FrcJules/presence/actions/workflows/ci.yml)
+[![CI](https://github.com/FrcJules/simple/actions/workflows/ci.yml/badge.svg)](https://github.com/FrcJules/simple/actions/workflows/ci.yml)
 [![Licence](https://img.shields.io/badge/licence-Apache--2.0-blue.svg)](LICENSE)
 
 ## Pourquoi

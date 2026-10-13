@@ -1,5 +1,5 @@
 import cors from "@fastify/cors";
-import { presenceEvent, type PresenceEvent } from "@simple/contracts";
+import { simpleEvent, type SimpleEvent } from "@simple/contracts";
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
 import { timingSafeEqual } from "node:crypto";
 import { z } from "zod";
@@ -63,8 +63,8 @@ export function buildApp(opts: HubOptions): FastifyInstance {
     const q = (req.query as { token?: unknown }).token;
     return tokenMatches(opts.displayToken, bearer(req.headers.authorization) || (typeof q === "string" ? q : ""));
   };
-  const events: PresenceEvent[] = [];
-  const listeners = new Set<(e: PresenceEvent) => void>();
+  const events: SimpleEvent[] = [];
+  const listeners = new Set<(e: SimpleEvent) => void>();
   const app = Fastify({ logger: false });
 
   void app.register(cors, { origin });
@@ -147,7 +147,7 @@ export function buildApp(opts: HubOptions): FastifyInstance {
   });
 
   app.post("/events", { bodyLimit: 16_384, onRequest: authenticateWriter }, async (req, reply) => {
-    const parsed = presenceEvent.safeParse(req.body);
+    const parsed = simpleEvent.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: "invalid_event" });
     events.push(parsed.data);
     if (events.length > maxEvents) events.shift();
@@ -216,7 +216,7 @@ export function buildApp(opts: HubOptions): FastifyInstance {
       "Access-Control-Allow-Origin": origin,
     });
     reply.raw.write(": connected\n\n");
-    const listener = (e: PresenceEvent) => reply.raw.write(`data: ${JSON.stringify(e)}\n\n`);
+    const listener = (e: SimpleEvent) => reply.raw.write(`data: ${JSON.stringify(e)}\n\n`);
     listeners.add(listener);
     req.raw.on("close", () => listeners.delete(listener));
     reply.hijack();

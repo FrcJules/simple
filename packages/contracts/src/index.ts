@@ -48,14 +48,14 @@ export const birthdayEvent = z.object({
   who: person,
 });
 
-export const presenceEvent = z.discriminatedUnion("type", [
+export const simpleEvent = z.discriminatedUnion("type", [
   missedCallEvent,
   newPhotoEvent,
   newMessageEvent,
   birthdayEvent,
 ]);
 
-export type PresenceEvent = z.infer<typeof presenceEvent>;
+export type SimpleEvent = z.infer<typeof simpleEvent>;
 export type NewMessageEvent = z.infer<typeof newMessageEvent>;
 export type MissedCallEvent = z.infer<typeof missedCallEvent>;
 

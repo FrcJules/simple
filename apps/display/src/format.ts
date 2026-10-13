@@ -1,4 +1,4 @@
-import type { PresenceEvent } from "@simple/contracts";
+import type { SimpleEvent } from "@simple/contracts";
 
 const fmtDate = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" });
 const fmtTime = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" });
@@ -21,7 +21,7 @@ export function timeAgo(from: Date, now: Date): string {
   return `il y a ${days} jour${days > 1 ? "s" : ""}`;
 }
 
-export function headline(e: PresenceEvent): string {
+export function headline(e: SimpleEvent): string {
   switch (e.type) {
     case "missed_call": return `${e.from.name} vous a appelé`;
     case "new_message": return `Message de ${e.from.name}`;
@@ -30,8 +30,8 @@ export function headline(e: PresenceEvent): string {
   }
 }
 
-export const icon = (e: PresenceEvent) =>
+export const icon = (e: SimpleEvent) =>
   ({ missed_call: "📞", new_photo: "📷", new_message: "💬", birthday: "🎂" })[e.type];
 
 /** Extra line under the headline (message body), if the event carries one. */
-export const body = (e: PresenceEvent): string | undefined => (e.type === "new_message" ? e.text : undefined);
+export const body = (e: SimpleEvent): string | undefined => (e.type === "new_message" ? e.text : undefined);
