@@ -1,0 +1,5 @@
+theme: jekyll-theme-minimal
+title: Simple
+lang: fr
+exclude:
+  - ui-config.schema.json
