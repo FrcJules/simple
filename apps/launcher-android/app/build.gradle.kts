@@ -12,7 +12,7 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "app.presence.launcher"
+        applicationId = "app.simple.launcher"
         minSdk = 26
         targetSdk = 36
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

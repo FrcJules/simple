@@ -1,4 +1,4 @@
-# Publier Présence sur Google Play
+# Publier Simple sur Google Play
 
 Ce qui est **déjà prêt dans le dépôt** : fiche en français (`fastlane/metadata/android/fr-FR/`), icône et visuel de présentation, icône adaptative, `targetSdk 36`, workflow de release signé, politique de confidentialité ([docs/privacy-policy.md](../privacy-policy.md)), réponses aux formulaires ([data-safety.md](data-safety.md), [declarations.md](declarations.md)).
 
@@ -6,8 +6,8 @@ Ce qui **demande votre compte** (je n'ai aucun accès à la Play Console) : tout
 
 ## 1. Compte et application (une fois)
 1. Créer un compte développeur : https://play.google.com/console (25 USD, vérification d'identité).
-2. *Créer une application* : nom « Présence : accueil simplifié », langue par défaut français, « Application », « Gratuite », cocher les déclarations.
-3. Identifiant de l'application : `app.presence.launcher` (déjà dans le code ; il ne pourra plus changer après le premier envoi).
+2. *Créer une application* : nom « Simple : accueil senior », langue par défaut français, « Application », « Gratuite », cocher les déclarations.
+3. Identifiant de l'application : `app.simple.launcher` (déjà dans le code ; il ne pourra plus changer après le premier envoi).
 
 ## 2. Clé de signature
 1. Sur votre machine avec un JDK 17 : `./scripts/generate-upload-key.sh` (crée la clé d'**import** ; Google garde la vraie clé de signature avec *Play App Signing*).
@@ -32,7 +32,7 @@ Pour un compte personnel créé après le 13 novembre 2023, Google exige avant l
 - Un compte **organisation** n'a pas cette contrainte (il faut alors un numéro D-U-N-S).
 
 ## 6. Fiche et formulaires
-- *Présence sur le Store* → *Fiche principale* : copier les textes de `fastlane/metadata/android/fr-FR/`, icône 512×512 et visuel 1024×500 du même dossier.
+- *Simple sur le Store* → *Fiche principale* : copier les textes de `fastlane/metadata/android/fr-FR/`, icône 512×512 et visuel 1024×500 du même dossier.
 - **Captures d'écran téléphone (2 minimum) : à faire par vous** sur un vrai téléphone (accueil, liste de proches, « J'appelle… »). Format 16:9 ou 9:16, côté de 320 à 3840 px.
 - *Politique de confidentialité* : il faut une **URL publique**. Le dépôt est privé : soit le passer en public puis activer GitHub Pages (ou utiliser l'URL `https://github.com/FrcJules/presence/blob/main/docs/privacy-policy.md`), soit héberger la page ailleurs.
 - *Contenu de l'application* : suivre [declarations.md](declarations.md) et [data-safety.md](data-safety.md).
@@ -40,7 +40,7 @@ Pour un compte personnel créé après le 13 novembre 2023, Google exige avant l
 ## 7. Mises à jour automatiques
 Une fois le premier envoi fait, créer un compte de service Google Cloud lié à la Play Console (*Paramètres* → *Accès à l'API*), lui donner le droit de publier sur l'application, et enregistrer sa clé JSON dans le secret GitHub `PLAY_SERVICE_ACCOUNT_JSON`. Chaque tag `vX.Y.Z` enverra alors le `.aab` sur la piste **test interne** (brouillon). La promotion vers le test fermé ou la production reste manuelle, volontairement.
 
-## Points d'attention propres à Présence
+## Points d'attention propres à Simple
 - **Niveau d'API** : depuis le 31 août 2026, les nouvelles applications doivent cibler Android 16 (API 36) : c'est fait. Source : [Google](https://support.google.com/googleplay/android-developer/answer/11926878).
 - **Accès aux notifications** : règle propre à Google, à justifier dans la fiche et la politique de confidentialité (fait), voir [declarations.md](declarations.md).
-- **Application d'accueil** : Présence se déclare « HOME » ; elle doit rester utilisable sans l'écran maison (c'est le cas).
+- **Application d'accueil** : Simple se déclare « HOME » ; elle doit rester utilisable sans l'écran maison (c'est le cas).

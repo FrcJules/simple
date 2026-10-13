@@ -13,7 +13,7 @@ if [ "$NUM_SHARDS" -gt 1 ]; then shard_args=(-e numShards "$NUM_SHARDS" -e shard
 
 gradle :app:installDebug :app:installDebugAndroidTest || exit 1
 
-RUNNER=app.presence.launcher.test/androidx.test.runner.AndroidJUnitRunner
+RUNNER=app.simple.launcher.test/androidx.test.runner.AndroidJUnitRunner
 SMS_TEST=app.presence.launcher.SmsEndToEndTest
 
 # 1. Every test except the SMS one, with the app as an ordinary app (becoming the SMS app also grants it the contacts
@@ -26,14 +26,14 @@ out2="OK (0 tests)"
 if [ "$SHARD" = "0" ]; then
   # The role is granted *before* the tests start: granting it to a running app kills its
   #    process (the test runner too). This also proves the debug manifest meets the role's requirements.
-  adb shell cmd role add-role-holder --user 0 android.app.role.SMS app.presence.launcher || echo "could not grant the SMS role"
+  adb shell cmd role add-role-holder --user 0 android.app.role.SMS app.simple.launcher || echo "could not grant the SMS role"
   out2=$(adb shell am instrument -w -e class "$SMS_TEST" "$RUNNER" 2>&1)
   echo "$out2"
-  adb shell cmd role remove-role-holder --user 0 android.app.role.SMS app.presence.launcher || true
+  adb shell cmd role remove-role-holder --user 0 android.app.role.SMS app.simple.launcher || true
 fi
 
 mkdir -p app/build/screenshots
-adb pull /sdcard/Android/media/app.presence.launcher/screenshots/. app/build/screenshots/ || echo "no screenshots to pull"
+adb pull /sdcard/Android/media/app.simple.launcher/screenshots/. app/build/screenshots/ || echo "no screenshots to pull"
 
 # `am instrument` exits 0 even when tests fail: read the verdicts from its output.
 for out in "$out1" "$out2"; do
