@@ -1,6 +1,6 @@
 import { BirthdaysStore } from "./birthdays";
 
-// `npm run birthdays -w @presence/hub -- add "Marie" --day 03-14 [--year 1950]`   `... -- list`   `... -- remove <identifiant>`
+// `npm run birthdays -w @simple/hub -- add "Marie" --day 03-14 [--year 1950]`   `... -- list`   `... -- remove <identifiant>`
 const store = new BirthdaysStore(process.env.PRESENCE_DATA_DIR ?? "./data");
 const [command, ...rest] = process.argv.slice(2);
 

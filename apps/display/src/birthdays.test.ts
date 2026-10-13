@@ -1,4 +1,4 @@
-import type { Birthday } from "@presence/contracts";
+import type { Birthday } from "@simple/contracts";
 import { describe, expect, it } from "vitest";
 import { birthdaysToday, daysUntil, nextBirthdays, plausibleAge, turnsAge } from "./birthdays";
 import { birthdayText, nameList } from "./strings";

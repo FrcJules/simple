@@ -1,4 +1,4 @@
-import { reminder, type Reminder } from "@presence/contracts";
+import { reminder, type Reminder } from "@simple/contracts";
 import { randomBytes } from "node:crypto";
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { join } from "node:path";

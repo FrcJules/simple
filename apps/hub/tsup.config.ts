@@ -6,5 +6,5 @@ export default defineConfig({
   target: "node22",
   clean: true,
   // The contracts workspace ships TypeScript sources, so it must be bundled.
-  noExternal: ["@presence/contracts"],
+  noExternal: ["@simple/contracts"],
 });

@@ -1,4 +1,4 @@
-import { type Weather, weather } from "@presence/contracts";
+import { type Weather, weather } from "@simple/contracts";
 import { z } from "zod";
 
 const HUB = import.meta.env.VITE_HUB_URL ?? "http://localhost:8787";

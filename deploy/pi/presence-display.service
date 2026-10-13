@@ -1,6 +1,6 @@
 # Sert l'écran maison (fichiers statiques) sur la boucle locale uniquement : http://127.0.0.1:5173
 [Unit]
-Description=Présence écran maison (fichiers statiques, boucle locale)
+Description=Simple écran maison (fichiers statiques, boucle locale)
 After=network.target
 
 [Service]

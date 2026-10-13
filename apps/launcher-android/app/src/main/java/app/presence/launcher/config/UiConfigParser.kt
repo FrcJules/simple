@@ -115,7 +115,7 @@ object UiConfigParser {
                 if (p.length > MAX_PACKAGE || !packageRegex.matches(p)) throw Invalid("Tuile \"$id\" : \"package\" doit être un nom d'application Android (par exemple com.whatsapp).")
                 p
             } else null
-            if (app != null && !AppPolicy.isAllowed(app)) throw Invalid("Tuile \"$id\" : cette application ne peut pas être sur l'accueil (réglages, boutique d'applications, prise de contrôle à distance ou Présence elle-même).")
+            if (app != null && !AppPolicy.isAllowed(app)) throw Invalid("Tuile \"$id\" : cette application ne peut pas être sur l'accueil (réglages, boutique d'applications, prise de contrôle à distance ou Simple elle-même).")
             if (action == TileAction.APP && label != null) throw Invalid("Tuile \"$id\" : une case application garde toujours le nom de l'application (pas de \"label\").")
             if (action == TileAction.APP && app == null) throw Invalid("Tuile \"$id\" : l'action \"app\" demande un \"package\".")
             if (action != TileAction.APP && app != null) throw Invalid("Tuile \"$id\" : \"package\" n'est permis que pour l'action \"app\".")

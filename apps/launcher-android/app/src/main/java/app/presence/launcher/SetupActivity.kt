@@ -134,7 +134,7 @@ class SetupActivity : ComponentActivity() {
 
     private val lock by lazy { FamilyLock(this) }
 
-    /** Whether Présence is the phone's SMS app; refreshed when this screen comes back from the system dialog. */
+    /** Whether Simple is the phone's SMS app; refreshed when this screen comes back from the system dialog. */
     private var smsHeld by mutableStateOf(false)
 
     /** The last answer of the system dialog: true = accepted, false = refused, null = not asked yet. */
@@ -424,7 +424,7 @@ class SetupActivity : ComponentActivity() {
                     Text(stringResource(if (smsHeld) R.string.setup_sms_held else R.string.setup_sms_not_held), fontSize = 24.sp, fontWeight = FontWeight.Bold)
                     Text(stringResource(if (access) R.string.setup_access_on else R.string.setup_access_off), fontSize = 24.sp)
                     if (!access) {
-                        // WhatsApp (and SMS announced by the phone's messaging app) only reach Présence through this switch.
+                        // WhatsApp (and SMS announced by the phone's messaging app) only reach Simple through this switch.
                         Button(
                             onClick = { openingChild = true; startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)); access = hasNotificationAccess() },
                             modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp),

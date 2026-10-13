@@ -3,7 +3,7 @@
 Statut : accepté (2026-10-06) — implémenté en v0.2, à valider sur appareils réels. **Pour les SMS, voir [ADR 0004](0004-photos-messages-sms.md)** (application SMS par défaut).
 
 ## Contexte
-Présence doit afficher « Marie vous a appelé » et rendre visibles les SMS/messages sans que la famille change d'outil. Les permissions `READ_CALL_LOG`, `READ_SMS`, `RECEIVE_SMS` sont, selon la [politique Google Play](https://support.google.com/googleplay/android-developer/answer/9047303), réservées à l'application SMS, Téléphone ou Assistant **par défaut**, hors exceptions rares. Un launcher n'est dans aucun de ces cas ; devenir l'application SMS/Téléphone par défaut serait disproportionné.
+Simple doit afficher « Marie vous a appelé » et rendre visibles les SMS/messages sans que la famille change d'outil. Les permissions `READ_CALL_LOG`, `READ_SMS`, `RECEIVE_SMS` sont, selon la [politique Google Play](https://support.google.com/googleplay/android-developer/answer/9047303), réservées à l'application SMS, Téléphone ou Assistant **par défaut**, hors exceptions rares. Un launcher n'est dans aucun de ces cas ; devenir l'application SMS/Téléphone par défaut serait disproportionné.
 
 ## Décision
 Utiliser un `NotificationListenerService` (accès aux notifications, accordé manuellement par la famille lors de l'installation) pour :
@@ -23,7 +23,7 @@ Garde-fous :
 − Les appels manqués donnent un nom ou un numéro tel qu'affiché par la notification ; la photo vient du contact Android correspondant.
 
 ## Mise à jour : répondre à WhatsApp (2026-10-08)
-Pour répondre à un message WhatsApp, Présence utilise l'action « Répondre » de la notification WhatsApp (le mécanisme de la réponse rapide d'Android, `RemoteInput`) : le texte dicté est confirmé à l'écran puis remis à WhatsApp, qui l'envoie. L'action n'existe **que tant que la notification existe** ; elle est gardée **en mémoire seulement** (jamais enregistrée) et oubliée dès que la notification disparaît ou que l'accès aux notifications est coupé. Sans notification, l'écran propose d'ouvrir WhatsApp. Présence ne sait pas si WhatsApp a réussi : la réponse est marquée « Envoyé » dès qu'elle lui est remise. Fragile par nature (dépend de WhatsApp) : à vérifier sur un vrai téléphone.
+Pour répondre à un message WhatsApp, Simple utilise l'action « Répondre » de la notification WhatsApp (le mécanisme de la réponse rapide d'Android, `RemoteInput`) : le texte dicté est confirmé à l'écran puis remis à WhatsApp, qui l'envoie. L'action n'existe **que tant que la notification existe** ; elle est gardée **en mémoire seulement** (jamais enregistrée) et oubliée dès que la notification disparaît ou que l'accès aux notifications est coupé. Sans notification, l'écran propose d'ouvrir WhatsApp. Simple ne sait pas si WhatsApp a réussi : la réponse est marquée « Envoyé » dès qu'elle lui est remise. Fragile par nature (dépend de WhatsApp) : à vérifier sur un vrai téléphone.
 
 ## Alternatives
 - `READ_CALL_LOG` / `READ_SMS` : refusé par la politique Play pour un launcher.

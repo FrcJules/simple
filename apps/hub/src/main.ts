@@ -54,7 +54,7 @@ createServer({ key: tls.key, cert: tls.cert }, (req, res) => {
 }).listen(tlsPort, "0.0.0.0");
 
 const lan = lanAddress() ?? "<ip-du-pi>";
-console.log(`Presence hub: display on http://127.0.0.1:${port}`);
+console.log(`Simple hub: display on http://127.0.0.1:${port}`);
 console.log(`Pairing — address: https://${lan}:${tlsPort}`);
 console.log(`Pairing — certificate fingerprint (SHA-256): ${tls.fingerprint}`);
-console.log("To pair the phone with a QR code: npm run pair -w @presence/hub");
+console.log("To pair the phone with a QR code: npm run pair -w @simple/hub");

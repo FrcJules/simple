@@ -1,6 +1,6 @@
 import { RemindersStore } from "./reminders";
 
-// `npm run reminders -w @presence/hub -- add "Prendre le médicament" --at 08:00 [--days lun,mer,ven | --date 2026-10-12]`
+// `npm run reminders -w @simple/hub -- add "Prendre le médicament" --at 08:00 [--days lun,mer,ven | --date 2026-10-12]`
 //  `... -- list`   `... -- remove <identifiant>`
 const store = new RemindersStore(process.env.PRESENCE_DATA_DIR ?? "./data");
 const [command, ...rest] = process.argv.slice(2);

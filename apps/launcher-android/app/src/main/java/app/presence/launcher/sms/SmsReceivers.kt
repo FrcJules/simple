@@ -40,7 +40,7 @@ class SmsDeliverReceiver : BroadcastReceiver() {
 
 /**
  * Direct mode: the phone's own messaging app is still the default SMS app and writes the SMS to the system database; every app with
- * the RECEIVE_SMS permission is told as well. We then copy the new SMS into our history at once, whether or not Présence is open and
+ * the RECEIVE_SMS permission is told as well. We then copy the new SMS into our history at once, whether or not Simple is open and
  * whether or not notification access works. Nothing here when we are the default app ([SmsDeliverReceiver] does the work).
  */
 class SmsReceivedReceiver : BroadcastReceiver() {
