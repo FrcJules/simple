@@ -7,7 +7,7 @@ package app.presence.launcher.config
  */
 object AppPolicy {
     /** Présence itself (opening it from its own home screen would open the family's settings). */
-    private const val SELF = "app.presence.launcher"
+    private const val SELF = "app.simple.launcher"
 
     private val exact = setOf(
         SELF,

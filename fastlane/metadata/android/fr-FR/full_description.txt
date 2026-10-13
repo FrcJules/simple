@@ -1,4 +1,4 @@
-Présence est un écran d'accueil ultra-simplifié pour les personnes âgées, pensé pour garder le lien avec la famille.
+Simple est un écran d'accueil ultra-simplifié pour les personnes âgées, pensé pour garder le lien avec la famille.
 
 Pour Jean-Pierre (ou n'importe quel proche qui lit peu et préfère les images) :
 • Quatre gros boutons : Appeler, Messages, Photo, Mes photos.
@@ -9,11 +9,11 @@ Pour Jean-Pierre (ou n'importe quel proche qui lit peu et préfère les images) 
 Pour la famille :
 • Rien à changer : vous continuez à utiliser le téléphone, les SMS et WhatsApp comme d'habitude.
 • Vous choisissez les proches à afficher en mettant une étoile sur leurs contacts dans le téléphone.
-• Facultatif : avec un écran maison (Raspberry Pi), Présence peut afficher « Marie vous a appelé » ou le dernier message reçu en grand sur l'écran du salon. Cela demande d'autoriser l'accès aux notifications (appels manqués, SMS, WhatsApp) dans les réglages famille.
+• Facultatif : avec un écran maison (Raspberry Pi), Simple peut afficher « Marie vous a appelé » ou le dernier message reçu en grand sur l'écran du salon. Cela demande d'autoriser l'accès aux notifications (appels manqués, SMS, WhatsApp) dans les réglages famille.
 
 Vie privée :
 • Aucune publicité, aucun traceur, aucun compte.
 • Vos contacts et messages ne quittent jamais votre domicile : les informations sont transmises uniquement à votre propre écran maison, sur votre réseau Wi-Fi, de façon chiffrée.
 • Application libre et ouverte : le code source est public.
 
-Présence se déclare comme application d'accueil : vous pouvez revenir à votre ancien écran d'accueil à tout moment dans les réglages d'Android.
+Simple se déclare comme application d'accueil : vous pouvez revenir à votre ancien écran d'accueil à tout moment dans les réglages d'Android.
