@@ -64,7 +64,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
         with: { gradle-version: 9.6.0 }
       - run: gradle :app:lintDebug :app:testDebugUnitTest :app:assembleDebug
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: launcher-debug-apk
           path: apps/launcher-android/app/build/outputs/apk/debug/*.apk
@@ -100,7 +100,7 @@ jobs:
           script: SHARD=${{ matrix.shard }} NUM_SHARDS=2 bash scripts/ci-emulator-tests.sh
       - name: Upload screenshots and reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: emulator-screenshots-and-reports-${{ matrix.shard }}
           if-no-files-found: warn

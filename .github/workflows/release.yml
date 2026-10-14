@@ -14,7 +14,7 @@ jobs:
       - run: npm ci && npm test && npm run build
       - run: |
           tar -czf simple-pi-${{ github.ref_name }}.tar.gz apps/hub/dist apps/display/dist .env.example
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with: { name: pi, path: "simple-pi-*.tar.gz" }
 
   android:
@@ -42,7 +42,7 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: gradle :app:testDebugUnitTest :app:bundleRelease
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with: { name: launcher-aab, path: "apps/launcher-android/app/build/outputs/bundle/release/*.aab" }
       # Uploads to the *internal testing* track only. Promotion to closed/production is done by hand in Play Console.
       - name: Upload to Google Play (internal testing)
