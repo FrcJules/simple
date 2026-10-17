@@ -1,6 +1,18 @@
 package app.simple.launcher
 
 import android.Manifest
+import androidx.activity.compose.BackHandler
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Sms
+import androidx.compose.material.icons.filled.Tv
+import app.simple.launcher.notifications.NotificationParser
+import app.simple.launcher.ui.SettingsCard
+import app.simple.launcher.ui.SettingsMenuItem
+import app.simple.launcher.ui.SettingsTopBar
+import app.simple.launcher.ui.SetupChecklist
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -174,11 +186,19 @@ class SetupActivity : ComponentActivity() {
     }
 
     private var homeHeld by mutableStateOf(false)
+    private var accessOn by mutableStateOf(false)
+    private var contactsOn by mutableStateOf(false)
+
+    private val askContactsPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+        contactsOn = ok
+        if (ok) contactsVm.refresh()
+    }
 
     /** Null until the family has answered Android's question; false means it was refused or could not be shown. */
     private var homeRoleAnswer by mutableStateOf<Boolean?>(null)
 
     private val homeRoleResult = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        openingChild = false
         homeHeld = HomeRole.isHeld(this)
         homeRoleAnswer = homeHeld
     }
@@ -241,6 +261,8 @@ class SetupActivity : ComponentActivity() {
         super.onResume()
         smsHeld = SmsRole.isHeld(this)
         homeHeld = HomeRole.isHeld(this)
+        accessOn = hasNotificationAccess()
+        contactsOn = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
         directSms = SmsAccess.direct(this)
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
             contactsVm.refresh()
@@ -316,9 +338,209 @@ class SetupActivity : ComponentActivity() {
                 var pin by remember { mutableStateOf(store.load()?.certSha256.orEmpty()) }
                 var name by remember { mutableStateOf(profile.name()) }
                 var saved by remember { mutableStateOf<Boolean?>(null) }
-                var access by remember { mutableStateOf(hasNotificationAccess()) }
-                Column(Modifier.padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(stringResource(R.string.setup_title), fontSize = 28.sp)
+                var section by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(if (offer != null || offerRefused) Section.DISPLAY else Section.MENU) }
+                var nameSaved by remember { mutableStateOf(false) }
+                var erased by remember { mutableStateOf<Int?>(null) }
+                val scroll = rememberScrollState()
+                androidx.compose.runtime.LaunchedEffect(section) {
+                    scroll.scrollTo(0)
+                    nameSaved = false; erased = null; saved = null; appearanceMessage = null // a confirmation belongs to the screen where it was given
+                }
+                BackHandler(enabled = section != Section.MENU) { section = Section.MENU }
+                Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp).verticalScroll(scroll), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    SettingsTopBar(stringResource(section.title), onBack = if (section == Section.MENU) null else ({ section = Section.MENU }))
+                    when (section) {
+                        Section.MENU -> {
+                            SettingsCard {
+                                Text(stringResource(R.string.step_title), fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
+                                if (homeHeld && contactsOn && accessOn) {
+                                    Text(stringResource(R.string.step_all_done), fontSize = 16.sp)
+                                } else SetupChecklist(
+                                    homeDone = homeHeld, contactsDone = contactsOn, messagesDone = accessOn,
+                                    onHome = { requestHomeRole() },
+                                    onContacts = { askContactsPermission.launch(Manifest.permission.READ_CONTACTS) },
+                                    onMessages = { openingChild = true; startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) },
+                                    onAppSettings = { openAppInfo() },
+                                )
+                                if (homeRoleAnswer == false && !homeHeld) Text(stringResource(R.string.setup_home_refused), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            }
+                            SettingsMenuItem(Icons.Filled.Sms, stringResource(R.string.setup_sec_messages), stringResource(if (accessOn) R.string.setup_sec_messages_on else R.string.setup_sec_messages_off)) { section = Section.MESSAGES }
+                            SettingsMenuItem(Icons.Filled.People, stringResource(R.string.setup_sec_people), stringResource(R.string.setup_sec_people_sub)) { section = Section.PEOPLE }
+                            SettingsMenuItem(Icons.Filled.Palette, stringResource(R.string.setup_sec_home), stringResource(R.string.setup_sec_home_sub)) { section = Section.HOME }
+                            SettingsMenuItem(Icons.Filled.Tv, stringResource(R.string.setup_sec_display), stringResource(R.string.setup_sec_display_sub)) { section = Section.DISPLAY }
+                            SettingsMenuItem(Icons.Filled.Delete, stringResource(R.string.setup_sec_erase), stringResource(R.string.setup_sec_erase_sub)) { section = Section.ERASE }
+                            Text(stringResource(R.string.setup_menu_hint), fontSize = 15.sp)
+                        }
+                        Section.MESSAGES -> {
+                            Text(stringResource(R.string.setup_messages_how), fontSize = 16.sp)
+                            SmsAppLine()
+                    // What is missing, and a button for each fix (the family reads this, Jean-Pierre does not).
+                    Text(stringResource(if (smsHeld) R.string.setup_sms_held else R.string.setup_sms_not_held), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Text(stringResource(if (accessOn) R.string.setup_access_on else R.string.setup_access_off), fontSize = 18.sp)
+                    if (!accessOn) {
+                        // WhatsApp (and SMS announced by the phone's messaging app) only reach Simple through this switch.
+                        Button(
+                            onClick = { openingChild = true; startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)); accessOn = hasNotificationAccess() },
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+                        ) { Text(stringResource(R.string.setup_open_access), fontSize = 18.sp) }
+                    }
+                    if (BuildConfig.SMS_ROLE_OFFERED && !smsHeld) {
+                        // Direct mode: works even when Android refuses the SMS role (the usual case for an app installed by hand).
+                        Text(stringResource(if (directSms) R.string.setup_sms_direct_on else R.string.setup_sms_direct_off), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        Button(
+                            onClick = { openingChild = true; if (directSms) copySms() else smsPermissions.launch(arrayOf(Manifest.permission.READ_SMS, Manifest.permission.SEND_SMS, Manifest.permission.RECEIVE_SMS)) },
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+                        ) { Text(stringResource(if (directSms) R.string.setup_sms_copy else R.string.setup_sms_direct_allow), fontSize = 18.sp) }
+                        copiedSms?.let { Text(resources.getQuantityString(R.plurals.setup_sms_copied, it, it), fontSize = 18.sp) }
+                    }
+                    if (!smsHeld) {
+                        if (BuildConfig.SMS_ROLE_OFFERED && SmsRole.requestIntent(this@SetupActivity) != null) {
+                            Button(onClick = { requestSmsRole() }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+                                Text(stringResource(R.string.setup_sms_offer), fontSize = 18.sp)
+                            }
+                            if (smsRoleAnswer == false) Text(stringResource(R.string.setup_sms_refused), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        } else {
+                            Text(stringResource(R.string.setup_sms_unavailable), fontSize = 18.sp)
+                        }
+                    }
+                    val trail = remember(trailVersion) { MessageDiagnostics.lines(this@SetupActivity) }
+                    Text(stringResource(R.string.setup_trail_title), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.setup_trail_help), fontSize = 18.sp)
+                    if (trail.isEmpty()) Text(stringResource(R.string.setup_trail_empty), fontSize = 18.sp)
+                    trail.take(12).forEach { Text(it, fontSize = 18.sp) }
+                    OutlinedButton(onClick = { trailVersion++ }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+                        Text(stringResource(R.string.setup_trail_refresh), fontSize = 18.sp)
+                    }
+                    if (smsRoleAnswer == true) Text(stringResource(R.string.setup_sms_done), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    if (sideloaded && (smsRoleAnswer == false || !accessOn)) {
+                        // Android 13+ blocks some access for an app that was not installed from a store until it is allowed by hand.
+                        Text(stringResource(R.string.setup_restricted_hint), fontSize = 18.sp)
+                        Button(onClick = { openAppInfo() }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+                            Text(stringResource(R.string.setup_open_app_info), fontSize = 18.sp)
+                        }
+                    }
+
+                        }
+                        Section.PEOPLE -> {
+                    val contacts by contactsVm.contacts.collectAsStateWithLifecycle()
+                    val all by contactsVm.allContacts.collectAsStateWithLifecycle()
+                    val chosen by contactsVm.chosen.collectAsStateWithLifecycle()
+                    var query by remember { mutableStateOf("") }
+                    var granted by remember {
+                        mutableStateOf(ContextCompat.checkSelfPermission(this@SetupActivity, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED)
+                    }
+                    val askContacts = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+                        granted = ok
+                        if (ok) { contactsVm.refresh(); contactsVm.loadAll() }
+                    }
+                    androidx.compose.runtime.LaunchedEffect(granted) { if (granted) contactsVm.loadAll() }
+
+                    Text(stringResource(R.string.setup_favorites), fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
+                    Text(stringResource(R.string.setup_favorites_help), fontSize = 18.sp)
+                    if (granted) Text(resources.getQuantityString(R.plurals.setup_contacts_read, all.size, all.size), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    if (!granted) {
+                        Button(onClick = { askContacts.launch(Manifest.permission.READ_CONTACTS) }, modifier = Modifier.heightIn(min = 52.dp)) {
+                            Text(stringResource(R.string.setup_contacts_allow), fontSize = 18.sp)
+                        }
+                    } else {
+                        OutlinedTextField(
+                            value = query,
+                            onValueChange = { query = it },
+                            label = { Text(stringResource(R.string.setup_favorites_search), fontSize = 18.sp) },
+                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 18.sp),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+                        )
+                        ContactPickerRows.rows(all, chosen, query).forEach { c ->
+                            val on = c.id in chosen
+                            Row(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 52.dp)
+                                    .toggleable(value = on, role = Role.Switch, onValueChange = { contactsVm.toggle(c.id) }),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Switch(checked = on, onCheckedChange = null)
+                                Text(c.name, fontSize = 18.sp, modifier = Modifier.weight(1f))
+                                Text(stringResource(if (on) R.string.setup_favorites_on else R.string.setup_favorites_off), fontSize = 18.sp)
+                            }
+                        }
+                        if (all.size > ContactPickerRows.LIMIT && query.isBlank()) Text(stringResource(R.string.setup_favorites_more), fontSize = 18.sp)
+                    }
+
+                    Text(stringResource(R.string.setup_people), fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
+                    if (contacts.isEmpty()) Text(stringResource(R.string.setup_people_empty))
+                    if (photoFailed) Text(stringResource(R.string.setup_photo_failed), fontSize = 16.sp)
+                    contacts.forEach { c ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Avatar(c, Modifier.size(72.dp), initialSize = 36.sp)
+                            Column(Modifier.weight(1f)) {
+                                Text(c.name, fontSize = 18.sp)
+                                OutlinedButton(onClick = {
+                                    pickFor = c.id
+                                    openingChild = true
+                                    picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                                }) { Text(stringResource(R.string.setup_photo_choose), fontSize = 18.sp) }
+                                if (c.photoUri?.startsWith("file:") == true) {
+                                    ConfirmedButton(stringResource(R.string.setup_photo_remove)) {
+                                        photoStore.remove(c.id)
+                                        contactsVm.refresh()
+                                    }
+                                }
+                            }
+                        }
+                    }
+                        }
+                        Section.HOME -> {
+                    OutlinedTextField(name, { name = it; nameSaved = false }, label = { Text(stringResource(R.string.setup_name)) }, modifier = Modifier.fillMaxWidth())
+                            Button(onClick = { profile.saveName(name); nameSaved = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text(stringResource(R.string.setup_save), fontSize = 18.sp) }
+                            if (nameSaved) Text(stringResource(R.string.setup_saved), fontSize = 16.sp)
+                    var tiles by remember { mutableStateOf(uiStore.load().home.tiles) }
+                    HomeTilesEditor(
+                        tiles = tiles,
+                        appInfo = { pkg -> tileApps.getOrPut(pkg) { InstalledApps.info(packageManager, pkg) } },
+                        loadApps = { InstalledApps.launchable(packageManager, packageName) },
+                        onChange = { new -> if (saveTiles(new)) tiles = new },
+                        onReset = { saveTiles(HomeConfig.Default.tiles); tiles = HomeConfig.Default.tiles },
+                    )
+
+                    Text(stringResource(R.string.setup_appearance_title), fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
+                    OutlinedButton(onClick = { openingChild = true; configPicker.launch(arrayOf("*/*")) }) { Text(stringResource(R.string.setup_appearance_import), fontSize = 18.sp) }
+                    ConfirmedButton(stringResource(R.string.setup_appearance_reset_button)) {
+                        uiStore.reset()
+                        appearanceMessage = getString(R.string.setup_appearance_reset)
+                    }
+                    appearanceMessage?.let { Text(it, fontSize = 16.sp) }
+
+                    // Home screen: Android only makes Simple the phone's home when the family says yes to its own question.
+                    Text(stringResource(R.string.setup_home_title), fontSize = 22.sp, modifier = Modifier.semantics { heading() })
+                    Text(stringResource(if (homeHeld) R.string.setup_home_held else R.string.setup_home_not_held), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    if (!homeHeld) {
+                        Button(onClick = { requestHomeRole() }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+                            Text(stringResource(R.string.setup_home_offer), fontSize = 18.sp)
+                        }
+                        if (Build.VERSION.SDK_INT < 29) Text(stringResource(R.string.setup_home_list_hint), fontSize = 18.sp)
+                        if (homeRoleAnswer == false) Text(stringResource(R.string.setup_home_refused), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    var feedbackOn by remember { mutableStateOf(profile.feedbackEnabled()) }
+                    Row(
+                        Modifier.fillMaxWidth().heightIn(min = 52.dp).toggleable(value = feedbackOn, role = Role.Switch, onValueChange = {
+                            feedbackOn = it
+                            profile.setFeedbackEnabled(it)
+                            if (it) app.simple.launcher.feedback.Feedback(this@SetupActivity) { true }.sent() // a try, so the family hears what was switched on
+                        }),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Switch(checked = feedbackOn, onCheckedChange = null)
+                        Text(stringResource(R.string.setup_feedback), fontSize = 18.sp, modifier = Modifier.weight(1f))
+                        Text(stringResource(if (feedbackOn) R.string.setup_yes else R.string.setup_no), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                        }
+                        Section.DISPLAY -> {
                     offer?.let { o ->
                         PairingOfferCard(
                             offer = o,
@@ -361,10 +583,9 @@ class SetupActivity : ComponentActivity() {
                             },
                         )
                     }
-                    if (offer == null) pairingStatus?.let { Text(stringResource(it), fontSize = 24.sp, fontWeight = FontWeight.Bold) }
-                    if (offerRefused) Text(stringResource(R.string.setup_link_refused), fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                    OutlinedTextField(name, { name = it }, label = { Text(stringResource(R.string.setup_name)) }, modifier = Modifier.fillMaxWidth())
-                    if (offer == null) Text(stringResource(R.string.setup_scan_hint), fontSize = 24.sp)
+                    if (offer == null) pairingStatus?.let { Text(stringResource(it), fontSize = 18.sp, fontWeight = FontWeight.Bold) }
+                    if (offerRefused) Text(stringResource(R.string.setup_link_refused), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    if (offer == null) Text(stringResource(R.string.setup_scan_hint), fontSize = 18.sp)
                     OutlinedTextField(url, { url = it }, label = { Text(stringResource(R.string.setup_hub_url)) }, modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(
                         token, { token = it }, label = { Text(stringResource(R.string.setup_token)) },
@@ -372,205 +593,59 @@ class SetupActivity : ComponentActivity() {
                     )
                     OutlinedTextField(pin, { pin = it }, label = { Text(stringResource(R.string.setup_fingerprint)) }, modifier = Modifier.fillMaxWidth())
                     when (store.protectionState()) {
-                        PairingStore.Protection.ENCRYPTED -> Text(stringResource(R.string.setup_token_encrypted))
-                        PairingStore.Protection.PLAIN -> Text(stringResource(R.string.setup_token_plain), fontWeight = FontWeight.Bold)
-                        PairingStore.Protection.UNREADABLE -> Text(stringResource(R.string.setup_token_lost), fontWeight = FontWeight.Bold)
+                        PairingStore.Protection.ENCRYPTED -> Text(stringResource(R.string.setup_token_encrypted), fontSize = 16.sp)
+                        PairingStore.Protection.PLAIN -> Text(stringResource(R.string.setup_token_plain), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        PairingStore.Protection.UNREADABLE -> Text(stringResource(R.string.setup_token_lost), fontSize = 16.sp, fontWeight = FontWeight.Bold)
                         PairingStore.Protection.NONE -> Unit
                     }
                     Button(onClick = {
-                        profile.saveName(name)
                         val config = PairingConfig.parse(url, token, pin)
                         if (config != null) store.save(config)
                         saved = config != null
-                    }, modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)) { Text(stringResource(R.string.setup_save), fontSize = 24.sp) }
+                    }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text(stringResource(R.string.setup_save), fontSize = 18.sp) }
                     when (saved) {
-                        true -> Text(stringResource(R.string.setup_saved))
-                        false -> Text(stringResource(R.string.setup_invalid))
+                        true -> Text(stringResource(R.string.setup_saved), fontSize = 16.sp)
+                        false -> Text(stringResource(R.string.setup_invalid), fontSize = 16.sp, fontWeight = FontWeight.Bold)
                         null -> Unit
                     }
-                    Text(stringResource(if (access) R.string.setup_access_on else R.string.setup_access_off))
-                    OutlinedButton(onClick = {
-                        openingChild = true
-                        startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
-                        access = hasNotificationAccess()
-                    }) { Text(stringResource(R.string.setup_open_access)) }
-                    OutlinedButton(onClick = { access = hasNotificationAccess() }) { Text(stringResource(R.string.setup_refresh)) }
-
-                    var tiles by remember { mutableStateOf(uiStore.load().home.tiles) }
-                    HomeTilesEditor(
-                        tiles = tiles,
-                        appInfo = { pkg -> tileApps.getOrPut(pkg) { InstalledApps.info(packageManager, pkg) } },
-                        loadApps = { InstalledApps.launchable(packageManager, packageName) },
-                        onChange = { new -> if (saveTiles(new)) tiles = new },
-                        onReset = { saveTiles(HomeConfig.Default.tiles); tiles = HomeConfig.Default.tiles },
-                    )
-
-                    Text(stringResource(R.string.setup_appearance_title), fontSize = 28.sp)
-                    OutlinedButton(onClick = { openingChild = true; configPicker.launch(arrayOf("*/*")) }) { Text(stringResource(R.string.setup_appearance_import)) }
-                    OutlinedButton(onClick = {
-                        uiStore.reset()
-                        appearanceMessage = getString(R.string.setup_appearance_reset)
-                    }) { Text(stringResource(R.string.setup_appearance_reset_button)) }
-                    appearanceMessage?.let { Text(it) }
-
-                    // Home screen: Android only makes Simple the phone's home when the family says yes to its own question.
-                    Text(stringResource(R.string.setup_home_title), fontSize = 28.sp, modifier = Modifier.semantics { heading() })
-                    Text(stringResource(if (homeHeld) R.string.setup_home_held else R.string.setup_home_not_held), fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                    if (!homeHeld) {
-                        Button(onClick = { requestHomeRole() }, modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)) {
-                            Text(stringResource(R.string.setup_home_offer), fontSize = 24.sp)
                         }
-                        if (Build.VERSION.SDK_INT < 29) Text(stringResource(R.string.setup_home_list_hint), fontSize = 24.sp)
-                        if (homeRoleAnswer == false) Text(stringResource(R.string.setup_home_refused), fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                    }
-
-                    var feedbackOn by remember { mutableStateOf(profile.feedbackEnabled()) }
-                    Row(
-                        Modifier.fillMaxWidth().heightIn(min = 64.dp).toggleable(value = feedbackOn, role = Role.Switch, onValueChange = {
-                            feedbackOn = it
-                            profile.setFeedbackEnabled(it)
-                            if (it) app.simple.launcher.feedback.Feedback(this@SetupActivity) { true }.sent() // a try, so the family hears what was switched on
-                        }),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Switch(checked = feedbackOn, onCheckedChange = null)
-                        Text(stringResource(R.string.setup_feedback), fontSize = 24.sp, modifier = Modifier.weight(1f))
-                        Text(stringResource(if (feedbackOn) R.string.setup_yes else R.string.setup_no), fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                    }
-
-                    var erased by remember { mutableStateOf(false) }
-                    ConfirmedButton(stringResource(R.string.setup_erase_messages), stringResource(R.string.setup_erase_confirm)) {
+                        Section.ERASE -> {
+                    ConfirmedButton(stringResource(R.string.setup_erase_messages)) {
                         MessageStore.get(this@SetupActivity).clear()
                         MessageDiagnostics.clear(this@SetupActivity)
                         trailVersion++
-                        erased = true
+                        erased = R.string.setup_erased_messages
                     }
-                    ConfirmedButton(stringResource(R.string.setup_erase_photos), stringResource(R.string.setup_erase_confirm)) {
+                    ConfirmedButton(stringResource(R.string.setup_erase_photos)) {
                         photoStore.clearAll()
                         contactsVm.refresh()
-                        erased = true
+                        erased = R.string.setup_erased_photos
                     }
-                    // Messages: what is missing, and a button for each fix (the family reads this, Jean-Pierre does not).
-                    Text(stringResource(R.string.setup_messages_title), fontSize = 28.sp, modifier = Modifier.semantics { heading() })
-                    Text(stringResource(if (smsHeld) R.string.setup_sms_held else R.string.setup_sms_not_held), fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                    Text(stringResource(if (access) R.string.setup_access_on else R.string.setup_access_off), fontSize = 24.sp)
-                    if (!access) {
-                        // WhatsApp (and SMS announced by the phone's messaging app) only reach Simple through this switch.
-                        Button(
-                            onClick = { openingChild = true; startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)); access = hasNotificationAccess() },
-                            modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp),
-                        ) { Text(stringResource(R.string.setup_open_access), fontSize = 24.sp) }
-                    }
-                    if (BuildConfig.SMS_ROLE_OFFERED && !smsHeld) {
-                        // Direct mode: works even when Android refuses the SMS role (the usual case for an app installed by hand).
-                        Text(stringResource(if (directSms) R.string.setup_sms_direct_on else R.string.setup_sms_direct_off), fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                        Button(
-                            onClick = { openingChild = true; if (directSms) copySms() else smsPermissions.launch(arrayOf(Manifest.permission.READ_SMS, Manifest.permission.SEND_SMS, Manifest.permission.RECEIVE_SMS)) },
-                            modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp),
-                        ) { Text(stringResource(if (directSms) R.string.setup_sms_copy else R.string.setup_sms_direct_allow), fontSize = 24.sp) }
-                        copiedSms?.let { Text(resources.getQuantityString(R.plurals.setup_sms_copied, it, it), fontSize = 24.sp) }
-                    }
-                    if (!smsHeld) {
-                        if (BuildConfig.SMS_ROLE_OFFERED && SmsRole.requestIntent(this@SetupActivity) != null) {
-                            Button(onClick = { requestSmsRole() }, modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)) {
-                                Text(stringResource(R.string.setup_sms_offer), fontSize = 24.sp)
-                            }
-                            if (smsRoleAnswer == false) Text(stringResource(R.string.setup_sms_refused), fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                        } else {
-                            Text(stringResource(R.string.setup_sms_unavailable), fontSize = 24.sp)
-                        }
-                    }
-                    val trail = remember(trailVersion) { MessageDiagnostics.lines(this@SetupActivity) }
-                    Text(stringResource(R.string.setup_trail_title), fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                    Text(stringResource(R.string.setup_trail_help), fontSize = 24.sp)
-                    if (trail.isEmpty()) Text(stringResource(R.string.setup_trail_empty), fontSize = 24.sp)
-                    trail.take(12).forEach { Text(it, fontSize = 24.sp) }
-                    OutlinedButton(onClick = { trailVersion++ }, modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)) {
-                        Text(stringResource(R.string.setup_trail_refresh), fontSize = 24.sp)
-                    }
-                    if (smsRoleAnswer == true) Text(stringResource(R.string.setup_sms_done), fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                    if (sideloaded && (smsRoleAnswer == false || !access)) {
-                        // Android 13+ blocks some access for an app that was not installed from a store until it is allowed by hand.
-                        Text(stringResource(R.string.setup_restricted_hint), fontSize = 24.sp)
-                        Button(onClick = { openAppInfo() }, modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)) {
-                            Text(stringResource(R.string.setup_open_app_info), fontSize = 24.sp)
-                        }
-                    }
-                    if (erased) Text(stringResource(R.string.setup_erased))
-
-                    val contacts by contactsVm.contacts.collectAsStateWithLifecycle()
-                    val all by contactsVm.allContacts.collectAsStateWithLifecycle()
-                    val chosen by contactsVm.chosen.collectAsStateWithLifecycle()
-                    var query by remember { mutableStateOf("") }
-                    var granted by remember {
-                        mutableStateOf(ContextCompat.checkSelfPermission(this@SetupActivity, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED)
-                    }
-                    val askContacts = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
-                        granted = ok
-                        if (ok) { contactsVm.refresh(); contactsVm.loadAll() }
-                    }
-                    androidx.compose.runtime.LaunchedEffect(granted) { if (granted) contactsVm.loadAll() }
-
-                    Text(stringResource(R.string.setup_favorites), fontSize = 28.sp)
-                    Text(stringResource(R.string.setup_favorites_help), fontSize = 24.sp)
-                    if (granted) Text(resources.getQuantityString(R.plurals.setup_contacts_read, all.size, all.size), fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                    if (!granted) {
-                        Button(onClick = { askContacts.launch(Manifest.permission.READ_CONTACTS) }, modifier = Modifier.heightIn(min = 64.dp)) {
-                            Text(stringResource(R.string.setup_contacts_allow), fontSize = 24.sp)
-                        }
-                    } else {
-                        OutlinedTextField(
-                            value = query,
-                            onValueChange = { query = it },
-                            label = { Text(stringResource(R.string.setup_favorites_search), fontSize = 24.sp) },
-                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 24.sp),
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp),
-                        )
-                        ContactPickerRows.rows(all, chosen, query).forEach { c ->
-                            val on = c.id in chosen
-                            Row(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .heightIn(min = 64.dp)
-                                    .toggleable(value = on, role = Role.Switch, onValueChange = { contactsVm.toggle(c.id) }),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Switch(checked = on, onCheckedChange = null)
-                                Text(c.name, fontSize = 24.sp, modifier = Modifier.weight(1f))
-                                Text(stringResource(if (on) R.string.setup_favorites_on else R.string.setup_favorites_off), fontSize = 24.sp)
-                            }
-                        }
-                        if (all.size > ContactPickerRows.LIMIT && query.isBlank()) Text(stringResource(R.string.setup_favorites_more), fontSize = 24.sp)
-                    }
-
-                    Text(stringResource(R.string.setup_people), fontSize = 28.sp)
-                    if (contacts.isEmpty()) Text(stringResource(R.string.setup_people_empty))
-                    if (photoFailed) Text(stringResource(R.string.setup_photo_failed))
-                    contacts.forEach { c ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Avatar(c, Modifier.size(72.dp), initialSize = 36.sp)
-                            Column(Modifier.weight(1f)) {
-                                Text(c.name, fontSize = 24.sp)
-                                OutlinedButton(onClick = {
-                                    pickFor = c.id
-                                    openingChild = true
-                                    picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                                }) { Text(stringResource(R.string.setup_photo_choose)) }
-                                if (c.photoUri?.startsWith("file:") == true) {
-                                    OutlinedButton(onClick = {
-                                        photoStore.remove(c.id)
-                                        contactsVm.refresh()
-                                    }) { Text(stringResource(R.string.setup_photo_remove)) }
-                                }
-                            }
+                            erased?.let { Text(stringResource(it), fontSize = 18.sp, fontWeight = FontWeight.Bold) }
                         }
                     }
                 }
             }
         }
+    }
+
+    private enum class Section(val title: Int) {
+        MENU(R.string.setup_title), MESSAGES(R.string.setup_sec_messages), PEOPLE(R.string.setup_sec_people),
+        HOME(R.string.setup_sec_home), DISPLAY(R.string.setup_sec_display), ERASE(R.string.setup_sec_erase),
+    }
+
+    /** Which messaging app the phone uses and whether Simple can see its notifications: the usual reason for "no messages". */
+    @androidx.compose.runtime.Composable
+    private fun SmsAppLine() {
+        val pkg = android.provider.Telephony.Sms.getDefaultSmsPackage(this)
+        val text = when {
+            pkg == null -> stringResource(R.string.setup_sms_app_none)
+            else -> {
+                val label = runCatching { packageManager.getApplicationLabel(packageManager.getApplicationInfo(pkg, 0)).toString() }.getOrDefault(pkg)
+                stringResource(if (NotificationParser.isSmsApp(pkg)) R.string.setup_sms_app_ok else R.string.setup_sms_app_unknown, label)
+            }
+        }
+        Text(text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
     }
 
     companion object {
@@ -582,11 +657,11 @@ class SetupActivity : ComponentActivity() {
     private fun hasNotificationAccess() = NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName)
 }
 
-/** A destructive action needs two touches: the first one only asks. */
+/** A destructive action needs two touches: the first one only asks, and still says what it is about. */
 @androidx.compose.runtime.Composable
-private fun ConfirmedButton(label: String, confirmLabel: String, onConfirmed: () -> Unit) {
+private fun ConfirmedButton(label: String, onConfirmed: () -> Unit) {
     var armed by remember { mutableStateOf(false) }
-    OutlinedButton(onClick = { if (armed) { armed = false; onConfirmed() } else armed = true }) {
-        Text(if (armed) confirmLabel else label)
+    OutlinedButton(onClick = { if (armed) { armed = false; onConfirmed() } else armed = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+        Text(if (armed) "$label ? " + stringResource(R.string.setup_erase_again) else label, fontSize = 18.sp)
     }
 }

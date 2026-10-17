@@ -12,6 +12,19 @@ import app.simple.launcher.config.UiConfigParser
 import app.simple.launcher.config.ParseResult
 import app.simple.launcher.ui.CallScreen
 import app.simple.launcher.ui.CallingScreen
+import app.simple.launcher.ui.FirstStepsScreen
+import app.simple.launcher.ui.SettingsCard
+import app.simple.launcher.ui.SettingsMenuItem
+import app.simple.launcher.ui.SettingsTopBar
+import app.simple.launcher.ui.SetupChecklist
+import app.simple.launcher.ui.SimpleTheme
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Sms
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import app.simple.launcher.ui.HomeScreen
 import app.simple.launcher.ui.MessageScreen
 import app.simple.launcher.ui.PermissionRationaleScreen
@@ -37,6 +50,38 @@ class ScreensTest {
         rule.onNodeWithText("Bonjour Jean-Pierre").assertIsDisplayed()
         listOf("Appeler", "Messages", "Photo", "Mes photos").forEach { rule.onNodeWithText(it).assertIsDisplayed() }
         shot("01_home")
+    }
+
+    @Test
+    fun firstStepsShowWhatIsDoneAndWhatIsLeft() {
+        var homeAsked = false
+        rule.setContent {
+            FirstStepsScreen(homeDone = false, contactsDone = true, messagesDone = false, onHome = { homeAsked = true }, onContacts = {}, onMessages = {}, onAppSettings = {}, onFinish = {})
+        }
+        rule.onNodeWithText("Bienvenue dans Simple").assertIsDisplayed()
+        rule.onNodeWithText("Choisir Simple comme écran d'accueil").assertIsDisplayed()
+        rule.onNodeWithText("Activer l'accès aux notifications").assertIsDisplayed()
+        rule.onNodeWithText("Fait").assertIsDisplayed() // contacts: written, not only an icon
+        shot("12_first_steps")
+        rule.onNodeWithText("Choisir Simple comme écran d'accueil").performClick()
+        assertTrue(homeAsked)
+    }
+
+    @Test
+    fun settingsMenuLooksLikeAMenu() {
+        rule.setContent {
+            SimpleTheme {
+                Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    SettingsTopBar("Réglages famille", onBack = null)
+                    SettingsCard { SetupChecklist(homeDone = true, contactsDone = true, messagesDone = false, onHome = {}, onContacts = {}, onMessages = {}, onAppSettings = {}) }
+                    SettingsMenuItem(Icons.Filled.Sms, "Messages", "À activer") {}
+                    SettingsMenuItem(Icons.Filled.People, "Proches et photos", "Qui apparaît pour appeler, et leurs photos") {}
+                }
+            }
+        }
+        rule.onNodeWithText("Réglages famille").assertIsDisplayed()
+        rule.onNodeWithText("Proches et photos").assertIsDisplayed()
+        shot("13_settings_menu")
     }
 
     @Test

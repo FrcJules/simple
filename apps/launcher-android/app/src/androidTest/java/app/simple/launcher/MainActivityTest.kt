@@ -16,10 +16,10 @@ class MainActivityTest {
     private val compose = createAndroidComposeRule<MainActivity>()
     private val rule get() = compose
 
-    /** Set before the activity starts: this test is about the home screen, not about Android's home-app question. */
+    /** Set before the activity starts: this test is about the home screen, not about Android's first-start guide. */
     private val homeQuestionAlreadyAsked = object : ExternalResource() {
         override fun before() {
-            ProfileStore(InstrumentationRegistry.getInstrumentation().targetContext).markHomeRoleAsked()
+            ProfileStore(InstrumentationRegistry.getInstrumentation().targetContext).markFirstStepsShown()
         }
     }
 

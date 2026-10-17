@@ -72,6 +72,44 @@
     <string name="no_contacts">Demandez à un proche d\'ajouter vos contacts.</string>
     <string name="app_missing">Cette fonction n\'est pas disponible sur ce téléphone.</string>
     <string name="setup_label">Réglages famille</string>
+    <string name="steps_title">Bienvenue dans Simple</string>
+    <string name="steps_intro">Trois étapes, pour la personne qui installe l\'application (la famille). Android posera ses propres questions : acceptez-les.</string>
+    <string name="steps_settings_hint">Pour revenir aux réglages plus tard : ouvrez l\'icône «&#160;Réglages famille&#160;» du téléphone.</string>
+    <string name="steps_finish">Terminer</string>
+    <string name="step_home">Écran d\'accueil du téléphone</string>
+    <string name="step_home_action">Choisir Simple comme écran d\'accueil</string>
+    <string name="step_contacts">Contacts</string>
+    <string name="step_contacts_action">Autoriser les contacts</string>
+    <string name="step_messages">Messages et appels manqués</string>
+    <string name="step_messages_action">Activer l\'accès aux notifications</string>
+    <string name="step_done">Fait</string>
+    <string name="step_title">Premiers pas</string>
+    <string name="step_all_done">Tout est prêt : écran d\'accueil, contacts et messages sont réglés.</string>
+    <string name="step_messages_help">Dans la liste qui s\'ouvre, touchez «&#160;Simple&#160;» puis activez l\'interrupteur.</string>
+    <string name="step_refused_help">Si un bouton ne fait rien, Android a peut-être gardé un refus en mémoire. Ouvrez les réglages de l\'application pour autoriser à la main.</string>
+    <string name="step_open_app_settings">Ouvrir les réglages de l\'application</string>
+    <string name="steps_later">Plus tard</string>
+    <string name="setup_erase_again">Toucher encore pour confirmer</string>
+    <string name="setup_erased_messages">Les messages gardés par Simple sont effacés.</string>
+    <string name="setup_erased_photos">Les photos des proches sont effacées de Simple (la galerie du téléphone n\'est pas touchée).</string>
+    <string name="step_todo">À faire</string>
+    <string name="setup_back">Retour</string>
+    <string name="setup_sec_messages">Messages</string>
+    <string name="setup_sec_messages_on">Lecture des notifications activée</string>
+    <string name="setup_sec_messages_off">À activer</string>
+    <string name="setup_sec_people">Proches et photos</string>
+    <string name="setup_sec_people_sub">Qui apparaît pour appeler, et leurs photos</string>
+    <string name="setup_sec_home">Accueil de Simple</string>
+    <string name="setup_sec_home_sub">Prénom, tuiles, apparence, sons</string>
+    <string name="setup_sec_display">Écran maison (Raspberry Pi)</string>
+    <string name="setup_sec_display_sub">Appairer l\'écran de la maison</string>
+    <string name="setup_sec_erase">Effacer</string>
+    <string name="setup_sec_erase_sub">Vider les messages ou les photos gardés par Simple</string>
+    <string name="setup_menu_hint">Pour revenir ici : l\'icône «&#160;Réglages famille&#160;» du téléphone, ou 7 touches sur l\'heure en haut de l\'accueil.</string>
+    <string name="setup_messages_how">Simple affiche les messages reçus à partir du moment où la lecture des notifications est activée (application Messages du téléphone et WhatsApp). Les anciens messages ne sont pas repris.</string>
+    <string name="setup_sms_app_ok">Application de messages du téléphone : %1$s (prise en charge)</string>
+    <string name="setup_sms_app_unknown">Application de messages du téléphone : %1$s. Simple ne la reconnaît pas encore : ses messages n\'apparaîtront pas.</string>
+    <string name="setup_sms_app_none">Aucune application de messages n\'a été trouvée sur ce téléphone.</string>
     <string name="setup_title">Réglages famille</string>
     <string name="setup_hub_url">Adresse de l\'écran maison (ex. https://192.168.1.20:8788)</string>
     <string name="setup_token">Code d\'appairage (16 caractères minimum)</string>
@@ -86,7 +124,6 @@
     <string name="message_you_label">Vous</string>
     <string name="message_sensitive_tap">Touchez pour voir. Un code : ne le donnez à personne.</string>
     <string name="reply_unknown_number">Ce numéro n\'est pas dans vos contacts.</string>
-    <string name="setup_erase_confirm">Toucher encore pour effacer pour de bon</string>
     <string name="setup_sms_direct_on">SMS directs : activés (Simple lit vos SMS et en envoie sans être l\'application SMS)</string>
     <string name="setup_sms_direct_off">SMS directs : pas encore autorisés</string>
     <string name="setup_sms_direct_allow">Autoriser la lecture et l\'envoi des SMS</string>
@@ -149,7 +186,7 @@
     <string name="family_code_new_hint">De 4 à 8 chiffres. Touchez l\'œil pour voir ce que vous tapez, et notez le code. S\'il est perdu, il faudra effacer les données de l\'application dans les réglages d\'Android : cela supprime aussi les messages et l\'appairage avec l\'écran maison.</string>
     <string name="family_code_for_family">Ces réglages sont réservés à la famille.</string>
     <string name="family_code_not_set_title">Rien à faire ici. Tout va bien.</string>
-    <string name="family_code_not_set_hint">Pour la famille : ouvrez l\'icône « Réglages » de Simple, puis choisissez un code.</string>
+    <string name="family_code_not_set_hint">Pour la famille : ouvrez l\'icône « Réglages famille » de Simple, puis choisissez un code.</string>
     <string name="family_code_show">Voir le code</string>
     <string name="family_code_hide">Cacher le code</string>
     <string name="family_code_again">Répétez le code</string>
@@ -196,13 +233,6 @@
     <string name="reply_send_direct">Envoyer</string>
     <string name="send_failed">Le message n\'a pas pu partir. Demandez à un proche.</string>
     <string name="write_to_title">À qui voulez-vous écrire ?</string>
-    <string name="home_role_text">Pour que Simple s\'ouvre avec la touche «&#160;Accueil&#160;», le téléphone va vous poser une question.
-
-Touchez le bouton qui parle de Simple ou de «&#160;par défaut&#160;».
-
-Rien n\'est effacé. La famille pourra changer plus tard.</string>
-    <string name="home_role_continue">Continuer</string>
-    <string name="home_role_later">Non merci</string>
     <string name="sms_role_text">Pour lire et écrire vos messages ici, le téléphone va vous poser une ou deux questions.
 
 Touchez «&#160;Oui&#160;» ou «&#160;Autoriser&#160;» à chaque fois.
@@ -271,5 +301,4 @@ Vos messages ne sont pas effacés.</string>
     <string name="setup_no">Non</string>
     <string name="setup_erase_messages">Effacer les messages conservés</string>
     <string name="setup_erase_photos">Effacer les photos des proches</string>
-    <string name="setup_erased">C\'est effacé.</string>
 </resources>

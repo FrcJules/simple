@@ -60,8 +60,8 @@ fun HomeTilesEditor(
 ) {
     var picking by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text(stringResource(R.string.tiles_title), fontSize = 28.sp, modifier = Modifier.semantics { heading() })
-        Text(stringResource(R.string.tiles_help, TileEditing.MAX), fontSize = 24.sp)
+        Text(stringResource(R.string.tiles_title), fontSize = 22.sp, modifier = Modifier.semantics { heading() })
+        Text(stringResource(R.string.tiles_help, TileEditing.MAX), fontSize = 18.sp)
         tiles.forEachIndexed { index, tile ->
             val app = tile.app?.let(appInfo)
             val name = (if (tile.action == TileAction.APP) app?.label else tile.label) ?: stringResource(tile.action.defaultLabel)
@@ -71,9 +71,9 @@ fun HomeTilesEditor(
                         val picture = app?.icon
                         if (picture != null) Image(picture, contentDescription = null, modifier = Modifier.size(48.dp))
                         else Icon(tile.icon.vector(), contentDescription = null, modifier = Modifier.size(48.dp))
-                        Text("${index + 1}. $name", fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                        Text("${index + 1}. $name", fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                     }
-                    if (tile.action == TileAction.APP && app == null) Text(stringResource(R.string.tiles_app_missing), fontSize = 24.sp)
+                    if (tile.action == TileAction.APP && app == null) Text(stringResource(R.string.tiles_app_missing), fontSize = 18.sp)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
                         val up = stringResource(R.string.tiles_up, name)
                         val down = stringResource(R.string.tiles_down, name)
@@ -88,20 +88,20 @@ fun HomeTilesEditor(
             }
         }
         if (!TileEditing.canAdd(tiles)) {
-            Text(stringResource(R.string.tiles_full, TileEditing.MAX), fontSize = 24.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.tiles_full, TileEditing.MAX), fontSize = 18.sp, fontWeight = FontWeight.Bold)
         } else {
-            Text(stringResource(R.string.tiles_add_title), fontSize = 24.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.tiles_add_title), fontSize = 18.sp, fontWeight = FontWeight.Bold)
             TileEditing.missingBuiltIns(tiles).forEach { action ->
-                OutlinedButton(onClick = { onChange(TileEditing.addBuiltIn(tiles, action)) }, modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)) {
+                OutlinedButton(onClick = { onChange(TileEditing.addBuiltIn(tiles, action)) }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
                     Icon(Icons.Filled.Add, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.tiles_add_named, stringResource(action.defaultLabel)), fontSize = 24.sp)
+                    Text(stringResource(R.string.tiles_add_named, stringResource(action.defaultLabel)), fontSize = 18.sp)
                 }
             }
-            Button(onClick = { picking = !picking }, modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)) {
+            Button(onClick = { picking = !picking }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
                 Icon(Icons.Filled.Add, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
-                Text(stringResource(if (picking) R.string.tiles_close_apps else R.string.tiles_add_app), fontSize = 24.sp)
+                Text(stringResource(if (picking) R.string.tiles_close_apps else R.string.tiles_add_app), fontSize = 18.sp)
             }
             if (picking) AppPicker(loadApps, appInfo, tiles.mapNotNull { it.app }.toSet()) { pkg -> onChange(TileEditing.addApp(tiles, pkg)); picking = false }
         }
@@ -120,24 +120,24 @@ private fun AppPicker(loadApps: () -> List<AppEntry>, appInfo: (String) -> AppIn
     LaunchedEffect(Unit) { apps = loadApps() }
     OutlinedTextField(
         value = query, onValueChange = { query = it },
-        label = { Text(stringResource(R.string.tiles_search_apps), fontSize = 24.sp) },
-        textStyle = TextStyle(fontSize = 24.sp), singleLine = true,
-        modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp),
+        label = { Text(stringResource(R.string.tiles_search_apps), fontSize = 18.sp) },
+        textStyle = TextStyle(fontSize = 18.sp), singleLine = true,
+        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
     )
     val list = apps
     if (list == null) {
-        Text(stringResource(R.string.tiles_loading_apps), fontSize = 24.sp)
+        Text(stringResource(R.string.tiles_loading_apps), fontSize = 18.sp)
         return
     }
     val shown = list.filter { it.packageName !in already && it.label.contains(query.trim(), ignoreCase = true) }.take(60)
-    if (shown.isEmpty()) Text(stringResource(R.string.tiles_no_app), fontSize = 24.sp)
-    if (shown.size == 60) Text(stringResource(R.string.tiles_type_more), fontSize = 24.sp)
+    if (shown.isEmpty()) Text(stringResource(R.string.tiles_no_app), fontSize = 18.sp)
+    if (shown.size == 60) Text(stringResource(R.string.tiles_type_more), fontSize = 18.sp)
     shown.forEach { entry ->
         val picture = appInfo(entry.packageName)?.icon
-        OutlinedButton(onClick = { onPick(entry.packageName) }, modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)) {
+        OutlinedButton(onClick = { onPick(entry.packageName) }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
             if (picture != null) Image(picture, contentDescription = null, modifier = Modifier.size(40.dp))
             Spacer(Modifier.width(12.dp))
-            Text(entry.label, fontSize = 24.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            Text(entry.label, fontSize = 18.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
         }
     }
 }
@@ -153,15 +153,15 @@ private fun ConfirmRemove(label: String, confirm: String, enabled: Boolean, modi
         }
     }
     val click = { if (armed) { armed = false; onConfirmed() } else armed = true }
-    if (armed) Button(onClick = click, enabled = enabled, modifier = modifier.heightIn(min = 64.dp)) { Text(confirm, fontSize = 24.sp, fontWeight = FontWeight.Bold) }
-    else OutlinedButton(onClick = click, enabled = enabled, modifier = modifier.heightIn(min = 64.dp)) { Text(label, fontSize = 24.sp) }
+    if (armed) Button(onClick = click, enabled = enabled, modifier = modifier.heightIn(min = 52.dp)) { Text(confirm, fontSize = 18.sp, fontWeight = FontWeight.Bold) }
+    else OutlinedButton(onClick = click, enabled = enabled, modifier = modifier.heightIn(min = 52.dp)) { Text(label, fontSize = 18.sp) }
 }
 
 /** Up / down with words: "Avant" and "Après" say which way, a greyed arrow alone says nothing. */
 @Composable
 private fun MoveKey(icon: androidx.compose.ui.graphics.vector.ImageVector, word: String, spoken: String, enabled: Boolean, modifier: Modifier, onClick: () -> Unit) {
-    OutlinedButton(onClick = onClick, enabled = enabled, modifier = modifier.heightIn(min = 64.dp).semantics { contentDescription = spoken }, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp)) {
+    OutlinedButton(onClick = onClick, enabled = enabled, modifier = modifier.heightIn(min = 52.dp).semantics { contentDescription = spoken }, contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 4.dp)) {
         Icon(icon, contentDescription = null, modifier = Modifier.size(24.dp))
-        Text(word, fontSize = 24.sp, maxLines = 1)
+        Text(word, fontSize = 18.sp, maxLines = 1)
     }
 }
