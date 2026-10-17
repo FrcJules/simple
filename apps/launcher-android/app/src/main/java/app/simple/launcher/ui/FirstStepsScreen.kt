@@ -29,6 +29,8 @@ fun FirstStepsScreen(
     messagesDone: Boolean,
     onHome: () -> Unit,
     onContacts: () -> Unit,
+    codeDone: Boolean,
+    onCode: () -> Unit,
     onMessages: () -> Unit,
     onAppSettings: () -> Unit,
     onFinish: () -> Unit,
@@ -40,9 +42,9 @@ fun FirstStepsScreen(
         ) {
             SettingsTopBar(stringResource(R.string.steps_title), onBack = null)
             Text(stringResource(R.string.steps_intro), fontSize = 18.sp)
-            SettingsCard { SetupChecklist(homeDone, contactsDone, messagesDone, onHome, onContacts, onMessages, onAppSettings) }
+            SettingsCard { SetupChecklist(homeDone, contactsDone, messagesDone, onHome, onContacts, onMessages, onAppSettings, codeDone, onCode) }
             Text(stringResource(R.string.steps_settings_hint), fontSize = 16.sp)
-            if (homeDone && contactsDone && messagesDone) {
+            if (homeDone && contactsDone && messagesDone && codeDone) {
                 Button(onClick = onFinish, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
                     Text(stringResource(R.string.steps_finish), fontSize = 20.sp)
                 }

@@ -1,6 +1,6 @@
 # Publier Simple sur Google Play
 
-Ce qui est **déjà prêt dans le dépôt** : fiche en français (`fastlane/metadata/android/fr-FR/`), icône et visuel de présentation, icône adaptative, `targetSdk 36`, workflow de release signé, politique de confidentialité ([docs/privacy-policy.md](../privacy-policy.md)), réponses aux formulaires ([data-safety.md](data-safety.md), [declarations.md](declarations.md)).
+Ce qui est **déjà prêt dans le dépôt** : fiche en français (`fastlane/metadata/android/fr-FR/`) et en anglais (`en-US/`, à copier dans « Traductions » de la fiche), icône et visuel de présentation, icône adaptative, `targetSdk 36`, workflow de release signé, politique de confidentialité ([docs/privacy-policy.md](../privacy-policy.md)), réponses aux formulaires ([data-safety.md](data-safety.md), [declarations.md](declarations.md)).
 
 Ce qui **demande votre compte** (je n'ai aucun accès à la Play Console) : tout ce qui suit.
 

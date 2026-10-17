@@ -6,13 +6,15 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -64,29 +66,41 @@ class SecretTapCounter(private val needed: Int = 7, private val windowMs: Long =
     }
 }
 
-/** Live time and battery. Needs no permission: the battery broadcast is sticky and public. */
+/**
+ * Live time and battery. Needs no permission: the battery broadcast is sticky and public.
+ * Simple is the home app, so its process lives all day: nothing here may run while the screen is off or another app is in front.
+ * The receiver and the clock only exist while the activity is STARTED, and the clock wakes once a minute, on the minute.
+ */
 @Composable
 fun rememberHomeStatus(): HomeStatus {
     val context = LocalContext.current
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
     var battery by remember { mutableStateOf(readBattery(context, context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)))) }
     var now by remember { mutableStateOf(LocalDateTime.now()) }
-    DisposableEffect(context) {
-        val receiver = object : BroadcastReceiver() {
-            override fun onReceive(c: Context, intent: Intent) {
-                battery = readBattery(c, intent)
+    LaunchedEffect(lifecycle) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            val receiver = object : BroadcastReceiver() {
+                override fun onReceive(c: Context, intent: Intent) {
+                    battery = readBattery(c, intent)
+                }
             }
-        }
-        context.registerReceiver(receiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-        onDispose { context.unregisterReceiver(receiver) }
-    }
-    LaunchedEffect(Unit) {
-        while (true) {
-            now = LocalDateTime.now()
-            delay(15_000)
+            battery = readBattery(context, context.registerReceiver(receiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED)))
+            try {
+                while (true) {
+                    now = LocalDateTime.now()
+                    delay(millisUntilNextMinute(now))
+                }
+            } finally {
+                context.unregisterReceiver(receiver)
+            }
         }
     }
     return HomeStatus.of(now, battery.first, battery.second)
 }
+
+/** Time to wait so the clock changes exactly when the displayed minute does (at least one second, so it can never spin). */
+internal fun millisUntilNextMinute(now: LocalDateTime): Long =
+    (60_000L - (now.second * 1_000L + now.nano / 1_000_000L)).coerceAtLeast(1_000L)
 
 private fun readBattery(@Suppress("UNUSED_PARAMETER") c: Context, i: Intent?): Pair<Int?, Boolean> {
     if (i == null) return null to false

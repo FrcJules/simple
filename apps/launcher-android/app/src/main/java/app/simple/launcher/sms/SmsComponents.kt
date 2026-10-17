@@ -1,5 +1,6 @@
 package app.simple.launcher.sms
 
+import app.simple.launcher.R
 import android.content.Context
 import app.simple.launcher.ContactsRepository
 import app.simple.launcher.messages.MessageDiagnostics
@@ -57,7 +58,7 @@ object SmsComponents {
         val app = context.applicationContext
         if (SmsRole.isHeld(app)) return 0 // as the default app, receivers keep the history up to date
         if (!SmsAccess.canRead(app)) {
-            MessageDiagnostics.record(app, "Copie des SMS : impossible, la permission de lecture des SMS n'est pas accordée")
+            MessageDiagnostics.record(app, app.getString(R.string.diag_sms_no_permission))
             return 0
         }
         return syncLocked(app, allowFirstCopy = allowFirstCopy)
@@ -80,17 +81,17 @@ object SmsComponents {
             // Once, and only if it worked: a failure is tried again at the next sync instead of blocking it.
             runCatching { MessageStore.get(app).removeSmsTwins() }.onSuccess { removed ->
                 profile.edit().putBoolean("sms_twins_cleaned", true).apply()
-                if (removed > 0) MessageDiagnostics.record(app, "Doublons de SMS envoyés supprimés : $removed")
+                if (removed > 0) MessageDiagnostics.record(app, app.getString(R.string.diag_sms_twins, removed))
             }
         }
         val firstDone = profile.getBoolean("sms_first_copy_done", false)
         if (!firstDone && !allowFirstCopy) {
             // A broadcast receiver has about ten seconds: the whole history is copied when the app is opened or from the settings.
-            MessageDiagnostics.record(app, "Copie des SMS : première copie à faire en ouvrant Simple")
+            MessageDiagnostics.record(app, app.getString(R.string.diag_sms_first_later))
             return@synchronized 0
         }
         val result = importer(app).syncSince(last, keepReadFlag = firstDone)
-        MessageDiagnostics.record(app, "Copie des SMS : ${result.count} nouveau(x)" + if (!firstDone) " (première copie)" else "")
+        MessageDiagnostics.record(app, app.getString(if (firstDone) R.string.diag_sms_copied else R.string.diag_sms_copied_first, result.count))
         val edit = profile.edit().putBoolean("sms_first_copy_done", true)
         if (result.lastId > last) edit.putLong("sms_synced_up_to", result.lastId)
         edit.apply()

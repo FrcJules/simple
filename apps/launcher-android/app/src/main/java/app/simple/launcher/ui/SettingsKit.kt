@@ -102,12 +102,16 @@ fun SetupChecklist(
     onContacts: () -> Unit,
     onMessages: () -> Unit,
     onAppSettings: () -> Unit,
+    codeDone: Boolean? = null,
+    onCode: () -> Unit = {},
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        // The family code comes first: it is what gives access to the settings later (null: not part of this list).
+        if (codeDone != null) StepRow(stringResource(R.string.step_code), codeDone, stringResource(R.string.step_code_action), stringResource(R.string.step_code_help), onCode)
         StepRow(stringResource(R.string.step_home), homeDone, stringResource(R.string.step_home_action), null, onHome)
         StepRow(stringResource(R.string.step_contacts), contactsDone, stringResource(R.string.step_contacts_action), null, onContacts)
         StepRow(stringResource(R.string.step_messages), messagesDone, stringResource(R.string.step_messages_action), stringResource(R.string.step_messages_help), onMessages)
-        if (!(homeDone && contactsDone && messagesDone)) {
+        if (!(homeDone && contactsDone && messagesDone && codeDone != false)) {
             Text(stringResource(R.string.step_refused_help), fontSize = 15.sp)
             OutlinedButton(onClick = onAppSettings, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
                 Text(stringResource(R.string.step_open_app_settings), fontSize = 16.sp)

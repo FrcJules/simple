@@ -1,0 +1,1 @@
+First version: simplified home screen, contacts as photos, calls with confirmation, camera and gallery.
