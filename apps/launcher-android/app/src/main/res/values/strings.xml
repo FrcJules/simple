@@ -196,6 +196,13 @@
     <string name="reply_send_direct">Envoyer</string>
     <string name="send_failed">Le message n\'a pas pu partir. Demandez à un proche.</string>
     <string name="write_to_title">À qui voulez-vous écrire ?</string>
+    <string name="home_role_text">Pour que Simple s\'ouvre avec la touche «&#160;Accueil&#160;», le téléphone va vous poser une question.
+
+Touchez le bouton qui parle de Simple ou de «&#160;par défaut&#160;».
+
+Rien n\'est effacé. La famille pourra changer plus tard.</string>
+    <string name="home_role_continue">Continuer</string>
+    <string name="home_role_later">Non merci</string>
     <string name="sms_role_text">Pour lire et écrire vos messages ici, le téléphone va vous poser une ou deux questions.
 
 Touchez «&#160;Oui&#160;» ou «&#160;Autoriser&#160;» à chaque fois.

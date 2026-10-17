@@ -22,6 +22,13 @@ class ProfileStore(context: Context) {
         prefs.edit().putBoolean("sms_role_declined", declined).apply()
     }
 
+    /** Android's "use Simple as your home app?" question was already shown (answered or postponed): do not spring it again. */
+    fun homeRoleAsked(): Boolean = prefs.getBoolean("home_role_asked", false)
+
+    fun markHomeRoleAsked() {
+        prefs.edit().putBoolean("home_role_asked", true).apply()
+    }
+
     /** The phone's old SMS were copied into our history. */
     fun smsImported(): Boolean = prefs.getBoolean("sms_imported", false)
 
