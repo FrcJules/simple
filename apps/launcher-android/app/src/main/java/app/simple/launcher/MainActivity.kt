@@ -55,6 +55,7 @@ import app.simple.launcher.sms.SmsRole
 import app.simple.launcher.ui.CallScreen
 import app.simple.launcher.ui.CallingScreen
 import app.simple.launcher.ui.ConversationScreen
+import app.simple.launcher.ui.HomeRoleScreen
 import app.simple.launcher.ui.HomeScreen
 import app.simple.launcher.ui.rememberHomeStatus
 import app.simple.launcher.ui.ImageViewerScreen
@@ -72,7 +73,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
-    private enum class Screen { HOME, RATIONALE, DENIED, CALL, SMS_ROLE, MESSAGES, PICK_RECIPIENT, MESSAGE, REPLY, PHOTO_CHOICE, PHOTO_CONFIRM, WRITE_NOT_READY, SMS_DENIED, APP_MISSING }
+    private enum class Screen { HOME, HOME_ROLE, RATIONALE, DENIED, CALL, SMS_ROLE, MESSAGES, PICK_RECIPIENT, MESSAGE, REPLY, PHOTO_CHOICE, PHOTO_CONFIRM, WRITE_NOT_READY, SMS_DENIED, APP_MISSING }
 
     private val contactsVm: ContactsViewModel by viewModels()
     private val messagesVm: MessagesViewModel by viewModels()
@@ -146,6 +147,18 @@ class MainActivity : ComponentActivity() {
         screen = if (granted(Manifest.permission.READ_CONTACTS)) Screen.CALL else Screen.DENIED
     }
 
+    /** Whatever the answer to Android's home-app question, it is not asked again by surprise: the family settings still offer it. */
+    private val homeRole = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { screen = Screen.HOME }
+
+    private fun requestHomeRole() {
+        profile.markHomeRoleAsked()
+        try {
+            homeRole.launch(HomeRole.requestIntent(this))
+        } catch (e: ActivityNotFoundException) {
+            screen = Screen.HOME
+        }
+    }
+
     private val smsRole = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { onSmsRoleAnswered() }
 
     /** Direct mode (Android did not make us the SMS app): the SMS permissions alone read old and new SMS and send. */
@@ -195,7 +208,15 @@ class MainActivity : ComponentActivity() {
             files.transferFile(name)?.let { cameraTarget = files.uriFor(it) }
         }
         MmsFiles(this).cleanOldTransfers(System.currentTimeMillis() - STALE_TRANSFER_MS)
-        if (savedInstanceState == null) handleIntent(intent) else restore(savedInstanceState)
+        if (savedInstanceState == null) {
+            // The first start of the app, opened from its icon (not by a message, a link or a "write to" request): offer to become the home app.
+            if (!handleIntent(intent) && !profile.homeRoleAsked() && !HomeRole.isHeld(this)) {
+                profile.markHomeRoleAsked() // shown once, whatever happens next (rotation, Home key, process death)
+                screen = Screen.HOME_ROLE
+            }
+        } else {
+            restore(savedInstanceState)
+        }
         setContent {
             val contacts by contactsVm.contacts.collectAsStateWithLifecycle()
             val conversations by messagesVm.items.collectAsStateWithLifecycle()
@@ -240,6 +261,10 @@ class MainActivity : ComponentActivity() {
                         showSetupHint = needsSetup,
                         onSetup = { startActivity(Intent(this, SetupActivity::class.java)) }, // no "from home" mark: the family chooses the code
                     )
+                    Screen.HOME_ROLE -> {
+                        BackHandler { profile.markHomeRoleAsked(); screen = Screen.HOME }
+                        HomeRoleScreen(onContinue = { requestHomeRole() }, onLater = { profile.markHomeRoleAsked(); screen = Screen.HOME })
+                    }
                     Screen.RATIONALE -> {
                         BackHandler { screen = Screen.HOME }
                         PermissionRationaleScreen(
