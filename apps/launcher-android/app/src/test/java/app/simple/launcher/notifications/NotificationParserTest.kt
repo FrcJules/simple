@@ -75,4 +75,12 @@ class NotificationParserTest {
         assertEquals(true, NotificationParser.isWatched("com.whatsapp"))
         assertEquals(false, NotificationParser.isWatched("com.bank.app"))
     }
+
+    @Test
+    fun knownMessagingAppsAreRecognisedAsSmsApps() {
+        assertEquals(true, NotificationParser.isSmsApp("com.google.android.apps.messaging"))
+        assertEquals(true, NotificationParser.isSmsApp("com.android.messaging"))
+        assertEquals(false, NotificationParser.isSmsApp("com.whatsapp")) // WhatsApp is not an SMS app
+        assertEquals(false, NotificationParser.isSmsApp("com.bank.app"))
+    }
 }

@@ -25,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -55,7 +56,7 @@ import app.simple.launcher.sms.SmsRole
 import app.simple.launcher.ui.CallScreen
 import app.simple.launcher.ui.CallingScreen
 import app.simple.launcher.ui.ConversationScreen
-import app.simple.launcher.ui.HomeRoleScreen
+import app.simple.launcher.ui.FirstStepsScreen
 import app.simple.launcher.ui.HomeScreen
 import app.simple.launcher.ui.rememberHomeStatus
 import app.simple.launcher.ui.ImageViewerScreen
@@ -73,7 +74,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
-    private enum class Screen { HOME, HOME_ROLE, RATIONALE, DENIED, CALL, SMS_ROLE, MESSAGES, PICK_RECIPIENT, MESSAGE, REPLY, PHOTO_CHOICE, PHOTO_CONFIRM, WRITE_NOT_READY, SMS_DENIED, APP_MISSING }
+    private enum class Screen { HOME, FIRST_STEPS, RATIONALE, DENIED, CALL, SMS_ROLE, MESSAGES, PICK_RECIPIENT, MESSAGE, REPLY, PHOTO_CHOICE, PHOTO_CONFIRM, WRITE_NOT_READY, SMS_DENIED, APP_MISSING }
 
     private val contactsVm: ContactsViewModel by viewModels()
     private val messagesVm: MessagesViewModel by viewModels()
@@ -147,15 +148,33 @@ class MainActivity : ComponentActivity() {
         screen = if (granted(Manifest.permission.READ_CONTACTS)) Screen.CALL else Screen.DENIED
     }
 
-    /** Whatever the answer to Android's home-app question, it is not asked again by surprise: the family settings still offer it. */
-    private val homeRole = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { screen = Screen.HOME }
+    /** Bumped whenever we come back from one of Android's own screens, so the first-start guide shows what was done meanwhile. */
+    private var stepsTick by mutableStateOf(0)
+
+    private val homeRole = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { stepsTick++ }
+    private val stepsContacts = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+        profile.markContactsAsked()
+        contactsVm.refresh()
+        stepsTick++
+    }
 
     private fun requestHomeRole() {
-        profile.markHomeRoleAsked()
         try {
             homeRole.launch(HomeRole.requestIntent(this))
         } catch (e: ActivityNotFoundException) {
-            screen = Screen.HOME
+            stepsTick++
+        }
+    }
+
+    private fun openAppSettings() {
+        startActivity(Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null)))
+    }
+
+    private fun openNotificationAccess() {
+        try {
+            startActivity(Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+        } catch (e: ActivityNotFoundException) {
+            stepsTick++
         }
     }
 
@@ -210,9 +229,9 @@ class MainActivity : ComponentActivity() {
         MmsFiles(this).cleanOldTransfers(System.currentTimeMillis() - STALE_TRANSFER_MS)
         if (savedInstanceState == null) {
             // The first start of the app, opened from its icon (not by a message, a link or a "write to" request): offer to become the home app.
-            if (!handleIntent(intent) && !profile.homeRoleAsked() && !HomeRole.isHeld(this)) {
-                profile.markHomeRoleAsked() // shown once, whatever happens next (rotation, Home key, process death)
-                screen = Screen.HOME_ROLE
+            if (!handleIntent(intent) && !profile.firstStepsShown()) {
+                profile.markFirstStepsShown() // shown once, whatever happens next (rotation, Home key, process death)
+                screen = Screen.FIRST_STEPS
             }
         } else {
             restore(savedInstanceState)
@@ -261,9 +280,19 @@ class MainActivity : ComponentActivity() {
                         showSetupHint = needsSetup,
                         onSetup = { startActivity(Intent(this, SetupActivity::class.java)) }, // no "from home" mark: the family chooses the code
                     )
-                    Screen.HOME_ROLE -> {
-                        BackHandler { profile.markHomeRoleAsked(); screen = Screen.HOME }
-                        HomeRoleScreen(onContinue = { requestHomeRole() }, onLater = { profile.markHomeRoleAsked(); screen = Screen.HOME })
+                    Screen.FIRST_STEPS -> {
+                        BackHandler { screen = Screen.HOME }
+                        val tick = stepsTick // read here: the three states below are looked up again after each answer
+                        FirstStepsScreen(
+                            homeDone = tick >= 0 && HomeRole.isHeld(this),
+                            contactsDone = tick >= 0 && granted(Manifest.permission.READ_CONTACTS),
+                            messagesDone = tick >= 0 && NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName),
+                            onHome = { requestHomeRole() },
+                            onContacts = { stepsContacts.launch(Manifest.permission.READ_CONTACTS) },
+                            onMessages = { openNotificationAccess() },
+                            onAppSettings = { openAppSettings() },
+                            onFinish = { screen = Screen.HOME },
+                        )
                     }
                     Screen.RATIONALE -> {
                         BackHandler { screen = Screen.HOME }
@@ -435,6 +464,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        stepsTick++ // coming back from one of Android's screens
         seniorName = profile.name() // may have been changed in "Réglages famille"
         // Direct mode: new SMS of the phone's own messaging app are copied in (the default SMS app receives them itself).
         if (!SmsRole.isHeld(this) && SmsAccess.canRead(this)) lifecycleScope.launch(Dispatchers.IO) { runCatching { SmsComponents.syncNew(this@MainActivity) } }

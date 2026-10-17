@@ -22,10 +22,13 @@ object NotificationParser {
         "com.google.android.dialer", "com.android.dialer", "com.samsung.android.dialer",
         "com.samsung.android.incallui", "com.android.server.telecom", "com.android.incallui",
     )
-    private val smsPackages = setOf("com.google.android.apps.messaging", "com.samsung.android.messaging", "com.android.mms")
+    private val smsPackages = setOf("com.google.android.apps.messaging", "com.samsung.android.messaging", "com.android.mms", "com.android.messaging")
     private val whatsappPackages = setOf("com.whatsapp", "com.whatsapp.w4b")
     private val missedKeywords = listOf("appel manqué", "appels manqués", "missed call", "missed calls")
     private val unreadSuffix = Regex("""\s*\(\d+\s+\S+\)\s*$""")
+
+    /** Whether this is a messaging app whose notifications Simple reads as SMS. */
+    fun isSmsApp(packageName: String) = packageName in smsPackages
 
     /** Checked first by the listener so notifications from other apps are never read at all. */
     fun isWatched(packageName: String) =
