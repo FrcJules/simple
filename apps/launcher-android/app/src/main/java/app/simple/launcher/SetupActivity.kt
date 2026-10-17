@@ -173,6 +173,26 @@ class SetupActivity : ComponentActivity() {
         if (smsHeld) ProfileStore(this).setSmsRoleDeclined(false)
     }
 
+    private var homeHeld by mutableStateOf(false)
+
+    /** Null until the family has answered Android's question; false means it was refused or could not be shown. */
+    private var homeRoleAnswer by mutableStateOf<Boolean?>(null)
+
+    private val homeRoleResult = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        homeHeld = HomeRole.isHeld(this)
+        homeRoleAnswer = homeHeld
+    }
+
+    private fun requestHomeRole() {
+        openingChild = true // the system dialog is not "leaving" the settings
+        try {
+            homeRoleResult.launch(HomeRole.requestIntent(this))
+        } catch (e: android.content.ActivityNotFoundException) {
+            openingChild = false
+            homeRoleAnswer = false
+        }
+    }
+
     private fun requestSmsRole() {
         val intent = SmsRole.requestIntent(this) ?: return
         openingChild = true // the system dialog is not "leaving" the settings
@@ -220,6 +240,7 @@ class SetupActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         smsHeld = SmsRole.isHeld(this)
+        homeHeld = HomeRole.isHeld(this)
         directSms = SmsAccess.direct(this)
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
             contactsVm.refresh()
@@ -391,6 +412,17 @@ class SetupActivity : ComponentActivity() {
                         appearanceMessage = getString(R.string.setup_appearance_reset)
                     }) { Text(stringResource(R.string.setup_appearance_reset_button)) }
                     appearanceMessage?.let { Text(it) }
+
+                    // Home screen: Android only makes Simple the phone's home when the family says yes to its own question.
+                    Text(stringResource(R.string.setup_home_title), fontSize = 28.sp, modifier = Modifier.semantics { heading() })
+                    Text(stringResource(if (homeHeld) R.string.setup_home_held else R.string.setup_home_not_held), fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                    if (!homeHeld) {
+                        Button(onClick = { requestHomeRole() }, modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp)) {
+                            Text(stringResource(R.string.setup_home_offer), fontSize = 24.sp)
+                        }
+                        if (Build.VERSION.SDK_INT < 29) Text(stringResource(R.string.setup_home_list_hint), fontSize = 24.sp)
+                        if (homeRoleAnswer == false) Text(stringResource(R.string.setup_home_refused), fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                    }
 
                     var feedbackOn by remember { mutableStateOf(profile.feedbackEnabled()) }
                     Row(
