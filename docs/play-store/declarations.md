@@ -22,7 +22,7 @@
 **Jamais utilisé** : `READ_CALL_LOG` (journal d'appels). **SMS** : les permissions `READ_SMS`, `SEND_SMS`, `RECEIVE_SMS`, `RECEIVE_MMS`, `RECEIVE_WAP_PUSH` ne sont déclarées que dans les versions de **test** (manifeste `src/debug`) tant que les MMS ne sont pas gérés ; la version publiée n'en déclare aucune. Quand elles seront déclarées, voir la section « Application SMS par défaut » ci-dessous.
 
 ## Instructions pour l'équipe de revue Google
-> Simple est un écran d'accueil simplifié. Sans matériel supplémentaire : installer, choisir Simple comme application d'accueil, toucher « Appeler » (accepter les contacts), voir les contacts étoilés en photos, confirmer un appel. La fonction d'écran maison (accès aux notifications, « Réglages famille ») est facultative et nécessite un Raspberry Pi ; elle n'est pas nécessaire pour utiliser l'application. Aucun compte ni mot de passe n'est requis.
+> Simple est un écran d'accueil simplifié. Sans matériel supplémentaire : installer, ouvrir l'application « Réglages famille » (seconde icône de Simple), choisir un code famille, toucher « Faire de Simple l'écran d'accueil » et accepter la question d'Android, puis toucher « Appeler » (accepter les contacts), voir les contacts étoilés en photos, confirmer un appel. La fonction d'écran maison (accès aux notifications, « Réglages famille ») est facultative et nécessite un Raspberry Pi ; elle n'est pas nécessaire pour utiliser l'application. Aucun compte ni mot de passe n'est requis.
 
 ## Application SMS par défaut (ADR 0005)
 Simple peut devenir l'application SMS par défaut (rôle `ROLE_SMS`). Google Play impose alors :

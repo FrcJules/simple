@@ -103,6 +103,12 @@
         <item quantity="one">Simple voit %1$d contact avec un numéro de téléphone.</item>
         <item quantity="other">Simple voit %1$d contacts avec un numéro de téléphone.</item>
     </plurals>
+    <string name="setup_home_title">Écran d\'accueil du téléphone</string>
+    <string name="setup_home_held">Simple est déjà l\'écran d\'accueil.</string>
+    <string name="setup_home_not_held">Simple n\'est pas encore l\'écran d\'accueil. Le bouton « Accueil » du téléphone ouvre une autre application.</string>
+    <string name="setup_home_list_hint">Android va montrer une liste : choisissez Simple.</string>
+    <string name="setup_home_refused">Rien n\'a changé. Vous pouvez réessayer.</string>
+    <string name="setup_home_offer">Faire de Simple l\'écran d\'accueil</string>
     <string name="setup_sms_offer">Faire de Simple l\'application SMS</string>
     <string name="setup_messages_title">Messages</string>
     <string name="setup_sms_held">SMS : gérés par Simple</string>
