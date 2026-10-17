@@ -40,6 +40,8 @@ android {
             // Do NOT offer the default-SMS role in a release until MMS are handled: an MMS we cannot read would be lost.
             buildConfigField("boolean", "SMS_ROLE_OFFERED", "false")
             isMinifyEnabled = true
+            // Play asks for native debug symbols so crash reports of the bundled native libraries are readable.
+            ndk { debugSymbolLevel = "SYMBOL_TABLE" }
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
             if (System.getenv("ANDROID_KEYSTORE_PATH") != null) signingConfig = signingConfigs.getByName("release")
         }
