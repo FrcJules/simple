@@ -1,5 +1,6 @@
 package app.simple.launcher.sms
 
+import app.simple.launcher.R
 import android.app.Activity
 import android.app.Service
 import android.content.BroadcastReceiver
@@ -49,7 +50,7 @@ class SmsReceivedReceiver : BroadcastReceiver() {
         val parts = Telephony.Sms.Intents.getMessagesFromIntent(intent)?.filterNotNull().orEmpty()
         val address = parts.firstOrNull()?.originatingAddress.orEmpty()
         val body = parts.joinToString("") { it.messageBody.orEmpty() }
-        MessageDiagnostics.record(context, "SMS reçu (diffusion du système)")
+        MessageDiagnostics.record(context, context.getString(R.string.diag_sms_received))
         val pending: PendingResult? = goAsync()
         thread(name = "sms-received") {
             try {
@@ -57,12 +58,12 @@ class SmsReceivedReceiver : BroadcastReceiver() {
                 try {
                     if (address.isNotEmpty() && body.isNotEmpty()) SmsComponents.forwardToDisplay(context, address, body)
                 } catch (e: RuntimeException) {
-                    MessageDiagnostics.record(context, "SMS reçu : envoi à l'écran maison en erreur")
+                    MessageDiagnostics.record(context, context.getString(R.string.diag_sms_forward_error))
                 }
                 Thread.sleep(WRITE_DELAY_MS) // the messaging app writes the row to the system database first
                 SmsComponents.syncNew(context, allowFirstCopy = false)
             } catch (e: RuntimeException) {
-                MessageDiagnostics.record(context, "SMS reçu : copie en erreur")
+                MessageDiagnostics.record(context, context.getString(R.string.diag_sms_copy_error))
             } finally {
                 pending?.finish()
             }

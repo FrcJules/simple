@@ -13,6 +13,9 @@ if [ "$NUM_SHARDS" -gt 1 ]; then shard_args=(-e numShards "$NUM_SHARDS" -e shard
 
 gradle :app:installDebug :app:installDebugAndroidTest || exit 1
 
+# The tests read the French screens; the emulator itself is in English (the app has an English translation too).
+adb shell cmd locale set-app-locales app.simple.launcher --locales fr || echo "could not set the app language"
+
 RUNNER=app.simple.launcher.test/androidx.test.runner.AndroidJUnitRunner
 SMS_TEST=app.simple.launcher.SmsEndToEndTest
 

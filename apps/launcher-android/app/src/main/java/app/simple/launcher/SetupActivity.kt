@@ -493,6 +493,11 @@ class SetupActivity : ComponentActivity() {
                     }
                         }
                         Section.HOME -> {
+                            if (Build.VERSION.SDK_INT >= 33) {
+                                OutlinedButton(onClick = { openingChild = true; startActivity(Intent(Settings.ACTION_APP_LOCALE_SETTINGS, android.net.Uri.fromParts("package", packageName, null))) }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+                                    Text(stringResource(R.string.setup_language), fontSize = 18.sp)
+                                }
+                            }
                     OutlinedTextField(name, { name = it; nameSaved = false }, label = { Text(stringResource(R.string.setup_name)) }, modifier = Modifier.fillMaxWidth())
                             Button(onClick = { profile.saveName(name); nameSaved = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text(stringResource(R.string.setup_save), fontSize = 18.sp) }
                             if (nameSaved) Text(stringResource(R.string.setup_saved), fontSize = 16.sp)

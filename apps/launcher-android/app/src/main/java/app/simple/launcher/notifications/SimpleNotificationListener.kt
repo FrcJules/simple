@@ -4,6 +4,7 @@ import android.app.Notification
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import app.simple.launcher.ContactsRepository
+import app.simple.launcher.R
 import app.simple.launcher.messages.MessageDiagnostics
 import app.simple.launcher.messages.MessageStore
 import app.simple.launcher.messages.StoredMessage
@@ -28,7 +29,7 @@ class SimpleNotificationListener : NotificationListenerService() {
         val source = shortName(sbn.packageName)
         val incoming = NotificationParser.parse(raw)
         if (incoming == null) {
-            MessageDiagnostics.record(applicationContext, "Notification $source : ignorée (${NotificationParser.rejectionReason(raw)})")
+            MessageDiagnostics.record(applicationContext, getString(R.string.diag_notif_ignored, source, NotificationParser.rejectionReason(raw)))
             return
         }
         // When we are the SMS app we receive SMS directly (SmsDeliverReceiver); a copy via another app's notification would double it.
@@ -40,10 +41,10 @@ class SimpleNotificationListener : NotificationListenerService() {
             }
         }
         if (duplicates.isDuplicate(sbn.key, "${raw.title}|${raw.text}", System.currentTimeMillis())) {
-            MessageDiagnostics.record(applicationContext, "Notification $source : déjà vue")
+            MessageDiagnostics.record(applicationContext, getString(R.string.diag_notif_seen, source))
             return
         }
-        MessageDiagnostics.record(applicationContext, "Notification $source : ${if (incoming is Incoming.Message) "message gardé" else "appel manqué"}")
+        MessageDiagnostics.record(applicationContext, getString(if (incoming is Incoming.Message) R.string.diag_notif_message else R.string.diag_notif_missed, source))
         if (incoming is Incoming.Message && incoming.channel == Channel.SMS) {
             // The home display is visible from the whole room: only SMS from people we know appear there, never a stranger's or a company's.
             val known = runCatching { ContactsRepository(applicationContext.contentResolver).byName(incoming.from) != null }.getOrDefault(false)
@@ -74,7 +75,7 @@ class SimpleNotificationListener : NotificationListenerService() {
         "com.google.android.apps.messaging" -> "Messages (Google)"
         "com.samsung.android.messaging" -> "Messages (Samsung)"
         "com.android.mms" -> "Messages (Android)"
-        else -> "Téléphone"
+        else -> getString(R.string.diag_app_phone)
     }
 
     /** An answer from here could go to a whole group: only one-to-one chats are ever answered. */

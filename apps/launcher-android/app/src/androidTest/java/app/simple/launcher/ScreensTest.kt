@@ -56,7 +56,7 @@ class ScreensTest {
     fun firstStepsShowWhatIsDoneAndWhatIsLeft() {
         var homeAsked = false
         rule.setContent {
-            FirstStepsScreen(homeDone = false, contactsDone = true, messagesDone = false, onHome = { homeAsked = true }, onContacts = {}, onMessages = {}, onAppSettings = {}, onFinish = {})
+            FirstStepsScreen(homeDone = false, contactsDone = true, messagesDone = false, codeDone = false, onCode = {}, onHome = { homeAsked = true }, onContacts = {}, onMessages = {}, onAppSettings = {}, onFinish = {})
         }
         rule.onNodeWithText("Bienvenue dans Simple").assertIsDisplayed()
         rule.onNodeWithText("Choisir Simple comme écran d'accueil").assertIsDisplayed()

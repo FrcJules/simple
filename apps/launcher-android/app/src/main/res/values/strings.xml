@@ -73,8 +73,8 @@
     <string name="app_missing">Cette fonction n\'est pas disponible sur ce téléphone.</string>
     <string name="setup_label">Réglages famille</string>
     <string name="steps_title">Bienvenue dans Simple</string>
-    <string name="steps_intro">Trois étapes, pour la personne qui installe l\'application (la famille). Android posera ses propres questions : acceptez-les.</string>
-    <string name="steps_settings_hint">Pour revenir aux réglages plus tard : ouvrez l\'icône «&#160;Réglages famille&#160;» du téléphone.</string>
+    <string name="steps_intro">Quelques étapes, pour la personne qui installe l\'application (la famille). Android posera ses propres questions : acceptez-les.</string>
+    <string name="steps_settings_hint">Pour rouvrir les réglages plus tard : touchez 7 fois l\'heure, en haut de l\'écran d\'accueil de Simple, puis entrez le code famille.</string>
     <string name="steps_finish">Terminer</string>
     <string name="step_home">Écran d\'accueil du téléphone</string>
     <string name="step_home_action">Choisir Simple comme écran d\'accueil</string>
@@ -82,6 +82,9 @@
     <string name="step_contacts_action">Autoriser les contacts</string>
     <string name="step_messages">Messages et appels manqués</string>
     <string name="step_messages_action">Activer l\'accès aux notifications</string>
+    <string name="step_code">Code famille</string>
+    <string name="step_code_action">Choisir le code famille</string>
+    <string name="step_code_help">Ce code protège les réglages : l\'accueil ne les ouvre pas sans lui.</string>
     <string name="step_done">Fait</string>
     <string name="step_title">Premiers pas</string>
     <string name="step_all_done">Tout est prêt : écran d\'accueil, contacts et messages sont réglés.</string>
@@ -301,4 +304,18 @@ Vos messages ne sont pas effacés.</string>
     <string name="setup_no">Non</string>
     <string name="setup_erase_messages">Effacer les messages conservés</string>
     <string name="setup_erase_photos">Effacer les photos des proches</string>
+    <string name="diag_notif_ignored">Notification %1$s : ignorée (%2$s)</string>
+    <string name="diag_notif_seen">Notification %1$s : déjà vue</string>
+    <string name="diag_notif_message">Notification %1$s : message gardé</string>
+    <string name="diag_notif_missed">Notification %1$s : appel manqué</string>
+    <string name="diag_app_phone">Téléphone</string>
+    <string name="diag_sms_no_permission">Copie des SMS : impossible, la permission de lecture des SMS n\'est pas accordée</string>
+    <string name="diag_sms_twins">Doublons de SMS envoyés supprimés : %1$d</string>
+    <string name="diag_sms_first_later">Copie des SMS : première copie à faire en ouvrant Simple</string>
+    <string name="diag_sms_copied">Copie des SMS : %1$d nouveau(x)</string>
+    <string name="diag_sms_copied_first">Copie des SMS : %1$d nouveau(x) (première copie)</string>
+    <string name="diag_sms_received">SMS reçu (diffusion du système)</string>
+    <string name="diag_sms_forward_error">SMS reçu : envoi à l\'écran maison en erreur</string>
+    <string name="diag_sms_copy_error">SMS reçu : copie en erreur</string>
+    <string name="setup_language">Langue de l\'application (français, anglais)</string>
 </resources>

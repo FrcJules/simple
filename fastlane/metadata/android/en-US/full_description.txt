@@ -1,0 +1,19 @@
+Simple is an ultra-simplified home screen for older people, made to keep in touch with the family.
+
+For the user (anyone who reads little and prefers pictures):
+• Big buttons: Call, Messages, Photo, My photos.
+• Family members are shown by their photo: you recognise the person, tap, confirm, call.
+• A clear confirmation before every call, with a button to cancel.
+• Very large text, high contrast, the time and the battery always visible.
+
+For the family:
+• Nothing to change: you keep using the phone, SMS and WhatsApp as usual.
+• You choose who is shown in the family settings, protected by a code only the family knows.
+• Optional: with a home display (Raspberry Pi), Simple can show “Marie called you” or the last message received in large letters on the living-room screen. This needs notification access (missed calls, SMS, WhatsApp), turned on in the family settings.
+
+Privacy:
+• No ads, no trackers, no account.
+• Your contacts and messages never leave your home: information is sent only to your own home display, on your Wi-Fi network, encrypted.
+• Free and open source: the source code is public.
+
+Simple declares itself as a home app: you can go back to your previous home screen at any time in Android's settings.

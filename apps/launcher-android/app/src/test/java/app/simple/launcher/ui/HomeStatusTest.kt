@@ -41,4 +41,10 @@ class HomeStatusTest {
         val c = SecretTapCounter()
         repeat(50) { assertFalse(c.tap(it * 1_000L)) }
     }
+
+    @Test fun clockWakesOnTheMinute() {
+        assertEquals(60_000L, millisUntilNextMinute(java.time.LocalDateTime.of(2026, 10, 17, 9, 5, 0)))
+        assertEquals(15_000L, millisUntilNextMinute(java.time.LocalDateTime.of(2026, 10, 17, 9, 5, 45)))
+        assertEquals(1_000L, millisUntilNextMinute(java.time.LocalDateTime.of(2026, 10, 17, 9, 5, 59, 500_000_000))) // never spins
+    }
 }

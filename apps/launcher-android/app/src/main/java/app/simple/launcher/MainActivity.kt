@@ -289,6 +289,8 @@ class MainActivity : ComponentActivity() {
                             messagesDone = tick >= 0 && NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName),
                             onHome = { requestHomeRole() },
                             onContacts = { stepsContacts.launch(Manifest.permission.READ_CONTACTS) },
+                            codeDone = tick >= 0 && FamilyLock(this).isSet(),
+                            onCode = { startActivity(Intent(this, SetupActivity::class.java)) }, // no "from home" mark: the family chooses the code
                             onMessages = { openNotificationAccess() },
                             onAppSettings = { openAppSettings() },
                             onFinish = { screen = Screen.HOME },
