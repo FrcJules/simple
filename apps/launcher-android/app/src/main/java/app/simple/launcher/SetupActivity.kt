@@ -338,7 +338,7 @@ class SetupActivity : ComponentActivity() {
                 var pin by remember { mutableStateOf(store.load()?.certSha256.orEmpty()) }
                 var name by remember { mutableStateOf(profile.name()) }
                 var saved by remember { mutableStateOf<Boolean?>(null) }
-                var section by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(if (offer != null) Section.DISPLAY else Section.MENU) }
+                var section by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(if (offer != null || offerRefused) Section.DISPLAY else Section.MENU) }
                 var nameSaved by remember { mutableStateOf(false) }
                 var erased by remember { mutableStateOf<Int?>(null) }
                 val scroll = rememberScrollState()

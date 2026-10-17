@@ -60,7 +60,7 @@ class ScreensTest {
         }
         rule.onNodeWithText("Bienvenue dans Simple").assertIsDisplayed()
         rule.onNodeWithText("Choisir Simple comme écran d'accueil").assertIsDisplayed()
-        rule.onNodeWithText("Activer la lecture des notifications").assertIsDisplayed()
+        rule.onNodeWithText("Activer l'accès aux notifications").assertIsDisplayed()
         rule.onNodeWithText("Fait").assertIsDisplayed() // contacts: written, not only an icon
         shot("12_first_steps")
         rule.onNodeWithText("Choisir Simple comme écran d'accueil").performClick()
