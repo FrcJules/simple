@@ -17,7 +17,7 @@
     "birthdays": "tsx src/birthdays-cli.ts"
   },
   "dependencies": {
-    "@fastify/cors": "^11.3.0",
+    "@fastify/cors": "^11.3.1",
     "@simple/contracts": "*",
     "fastify": "^5.0.0",
     "qrcode": "^1.5.4",
