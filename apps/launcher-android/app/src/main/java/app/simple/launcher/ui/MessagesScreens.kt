@@ -183,7 +183,7 @@ fun ConversationScreen(
         Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Avatar(item.displayContact, Modifier.size(72.dp), initialSize = 36.sp)
-                Text(item.message.from, fontSize = 32.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(item.message.from, fontSize = 32.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
             }
             // Newest at the bottom, anchored there: a new message never makes the list jump while someone reads further up.
             LazyColumn(Modifier.weight(1f).fillMaxWidth(), reverseLayout = true, verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -303,7 +303,7 @@ private fun statusText(status: MessageStatus): String? = when (status) {
 private fun StackedLabel(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Icon(icon, contentDescription = null)
-        Text(label, fontSize = 24.sp, maxLines = 1, softWrap = false)
+        Text(label, fontSize = 24.sp, textAlign = TextAlign.Center, maxLines = 2)
     }
 }
 
