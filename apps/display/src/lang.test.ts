@@ -23,9 +23,9 @@ describe("English home screen", () => {
   const at = new Date(2026, 9, 6, 9, 5); // Tuesday 6 October 2026, 09:05
 
   it("greets by the time of day", () => {
-    expect(greeting(new Date(2026, 9, 6, 9), "Jean-Pierre", "en")).toBe("Good morning Jean-Pierre");
-    expect(greeting(new Date(2026, 9, 6, 14), "Jean-Pierre", "en")).toBe("Good afternoon Jean-Pierre");
-    expect(greeting(new Date(2026, 9, 6, 19), "Jean-Pierre", "en")).toBe("Good evening Jean-Pierre");
+    expect(greeting(new Date(2026, 9, 6, 9), "Jean-Pierre", "en")).toBe("Good morning, Jean-Pierre");
+    expect(greeting(new Date(2026, 9, 6, 14), "Jean-Pierre", "en")).toBe("Good afternoon, Jean-Pierre");
+    expect(greeting(new Date(2026, 9, 6, 19), "Jean-Pierre", "en")).toBe("Good evening, Jean-Pierre");
   });
 
   it("formats date and time the English way", () => {
@@ -59,6 +59,10 @@ describe("English home screen", () => {
     expect(formatAt("15:45", "fr")).toBe("15 h 45");
     expect(describeWeather(0, "en").label).toBe("Sunny");
     expect(describeWeather(61, "en").label).toBe("Rain");
+    expect(describeWeather(3, "en").label).toBe("Cloudy");
+    expect(texts.en.pairing.expires(1)).toBe("This code closes in 1 second.");
+    expect(texts.fr.pairing.expires(1)).toBe("Ce code se ferme dans 1 seconde.");
+    expect(texts.en.pairing.expires(30)).toBe("This code closes in 30 seconds.");
     expect(describeWeather(0, "fr").label).toBe("Grand soleil");
     expect(texts.en.range("12°", "19°")).toBe("12° to 19°");
   });
@@ -68,10 +72,10 @@ describe("English home screen", () => {
     expect(nameList(["Marie", "Paul"], "en")).toBe("Marie and Paul");
     expect(nameList(["Marie", "Paul", "Anne"], "en")).toBe("Marie, Paul and 1 other");
     expect(nameList(["Marie", "Paul", "Anne", "Luc"], "en")).toBe("Marie, Paul and 2 others");
-    expect(birthdayText.today(["Marie"], 76, "en")).toBe("Today Marie turns 76");
-    expect(birthdayText.today(["Marie", "Paul"], undefined, "en")).toBe("Today is Marie and Paul's birthday");
-    expect(birthdayText.soon(["Marie"], 1, 3, "en")).toBe("Tomorrow: Marie's birthday");
-    expect(birthdayText.soon(["Marie"], 3, 6, "en")).toBe("Saturday: Marie's birthday");
+    expect(birthdayText.today(["Marie"], 76, "en")).toBe("Today, Marie turns 76");
+    expect(birthdayText.today(["Marie", "Paul"], undefined, "en")).toBe("Birthday today: Marie and Paul");
+    expect(birthdayText.soon(["Marie"], 1, 3, "en")).toBe("Tomorrow: birthday of Marie");
+    expect(birthdayText.soon(["Marie"], 3, 6, "en")).toBe("Saturday: birthday of Marie");
   });
 
   it("has exactly the same texts as French (nothing left untranslated)", () => {

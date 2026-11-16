@@ -24,13 +24,13 @@ export function describeWeather(code: number, l: Lang = lang): { icon: string; l
   const say = (fr: string, en: string) => (l === "en" ? en : fr);
   if (code === 0) return { icon: "☀️", label: say("Grand soleil", "Sunny") };
   if (code === 1 || code === 2) return { icon: "🌤️", label: say("Soleil et nuages", "Sun and clouds") };
-  if (code === 3) return { icon: "☁️", label: say("Ciel couvert", "Overcast") };
+  if (code === 3) return { icon: "☁️", label: say("Ciel couvert", "Cloudy") };
   if (code === 45 || code === 48) return { icon: "🌫️", label: say("Brouillard", "Fog") };
-  if (code >= 51 && code <= 57) return { icon: "🌦️", label: say("Bruine", "Drizzle") };
+  if (code >= 51 && code <= 57) return { icon: "🌦️", label: say("Bruine", "Light rain") };
   if ((code >= 61 && code <= 67) || (code >= 80 && code <= 82)) return { icon: "🌧️", label: say("Pluie", "Rain") };
   if ((code >= 71 && code <= 77) || code === 85 || code === 86) return { icon: "❄️", label: say("Neige", "Snow") };
   if (code >= 95) return { icon: "⛈️", label: say("Orage", "Thunderstorm") };
-  return { icon: "🌡️", label: say("Temps variable", "Changeable weather") };
+  return { icon: "🌡️", label: say("Temps variable", "Changing weather") };
 }
 
 /** "18°" — whole degrees, a minus sign (not a hyphen) below zero. */

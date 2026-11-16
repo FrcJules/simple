@@ -12,7 +12,7 @@ export const formatTime = (d: Date, l: Lang = lang) => TIME[l].format(d);
 
 export function greeting(d: Date, name: string, l: Lang = lang): string {
   const morning = d.getHours() < 18;
-  if (l === "en") return `${d.getHours() < 12 ? "Good morning" : morning ? "Good afternoon" : "Good evening"} ${name}`;
+  if (l === "en") return `${d.getHours() < 12 ? "Good morning" : morning ? "Good afternoon" : "Good evening"}, ${name}`;
   return `${morning ? "Bonjour" : "Bonsoir"} ${name}`;
 }
 
