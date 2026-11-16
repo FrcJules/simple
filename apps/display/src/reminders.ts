@@ -1,4 +1,5 @@
 import { remindersResponse, type Reminder } from "@simple/contracts";
+import { lang, type Lang } from "./lang";
 
 const HUB = import.meta.env.VITE_HUB_URL ?? "http://localhost:8787";
 const TOKEN = import.meta.env.VITE_DISPLAY_TOKEN ?? "";
@@ -9,8 +10,12 @@ export const SHOW_FOR_MINUTES = 60;
 /** The full-screen card only lasts this long; then the home screen is back and the reminder stays as a small line until it is touched. */
 export const CARD_FOR_MINUTES = 5;
 
-/** "08:05" → "8 h 05". */
-export const formatAt = (at: string) => `${Number(at.slice(0, 2))} h ${at.slice(3, 5)}`;
+/** "08:05" → "8 h 05" (French) or "8:05 AM" (English). */
+export const formatAt = (at: string, l: Lang = lang) => {
+  const hours = Number(at.slice(0, 2));
+  const minutes = at.slice(3, 5);
+  return l === "en" ? `${hours % 12 || 12}:${minutes} ${hours < 12 ? "AM" : "PM"}` : `${hours} h ${minutes}`;
+};
 
 /** The family's reminders from the hub. Empty when the hub cannot be reached: the clock keeps working. */
 export async function fetchReminders(): Promise<Reminder[]> {
