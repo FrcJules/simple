@@ -1,5 +1,7 @@
 package app.simple.launcher.ui
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,11 +30,17 @@ fun PermissionRationaleScreen(onContinue: () -> Unit, onLater: () -> Unit) {
     SimpleTheme {
         Column(
             Modifier.fillMaxSize().padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Icon(Icons.Filled.Call, contentDescription = null, modifier = Modifier.size(96.dp))
-            Text(stringResource(R.string.rationale_text), fontSize = 28.sp, textAlign = TextAlign.Center)
+            Column(
+                Modifier.weight(1f).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Icon(Icons.Filled.Call, contentDescription = null, modifier = Modifier.size(96.dp))
+                Text(stringResource(R.string.rationale_text), fontSize = 28.sp, textAlign = TextAlign.Center)
+            }
             Button(onClick = onContinue, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
                 Text(stringResource(R.string.rationale_continue), fontSize = 28.sp)
             }

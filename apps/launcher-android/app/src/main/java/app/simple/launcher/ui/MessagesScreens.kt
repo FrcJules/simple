@@ -183,7 +183,7 @@ fun ConversationScreen(
         Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Avatar(item.displayContact, Modifier.size(72.dp), initialSize = 36.sp)
-                Text(item.message.from, fontSize = 32.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(item.message.from, fontSize = 32.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
             }
             // Newest at the bottom, anchored there: a new message never makes the list jump while someone reads further up.
             LazyColumn(Modifier.weight(1f).fillMaxWidth(), reverseLayout = true, verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -303,7 +303,7 @@ private fun statusText(status: MessageStatus): String? = when (status) {
 private fun StackedLabel(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Icon(icon, contentDescription = null)
-        Text(label, fontSize = 24.sp, maxLines = 1, softWrap = false)
+        Text(label, fontSize = 24.sp, textAlign = TextAlign.Center, maxLines = 2)
     }
 }
 
@@ -340,38 +340,44 @@ fun ReplyConfirmScreen(
     onOpenWhatsApp: (() -> Unit)? = null,
 ) {
     SimpleTheme {
-        // The whole screen scrolls: on a small screen or with a large font the text to check must never be squeezed out.
+        // The text to check scrolls; "Envoyer" and "Annuler" stay pinned below it, so the main action is never hidden off screen.
         Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+            Modifier.fillMaxSize().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Avatar(item.displayContact, Modifier.fillMaxWidth(0.28f).aspectRatio(1f))
-            Text(stringResource(if (whatsapp) R.string.reply_to_whatsapp else if (isNew) R.string.write_to else R.string.reply_to, item.message.from), fontSize = 28.sp, textAlign = TextAlign.Center)
-            Text(text, fontSize = 30.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp))
-            if (notice != null) Text(notice, fontSize = 24.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-            Text(stringResource(if (whatsapp) R.string.reply_hint_whatsapp else if (directSend) R.string.reply_hint_direct else R.string.reply_hint), fontSize = 24.sp, textAlign = TextAlign.Center)
-            if (onOpenWhatsApp != null) {
-                Button(onClick = onOpenWhatsApp, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
-                    Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null)
+            Column(
+                Modifier.weight(1f).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Avatar(item.displayContact, Modifier.fillMaxWidth(0.28f).aspectRatio(1f))
+                Text(stringResource(if (whatsapp) R.string.reply_to_whatsapp else if (isNew) R.string.write_to else R.string.reply_to, item.message.from), fontSize = 28.sp, textAlign = TextAlign.Center)
+                Text(text, fontSize = 30.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp))
+                if (notice != null) Text(notice, fontSize = 24.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                Text(stringResource(if (whatsapp) R.string.reply_hint_whatsapp else if (directSend) R.string.reply_hint_direct else R.string.reply_hint), fontSize = 24.sp, textAlign = TextAlign.Center)
+                if (onOpenWhatsApp != null) {
+                    Button(onClick = onOpenWhatsApp, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
+                        Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null)
+                        Spacer(Modifier.width(12.dp))
+                        Text(stringResource(R.string.whatsapp_open), fontSize = 28.sp)
+                    }
+                }
+                OutlinedButton(onClick = onListen, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
+                    Icon(Icons.Filled.VolumeUp, contentDescription = null)
                     Spacer(Modifier.width(12.dp))
-                    Text(stringResource(R.string.whatsapp_open), fontSize = 28.sp)
+                    Text(stringResource(R.string.reply_listen), fontSize = 28.sp)
+                }
+                OutlinedButton(onClick = onRedo, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
+                    Icon(Icons.Filled.Mic, contentDescription = null)
+                    Spacer(Modifier.width(12.dp))
+                    Text(stringResource(R.string.reply_redo), fontSize = 28.sp)
                 }
             }
             Button(onClick = onSend, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
                 Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null)
                 Spacer(Modifier.width(12.dp))
                 Text(stringResource(if (whatsapp) R.string.reply_send_whatsapp else if (directSend) R.string.reply_send_direct else R.string.reply_send), fontSize = 28.sp)
-            }
-            OutlinedButton(onClick = onListen, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
-                Icon(Icons.Filled.VolumeUp, contentDescription = null)
-                Spacer(Modifier.width(12.dp))
-                Text(stringResource(R.string.reply_listen), fontSize = 28.sp)
-            }
-            OutlinedButton(onClick = onRedo, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
-                Icon(Icons.Filled.Mic, contentDescription = null)
-                Spacer(Modifier.width(12.dp))
-                Text(stringResource(R.string.reply_redo), fontSize = 28.sp)
             }
             OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp)) {
                 Icon(Icons.Filled.Close, contentDescription = null)
