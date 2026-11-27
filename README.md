@@ -22,10 +22,10 @@ Voir [docs/vision.md](docs/vision.md).
 
 | Composant | Dossier | Stack | État |
 |---|---|---|---|
-| Launcher Android ultra-simplifié | [`apps/launcher-android`](apps/launcher-android) | Kotlin, Jetpack Compose | squelette |
-| Écran maison (Raspberry Pi) | [`apps/display`](apps/display) | TypeScript, React, Vite | squelette |
-| Hub local (événements, intégrations) | [`apps/hub`](apps/hub) | Node.js, Fastify | squelette |
-| Contrats partagés (événements) | [`packages/contracts`](packages/contracts) | TypeScript, Zod | squelette |
+| Launcher Android ultra-simplifié | [`apps/launcher-android`](apps/launcher-android) | Kotlin, Jetpack Compose | AAB v0.1.x envoyés en brouillon sur la piste test interne de Google Play ; pas encore essayé sur un vrai téléphone ([état](docs/roadmap-launcher.md)) |
+| Écran maison (Raspberry Pi) | [`apps/display`](apps/display) | TypeScript, React, Vite | heure, date, appels manqués, photos, anniversaires, rappels, météo ([installation](docs/pi-install.md)) |
+| Hub local (événements, intégrations) | [`apps/hub`](apps/hub) | Node.js, Fastify | appairage par QR code, événements, rappels, anniversaires, photos, météo |
+| Contrats partagés (événements) | [`packages/contracts`](packages/contracts) | TypeScript, Zod | en place |
 
 Architecture : [docs/architecture.md](docs/architecture.md) · Décisions : [docs/adr](docs/adr).
 
