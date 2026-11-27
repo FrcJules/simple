@@ -42,8 +42,8 @@ L'apparence de l'accueil (thème, tuiles) vient d'un JSON validé : `docs/custom
 
 ## Agents (`.claude/agents`) et revue
 - Dév : `android-dev` (launcher), `display-dev` (display, hub, contracts), `ci-release` (`.github/`, versions).
-- Revue (lecture seule) : `code-reviewer` (bugs, tests, règles), `senior-ux-reviewer` (accessibilité, compréhension par le senior), `ui-designer-reviewer` (cohérence visuelle, états), `privacy-reviewer` (données personnelles, réseau, stockage).
-- Avant chaque PR : `code-reviewer` ; + `senior-ux-reviewer` et `ui-designer-reviewer` si l'UI change (leur fournir les captures d'écran) ; + `privacy-reviewer` si photos, appels, messages, contacts, réseau ou stockage sont touchés. Corriger, re-pousser, CI verte sur le dernier commit avant fusion.
+- Revue (lecture seule) : `code-reviewer` (bugs, tests, règles), `senior-ux-reviewer` (accessibilité, compréhension par le senior), `ui-designer-reviewer` (cohérence visuelle, états), `privacy-reviewer` (données personnelles, minimisation), `security-reviewer` (surface d'attaque : hub, appairage, TLS, composants Android, dépendances, CI).
+- Avant chaque PR : `code-reviewer` ; + `senior-ux-reviewer` et `ui-designer-reviewer` si l'UI change (leur fournir les captures d'écran) ; + `privacy-reviewer` si photos, appels, messages, contacts, réseau ou stockage sont touchés ; + `security-reviewer` si le hub, l'appairage, le réseau, le manifeste, les permissions, le stockage, les dépendances ou `.github/` changent. Corriger, re-pousser, CI verte sur le dernier commit avant fusion.
 - Donner aux relecteurs le chemin d'un `git worktree` de la branche ; ne pas changer de branche dans le dépôt principal pendant qu'ils lisent.
 
 Commandes : `/check` (qualité complète), `/review` (relectures adaptées au diff), `/adr <titre>` (nouvel ADR).
