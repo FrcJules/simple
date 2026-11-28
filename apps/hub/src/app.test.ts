@@ -110,6 +110,18 @@ describe("event stream", () => {
     expect(text.indexOf("Marie")).toBeLessThan(text.indexOf("Paul"));
   });
 
+  it("gives live events an id too, and sends each event exactly once", async () => {
+    const { app, address } = await hubWith("Marie");
+    const reading = readStream(address, {}, /Paul/);
+    await new Promise((r) => setTimeout(r, 200)); // let the stream open and replay Marie
+    await app.inject({ method: "POST", url: "/events", headers: { authorization: `Bearer ${TOKEN}` }, payload: { ...event, id: "live", from: { name: "Paul" } } });
+    const text = await reading;
+    await app.close();
+    expect(text).toMatch(/id: [0-9a-f]+-2\ndata: .*Paul/);
+    expect(text.split("Marie").length - 1).toBe(1);
+    expect(text.split("Paul").length - 1).toBe(1);
+  });
+
   it("sends a reconnecting screen only what came after the last id it saw", async () => {
     const { app, address } = await hubWith("Marie", "Paul");
     const first = await readStream(address, {}, /Paul/);

@@ -37,9 +37,12 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("home shows the time and date with nothing else happening", async ({ page }, info) => {
+  // The hub is shared by both screen sizes and replays the last day: start this screen with no events at all.
+  await page.route(`${HUB}/events/stream*`, (route) => route.abort());
   await page.goto("/");
   await expect(page.getByText("09:30")).toBeVisible();
   await expect(page.getByText(/samedi/i)).toBeVisible();
+  await expect(page.getByText(/vous a appelé|Message de/)).toHaveCount(0);
   await shot(page, info, "01_idle");
   await expectAccessible(page);
 });

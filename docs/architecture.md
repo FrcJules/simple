@@ -12,7 +12,7 @@
 ```
 
 - **Contrats** (`packages/contracts`) : types d'événements (`missed_call`, `new_message`, `new_photo`, `birthday`) validés avec Zod. Versionnés (`schemaVersion`).
-- **Hub** : reçoit les événements authentifiés par jeton d'appareil (ou le jeton statique facultatif), garde les 200 derniers **en mémoire** (perdus au redémarrage) et les diffuse en SSE. Il sert aussi à l'écran les rappels et anniversaires (fichiers JSON dans `data/`), les photos d'un dossier du Pi (`SIMPLE_PHOTOS_DIR`) et la météo Open-Meteo, désactivée par défaut ([ADR 0006](adr/0006-meteo-open-meteo.md)). Pas de base de données.
+- **Hub** : reçoit les événements authentifiés par jeton d'appareil (ou le jeton statique facultatif), garde les 200 derniers **en mémoire** (perdus au redémarrage) et les diffuse en SSE. Un écran qui démarre ou se reconnecte reçoit d'abord ce qu'il a manqué : au plus 50 événements des dernières 24 h (identifiants SSE `<démarrage>-<numéro>`, renvoyés par le navigateur dans `Last-Event-ID`) ; un appel manqué pendant un redémarrage du Pi ou une coupure Wi-Fi n'est donc pas perdu. Il sert aussi à l'écran les rappels et anniversaires (fichiers JSON dans `data/`), les photos d'un dossier du Pi (`SIMPLE_PHOTOS_DIR`) et la météo Open-Meteo, désactivée par défaut ([ADR 0006](adr/0006-meteo-open-meteo.md)). Pas de base de données.
 - **Display** : s'abonne au flux ; reste utile sans internet (heure, date, photos du Pi). Installation sur le Pi : [pi-install.md](pi-install.md).
 - **Réseau** : tout reste sur le réseau local ; aucun cloud par défaut ([privacy.md](privacy.md)).
 - **TV** (plus tard) : hub → Zigbee2MQTT → contrôleur IR.

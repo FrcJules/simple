@@ -3,7 +3,10 @@ import type { SimpleEvent } from "@simple/contracts";
 /** An accepted event as the hub keeps it in memory: [seq] orders events since the hub started. */
 export interface StoredEvent {
   seq: number;
-  /** Hub clock, not the phone's: used to decide what is recent. */
+  /**
+   * Monotonic hub time (`performance.now()`), not the phone's clock nor the wall clock: a Pi has no battery clock and jumps
+   * when NTP syncs after boot, which would make a minute-old missed call look days old.
+   */
   receivedAt: number;
   event: SimpleEvent;
 }
@@ -22,11 +25,17 @@ export const sseId = (bootId: string, seq: number): string => `${bootId}-${seq}`
  * Oldest first, so the screen ends up showing the newest one.
  */
 export function replayFor(stored: readonly StoredEvent[], lastEventId: string | undefined, bootId: string, now: number): StoredEvent[] {
-  const latest = stored.at(-1)?.seq ?? 0;
+  const recent = stored.filter((s) => now - s.receivedAt <= REPLAY_WINDOW_MS);
+  const seen = seenSeq(lastEventId, bootId, stored.at(-1)?.seq ?? 0);
+  return (seen === undefined ? recent : recent.filter((s) => s.seq > seen)).slice(-MAX_REPLAY);
+}
+
+/** The sequence number in a `Last-Event-ID` sent back by a screen, if it is one of ours (this run, digits only, not in the future). */
+function seenSeq(lastEventId: string | undefined, bootId: string, latest: number): number | undefined {
   const prefix = `${bootId}-`;
-  if (lastEventId?.startsWith(prefix)) {
-    const seen = Number(lastEventId.slice(prefix.length));
-    if (Number.isInteger(seen) && seen >= 0 && seen <= latest) return stored.filter((s) => s.seq > seen).slice(-MAX_REPLAY);
-  }
-  return stored.filter((s) => now - s.receivedAt <= REPLAY_WINDOW_MS).slice(-MAX_REPLAY);
+  if (lastEventId === undefined || lastEventId.length > 64 || !lastEventId.startsWith(prefix)) return undefined;
+  const digits = lastEventId.slice(prefix.length);
+  if (!/^\d{1,15}$/.test(digits)) return undefined;
+  const seen = Number(digits);
+  return seen <= latest ? seen : undefined;
 }

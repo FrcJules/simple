@@ -28,7 +28,7 @@ Choix **facultatif** de la famille ([ADR 0005](adr/0005-sms-par-defaut-et-histor
 - Les SMS sont enregistrés dans la boîte de réception **du système** (comme toute application de messages) et copiés dans l'historique privé de Simple, **sur le téléphone seulement**, sans limite de durée, effaçable depuis « Réglages famille ».
 - À l'activation, les SMS déjà présents sont copiés dans l'historique (marqués lus).
 - Les codes à usage unique et alertes bancaires sont conservés mais **masqués** dans l'application, jamais lus à voix haute ni envoyés à l'écran maison.
-- Seuls le nom de l'expéditeur et le texte (500 caractères au plus) des messages **ordinaires** sont envoyés à l'écran maison appairé, chiffrés, sur le réseau local.
+- Seuls le nom de l'expéditeur et le texte (500 caractères au plus) des messages **ordinaires** sont envoyés à l'écran maison appairé, chiffrés, sur le réseau local. Le hub les garde **en mémoire seulement** (200 au plus, effacés à son redémarrage) ; un écran qui redémarre ou se reconnecte réaffiche ceux des **dernières 24 heures** (50 au plus), à la vue de qui passe devant l'écran comme avant la coupure.
 - Aucune donnée ne quitte le téléphone ni le foyer. Si le rôle est retiré, l'historique reste, mais Simple ne reçoit plus de SMS.
 - **MMS** : la réception est codée et testée mais **pas encore essayée avec un vrai opérateur** ; l'envoi d'une photo est limité à une photo, un destinataire, sans texte ni vidéo. Ne pas activer le rôle sur le téléphone utilisé au quotidien tant que ce n'est pas indiqué ici.
 

@@ -153,7 +153,7 @@ export function buildApp(opts: HubOptions): FastifyInstance {
   app.post("/events", { bodyLimit: 16_384, onRequest: authenticateWriter }, async (req, reply) => {
     const parsed = simpleEvent.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: "invalid_event" });
-    const stored: StoredEvent = { seq: ++seq, receivedAt: Date.now(), event: parsed.data };
+    const stored: StoredEvent = { seq: ++seq, receivedAt: performance.now(), event: parsed.data };
     events.push(stored);
     if (events.length > maxEvents) events.shift();
     listeners.forEach((l) => l(stored));
@@ -224,7 +224,7 @@ export function buildApp(opts: HubOptions): FastifyInstance {
     const send = (s: StoredEvent) => reply.raw.write(`id: ${sseId(bootId, s.seq)}\ndata: ${JSON.stringify(s.event)}\n\n`);
     // A screen that just started, or reconnected after a Wi-Fi drop, first gets what it missed: a missed call is never lost.
     const lastEventId = req.headers["last-event-id"];
-    replayFor(events, typeof lastEventId === "string" ? lastEventId : undefined, bootId, Date.now()).forEach(send);
+    replayFor(events, typeof lastEventId === "string" ? lastEventId : undefined, bootId, performance.now()).forEach(send);
     listeners.add(send);
     req.raw.on("close", () => listeners.delete(send));
     reply.hijack();

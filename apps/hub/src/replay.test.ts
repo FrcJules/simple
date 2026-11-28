@@ -25,6 +25,13 @@ describe("replayFor", () => {
     expect(seqs(replayFor(buffer, "old-2", "boot", NOW))).toEqual([2, 3, 4]);
     expect(seqs(replayFor(buffer, "boot-x", "boot", NOW))).toEqual([2, 3, 4]);
     expect(seqs(replayFor(buffer, "boot-99", "boot", NOW))).toEqual([2, 3, 4]);
+    for (const id of ["boot-", "boot-0x1", "boot-1e0", "boot- 2", "boot-+1", "boot-2.0", `boot-${"9".repeat(80)}`]) {
+      expect(seqs(replayFor(buffer, id, "boot", NOW)), id).toEqual([2, 3, 4]);
+    }
+  });
+
+  it("never replays events older than a day, even to a screen that was away longer", () => {
+    expect(seqs(replayFor(buffer, "boot-0", "boot", NOW))).toEqual([2, 3, 4]);
   });
 
   it("never replays more than the screen keeps", () => {
