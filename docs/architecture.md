@@ -11,9 +11,9 @@
                                               └───────────────────────────┘
 ```
 
-- **Contrats** (`packages/contracts`) : types d'événements (`missed_call`, `new_photo`, `birthday`, …) validés avec Zod. Versionnés (`schemaVersion`).
-- **Hub** : reçoit les événements authentifiés par jeton d'appairage, les garde en mémoire (puis SQLite), les diffuse en SSE.
-- **Display** : s'abonne au flux ; reste utile hors-ligne (heure, date, photos locales).
+- **Contrats** (`packages/contracts`) : types d'événements (`missed_call`, `new_message`, `new_photo`, `birthday`) validés avec Zod. Versionnés (`schemaVersion`).
+- **Hub** : reçoit les événements authentifiés par jeton d'appareil (ou le jeton statique facultatif), garde les 200 derniers **en mémoire** (perdus au redémarrage) et les diffuse en SSE. Il sert aussi à l'écran les rappels et anniversaires (fichiers JSON dans `data/`), les photos d'un dossier du Pi (`SIMPLE_PHOTOS_DIR`) et la météo Open-Meteo, désactivée par défaut ([ADR 0006](adr/0006-meteo-open-meteo.md)). Pas de base de données.
+- **Display** : s'abonne au flux ; reste utile sans internet (heure, date, photos du Pi). Installation sur le Pi : [pi-install.md](pi-install.md).
 - **Réseau** : tout reste sur le réseau local ; aucun cloud par défaut ([privacy.md](privacy.md)).
 - **TV** (plus tard) : hub → Zigbee2MQTT → contrôleur IR.
 
@@ -26,6 +26,13 @@ Décisions : [adr/](adr/).
 Écran → hub : HTTP loopback (même appareil). Téléphone → hub : HTTPS, certificat auto-signé épinglé par empreinte ([ADR 0003](adr/0003-tls-epingle.md)).
 
 ## CI/CD
-- `ci.yml` : lint/typecheck/test/build web (Node 22) et lint/test/APK Android, filtré par chemins ; job `ci-ok` = check requis.
+- `ci.yml` : lint/typecheck/test/build/`npm audit` web (Node 22), lint/tests unitaires/APK debug Android, tests d'interface sur émulateur (`android-emulator`), filtré par chemins ; job `ci-ok` = check requis.
 - `codeql.yml` : analyse statique hebdomadaire et sur PR.
-- `release.yml` : tag `vX.Y.Z` → archive Pi + AAB signé → GitHub Release. Secrets requis : `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`. La publication Play Store (fastlane / Play Developer API) viendra une fois le compte développeur créé.
+- `release.yml` : tag `vX.Y.Z` → archive Pi + AAB signé → GitHub Release, et envoi de l'AAB sur la piste **test interne** de Google Play, **en brouillon** (si le secret `PLAY_SERVICE_ACCOUNT_JSON` est présent). Le passage en test fermé ou en production se fait à la main dans la Play Console. Secrets de signature : `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`.
+
+## Tests
+- **Web** : Vitest pour `apps/hub`, `apps/display` et `packages/contracts` (`npm test`).
+- **Launcher, unitaires** : tests JVM avec Robolectric (`gradle :app:testDebugUnitTest`).
+- **Launcher, interface** : tests sur émulateur Android dans la CI (job `android-emulator`, 2 émulateurs en parallèle) ; les captures d'écran et rapports sont publiés en artefact.
+- **Tests par captures d'écran** (Roborazzi pour le launcher, Playwright pour l'écran) : en cours.
+- Aucun test sur un vrai téléphone n'est automatisé : voir [real-phone-test.md](real-phone-test.md).
