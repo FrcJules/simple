@@ -337,7 +337,7 @@ class SetupActivity : ComponentActivity() {
                             modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
                         ) { Text(stringResource(R.string.setup_open_access), fontSize = 18.sp) }
                     }
-                    if (BuildConfig.SMS_ROLE_OFFERED && !smsHeld) {
+                    if (BuildConfig.SMS_DIRECT_MODE_OFFERED && !smsHeld) {
                         // Direct mode: works even when Android refuses the SMS role (the usual case for an app installed by hand).
                         Text(stringResource(if (directSms) R.string.setup_sms_direct_on else R.string.setup_sms_direct_off), fontSize = 18.sp, fontWeight = FontWeight.Bold)
                         Button(
@@ -347,7 +347,7 @@ class SetupActivity : ComponentActivity() {
                         copiedSms?.let { Text(resources.getQuantityString(R.plurals.setup_sms_copied, it, it), fontSize = 18.sp) }
                     }
                     if (!smsHeld) {
-                        if (BuildConfig.SMS_ROLE_OFFERED && SmsRole.requestIntent(this@SetupActivity) != null) {
+                        if (SmsRole.requestIntent(this@SetupActivity) != null) {
                             Button(onClick = { requestSmsRole() }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
                                 Text(stringResource(R.string.setup_sms_offer), fontSize = 18.sp)
                             }
