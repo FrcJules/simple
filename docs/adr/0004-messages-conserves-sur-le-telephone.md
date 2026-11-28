@@ -1,5 +1,7 @@
 # 0004 — Conserver les derniers messages sur le téléphone
 
+> **Note (2026-11-28)** : l'écran maison est abandonné ; les mentions d'envoi à l'écran maison ci-dessous sont caduques, les messages ne quittent plus le téléphone.
+
 Statut : accepté (2026-10-07) — **remplacé en partie par l'[ADR 0005](0005-sms-par-defaut-et-historique-illimite.md)** : plus de limite de 30 messages / 7 jours, et l'envoi de SMS passe par le rôle d'application SMS par défaut. Le reste (dictée, lecture, données sensibles écartées, effacement) reste valable.
 
 ## Contexte

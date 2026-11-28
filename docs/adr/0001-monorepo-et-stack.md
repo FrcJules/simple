@@ -1,5 +1,7 @@
 # 0001 — Monorepo et choix de stack
 
+> **Statut : remplacé en partie (2026-11-28)** : l'écran maison est abandonné ; le hub, l'écran et les contrats partagés (`apps/hub`, `apps/display`, `packages/contracts`) sont retirés du dépôt. Restent valables : Android natif Kotlin + Jetpack Compose et la licence Apache-2.0. Le dépôt ne contient plus que l'application Android ([architecture](../architecture.md)).
+
 Statut : accepté
 
 ## Contexte

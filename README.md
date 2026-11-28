@@ -18,33 +18,37 @@ Deux principes guident tout :
 Simple ne crée pas une nouvelle messagerie : il **rend visibles les interactions qui existent déjà**.
 Voir [docs/vision.md](docs/vision.md).
 
-## Composants
+## L'application
 
-| Composant | Dossier | Stack | État |
-|---|---|---|---|
-| Launcher Android ultra-simplifié | [`apps/launcher-android`](apps/launcher-android) | Kotlin, Jetpack Compose | AAB v0.1.x envoyés en brouillon sur la piste test interne de Google Play ; pas encore essayé sur un vrai téléphone ([état](docs/roadmap-launcher.md)) |
-| Écran maison (Raspberry Pi) | [`apps/display`](apps/display) | TypeScript, React, Vite | heure, date, appels manqués, photos, anniversaires, rappels, météo ([installation](docs/pi-install.md)) |
-| Hub local (événements, intégrations) | [`apps/hub`](apps/hub) | Node.js, Fastify | appairage par QR code, événements, rappels, anniversaires, photos, météo |
-| Contrats partagés (événements) | [`packages/contracts`](packages/contracts) | TypeScript, Zod | en place |
+Simple est une **application Android** ([`apps/launcher-android`](apps/launcher-android), Kotlin, Jetpack Compose) :
 
-Architecture : [docs/architecture.md](docs/architecture.md) · Décisions : [docs/adr](docs/adr).
+- un **écran d'accueil** ultra-simplifié : gros boutons, proches en photos, appel après confirmation, appareil photo et galerie du téléphone ;
+- une **application de messages** (SMS et MMS) que la famille peut choisir comme application SMS par défaut, avec lecture à voix haute et réponse dictée ;
+- les **messages WhatsApp** lus dans leurs notifications, avec réponse par la notification ;
+- des **réglages famille** protégés par un code, et une apparence modifiable ([docs/customization.md](docs/customization.md)).
+
+État : v0.2.0, AAB envoyés en brouillon sur la piste test interne de Google Play ; pas encore essayé sur un vrai téléphone ([état et plan](docs/roadmap-launcher.md)).
+
+L'écran maison (Raspberry Pi) prévu au départ a été abandonné le 28 novembre 2026 ([vision](docs/vision.md#abandonné)).
+
+Architecture : [docs/architecture.md](docs/architecture.md) · Tests : [docs/testing.md](docs/testing.md) · Décisions : [docs/adr](docs/adr).
 
 ## Démarrer (développement)
 
+Ouvrir `apps/launcher-android` dans Android Studio (JDK 17), ou en ligne de commande :
+
 ```bash
-npm install          # hub, display, contracts (workspaces)
-npm run dev:hub      # http://localhost:8787
-npm run dev:display  # http://localhost:5173
-npm test             # tests de tous les workspaces
-npm run lint
+cd apps/launcher-android
+gradle :app:lintDebug :app:testDebugUnitTest :app:assembleDebug
 ```
 
-Launcher Android : ouvrir `apps/launcher-android` dans Android Studio (JDK 17).
+Les tests d'interface sur émulateur tournent dans la CI ([docs/testing.md](docs/testing.md)).
 
 ## Vie privée
 
-Les données de la famille (photos, appels, messages) sont **traitées localement** et ne quittent pas
-le foyer par défaut. Voir [docs/privacy.md](docs/privacy.md).
+L'application n'a **aucun accès à Internet** : photos, appels, messages et contacts **restent sur le téléphone**.
+Aucune télémétrie, aucun compte. Voir [docs/privacy.md](docs/privacy.md) et la
+[politique de confidentialité](docs/privacy-policy.md).
 
 ## Contribuer
 

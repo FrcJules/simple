@@ -1,6 +1,8 @@
 # 0002 — Lire les notifications plutôt que le journal d'appels / les SMS
 
-Statut : accepté (2026-10-06) — implémenté en v0.2, à valider sur appareils réels. **Pour les SMS, voir [ADR 0004](0004-photos-messages-sms.md)** (application SMS par défaut).
+> **Statut : remplacé en partie (2026-11-28)** : l'écran maison est abandonné, les notifications ne sont plus envoyées à aucun hub, et celles de l'application Téléphone (appels manqués) ne sont plus lues ; liste blanche : Messages et WhatsApp. Les SMS passent d'abord par le rôle d'application SMS ([ADR 0005](0005-sms-par-defaut-et-historique-illimite.md)) ; les notifications restent la source pour WhatsApp, et pour les SMS quand Simple n'a pas le rôle. La réponse WhatsApp par la notification reste valable.
+
+Statut : accepté (2026-10-06) — implémenté en v0.2, à valider sur appareils réels. **Pour les SMS, voir [ADR 0005](0005-sms-par-defaut-et-historique-illimite.md)** (application SMS par défaut).
 
 ## Contexte
 Simple doit afficher « Marie vous a appelé » et rendre visibles les SMS/messages sans que la famille change d'outil. Les permissions `READ_CALL_LOG`, `READ_SMS`, `RECEIVE_SMS` sont, selon la [politique Google Play](https://support.google.com/googleplay/android-developer/answer/9047303), réservées à l'application SMS, Téléphone ou Assistant **par défaut**, hors exceptions rares. Un launcher n'est dans aucun de ces cas ; devenir l'application SMS/Téléphone par défaut serait disproportionné.
