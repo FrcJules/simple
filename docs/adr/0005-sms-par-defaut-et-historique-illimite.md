@@ -1,5 +1,7 @@
 # 0005 — Application SMS par défaut, historique illimité, photos du téléphone intouchées
 
+> **Mise à jour (2026-11-28)** : depuis la v0.2.0, le rôle d'application SMS par défaut est déclaré dans le manifeste principal et proposé dans la **version Google Play** ([#48](https://github.com/FrcJules/simple/issues/48)) ; le « mode direct » ([ADR 0007](0007-sms-mode-direct.md)) reste réservé aux versions de test. Les mentions de l'écran maison ci-dessous sont caduques : il est abandonné, rien n'est plus envoyé hors du téléphone.
+
 Statut : accepté (2026-10-07). **Implémenté** : historique illimité, SMS (réception, envoi, import, conversations) et MMS (réception de photos, envoi d'une photo) sont codés et testés ; les MMS ne sont **pas encore vérifiés avec un vrai opérateur** ([guide d'essai](../real-phone-test.md)), donc le rôle n'est proposé que dans les versions de test (`SMS_ROLE_OFFERED`) et **ne doit pas être publié** avant cet essai. Remplace, pour les points ci-dessous, certaines décisions de l'[ADR 0004](0004-messages-conserves-sur-le-telephone.md).
 
 ## Décisions du propriétaire du projet

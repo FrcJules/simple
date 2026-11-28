@@ -1,6 +1,6 @@
 # Essai sur un vrai téléphone (SMS et MMS)
 
-Ce que l'émulateur ne peut pas vérifier : les **vrais SMS et MMS d'un opérateur**, la double SIM, la dictée, le son. Cet essai est la dernière étape avant de proposer le rôle SMS dans une version publiée (voir `src/debug/AndroidManifest.xml`).
+Ce que l'émulateur ne peut pas vérifier : les **vrais SMS et MMS d'un opérateur**, la double SIM, la dictée, le son. Depuis la v0.2.0, la version Google Play propose déjà le rôle SMS : cet essai doit confirmer qu'il est sûr avant le test fermé et la production. La version de test (APK debug) propose en plus le « mode direct » (voir plus bas).
 
 > ⚠️ **Pas sur le téléphone de Jean-Pierre, ni sur un téléphone dont vous avez besoin au quotidien.** La version de test devient l'application SMS du téléphone : tant que les MMS n'ont pas été éprouvés, un message pourrait être perdu. Utilisez **votre** téléphone, avec une SIM, et un second téléphone (ou un proche) pour envoyer les messages.
 
@@ -9,9 +9,6 @@ Ce que l'émulateur ne peut pas vérifier : les **vrais SMS et MMS d'un opérate
    En ligne de commande : `gh run download <id-du-run> -n launcher-debug-apk`.
 2. Copier `app-debug.apk` sur le téléphone et l'ouvrir (autoriser « Installer des applications inconnues » pour l'application utilisée). Ou, avec le débogage USB : `adb install -r app-debug.apk`.
 3. Appuyer sur Accueil : Android propose de choisir l'application d'accueil → **Simple**, « Toujours ».
-
-## 1 bis. Appairer avec l'écran maison (si vous avez le Raspberry Pi)
-Sur le Pi : touchez 5 fois de suite l'heure sur l'écran maison (ou lancez `npm run pair -w @simple/hub` dans un terminal) : un QR code s'affiche. Le terminal affiche aussi l'**empreinte** du hub. Avec l'appareil photo du téléphone, scannez le QR code : il s'ouvre dans Simple → **Réglages famille** → code famille → une carte « Appairer avec cet écran maison ? » montre l'adresse et l'empreinte → **comparez l'empreinte avec celle du terminal** → **Appairer**. Le QR code ne marche qu'une fois et pendant 2 minutes. Vérifiez qu'un appel manqué apparaît ensuite sur l'écran maison.
 
 ## 2. Devenir l'application SMS
 Sur l'accueil, toucher **Messages**. L'explication s'affiche ; **Continuer**, puis « Oui » à la question d'Android. Vos anciens SMS sont copiés dans Simple (ils restent aussi dans Android).
@@ -29,7 +26,7 @@ Avec un **autre téléphone** (ou un proche) :
 - [ ] La même photo envoyée **n'apparaît pas deux fois** chez vous (l'opérateur ne renvoie pas la notification).
 - [ ] **WhatsApp** : un proche vous écrit sur WhatsApp (notification **non balayée**) : le message apparaît dans Simple ; vous **répondez** en dictant ; il reçoit la réponse sur WhatsApp. Balayez ensuite la notification : le bouton « Répondre » est remplacé par « Ouvrir WhatsApp ».
 - [ ] Un **code de sécurité** reçu par SMS (banque, site) est masqué (« Message de sécurité ») et n'est pas lu à voix haute.
-- [ ] Vous recevez un message d'un **numéro inconnu** : il s'affiche par son numéro, rien n'apparaît sur l'écran maison.
+- [ ] Vous recevez un message d'un **numéro inconnu** : il s'affiche par son numéro.
 
 ## 4. Revenir en arrière
 Réglages Android → Applications → Applications par défaut → **Application SMS** → choisissez l'ancienne. Rien n'est perdu côté Android.
@@ -42,9 +39,7 @@ Réglages Android → Applications → Applications par défaut → **Applicatio
 ### Option : me laisser regarder les journaux en direct
 Je ne peux pas accéder à votre téléphone par défaut. Si vous le souhaitez, vous pouvez activer *Options pour les développeurs → Débogage sans fil* et me donner l'adresse et le port affichés, **uniquement sur votre réseau Wi-Fi**, le temps de l'essai ; ADB donne un contrôle complet du téléphone : désactivez-le après. Ce n'est pas nécessaire : les journaux de l'application ne contiennent volontairement ni messages, ni numéros.
 
-> Premier lancement : tant que la famille n'a pas choisi de code, le geste caché (7 appuis sur l'heure) n'ouvre qu'un écran rassurant, jamais le choix du code. La famille ouvre « Réglages » depuis la liste des applications (si Simple est le lanceur : Réglages Android › Applications › Simple › Ouvrir) ou en scannant le QR code, puis choisit le code.
-
-Installation du Pi : [docs/pi-install.md](pi-install.md).
+> Premier lancement : tant que la famille n'a pas choisi de code, le geste caché (7 appuis sur l'heure) n'ouvre qu'un écran rassurant, jamais le choix du code. La famille ouvre « Réglages » depuis la liste des applications (si Simple est le lanceur : Réglages Android › Applications › Simple › Ouvrir), puis choisit le code.
 
 ## Ouvrir les réglages de la famille
 - **Première installation** : tant qu'aucun code famille n'existe, un bouton « Pour la famille : choisir le code de Simple » apparaît en bas de l'accueil pendant **30 minutes** après le premier affichage. Il mène au choix du code (notez-le !). Il disparaît dès que le code existe. Passé ce délai, choisissez le code depuis l'icône « Réglages ».
@@ -53,7 +48,7 @@ Installation du Pi : [docs/pi-install.md](pi-install.md).
 - « Écrire un message » : si Simple n'est pas encore l'application SMS par défaut, la question est reposée ; si elle n'est pas disponible dans cette version, un message simple s'affiche (jamais Google Messages).
 
 ## Messages en mode direct
-Si Android ne propose pas de faire de Simple l'application SMS (cas fréquent d'une application installée à la main), touchez « Continuer » dans « Messages » : après la question du rôle, Simple demande les permissions **SMS** (autorisez-les) et **copie vos SMS existants** dans son historique ; les nouveaux sont copiés à chaque ouverture. « Écrire un message » envoie ensuite directement. Les SMS envoyés ainsi n'apparaissent pas dans l'autre application de messages. Si les permissions SMS sont grisées : voir l'aide « paramètres restreints » ci-dessous.
+*Versions de test seulement.* Si Android ne propose pas de faire de Simple l'application SMS (cas fréquent d'une application installée à la main), touchez « Continuer » dans « Messages » : après la question du rôle, Simple demande les permissions **SMS** (autorisez-les) et **copie vos SMS existants** dans son historique ; les nouveaux sont copiés à chaque ouverture. « Écrire un message » envoie ensuite directement. Les SMS envoyés ainsi n'apparaissent pas dans l'autre application de messages. Si les permissions SMS sont grisées : voir l'aide « paramètres restreints » ci-dessous.
 
 ## Les messages ne marchent pas ?
 Ouvrez « Réglages famille » : la section **Messages** dit en clair où ça bloque.
@@ -61,7 +56,7 @@ Ouvrez « Réglages famille » : la section **Messages** dit en clair où ça bl
 2. **La question ne s'affiche pas, ou le bouton ne change rien** → si le texte « installée à la main » est présent, c'est le blocage d'Android 13+ pour les applications hors boutique : touchez **Ouvrir les infos de l'application**, puis ⋮ (en haut à droite) › **Autoriser les paramètres restreints**, puis revenez et réessayez. La même autorisation débloque « Lecture des notifications ».
 3. **« Lecture des notifications : désactivée »** → touchez « Ouvrir l'accès aux notifications » plus bas, activez Simple (voir 2 si c'est grisé).
 4. **Rien de tout cela** → notez le texte exact affiché dans cette section et le modèle du téléphone, et ouvrez une issue.
-Une version « release » ne propose pas encore le rôle SMS (voir le commentaire de `src/debug/AndroidManifest.xml`) : utilisez l'APK debug de la CI pour ces essais.
+Une version « release » (Google Play) propose le rôle SMS mais **pas** le mode direct (voir le commentaire de `src/debug/AndroidManifest.xml`) : pour essayer le mode direct, utilisez l'APK debug de la CI.
 
 ## Changer les cases de l'accueil
 « Réglages famille › Cases de l'accueil » : montez, descendez ou retirez une case, remettez une case d'origine, ou **ajoutez une application du téléphone** (WhatsApp, une application de vidéos…) : la case reprend le nom et l'icône de l'application. De 1 à 8 cases. Vérifiez sur l'accueil que chaque case ouvre bien ce qu'elle annonce.

@@ -1,5 +1,7 @@
 # 0006 — Météo de l'écran maison par Open-Meteo (désactivée par défaut)
 
+> **Statut : caduc (2026-11-28)** : l'écran maison est abandonné, la météo avec lui ; plus aucune exception réseau. Conservé pour l'historique.
+
 Statut : proposé (2026-10-09) — exception au principe « pas de cloud par défaut », **désactivée tant que la famille ne la configure pas**. À confirmer par la personne qui installe.
 
 ## Contexte

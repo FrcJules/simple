@@ -9,26 +9,30 @@ Jean-Pierre passe beaucoup de temps chez lui, utilise peu la technologie, n'empo
 ## Principes
 1. La technologie s'adapte à Jean-Pierre.
 2. La famille ne change pas ses habitudes (téléphone, WhatsApp, SMS). Simple fonctionne *autour* de ces outils et rend visibles les interactions existantes.
+3. Tout reste sur le téléphone : l'application n'a pas d'accès à Internet ([privacy.md](privacy.md)).
 
-## Deux briques
-- **Launcher Android** : écran d'accueil radicalement simplifié (Appeler, Messages, Photos, Appareil photo), contacts représentés par leur photo, dictée vocale et lecture à voix haute (TTS).
-- **Écran maison (Raspberry Pi)** : heure, date, photos de famille plein écran, anniversaires, appels manqués (« Marie vous a appelé » + Rappeler), météo, rappels, résultats du Loto, musique, télécommande TV simplifiée (Pi → Zigbee → contrôleur IR → TV).
+## Le produit : l'application Android
+- **Écran d'accueil** radicalement simplifié (Appeler, Messages, Photos, Appareil photo, cases d'applications choisies par la famille), contacts représentés par leur photo.
+- **Messages** : Simple peut devenir l'application SMS du téléphone (SMS et MMS) ; les messages WhatsApp sont lus dans leurs notifications et on peut y répondre. Tout l'historique reste sur le téléphone.
+- **Voix** : dictée plutôt que clavier, lecture à voix haute (TTS).
+- **Réglages famille** protégés par un code, apparence modifiable ([customization.md](customization.md)).
 
 ## Journée type
-Matin : date, anniversaire du jour, nouvelle photo, météo. Journée : « 📞 Marie vous a appelé », rappel possible. Plus tard : nouvelle photo en grand. Soir : Télévision, Musique, Photos, Demain.
+Matin : l'accueil affiche l'heure ; une pastille signale un nouveau message. Dans Messages, Jean-Pierre reconnaît la photo de Marie, écoute son message et répond en dictant. Plus tard : il appelle son fils en touchant sa photo, après une confirmation. Une photo reçue par MMS s'ouvre en grand.
 
 ## Hors périmètre
 Créer une nouvelle messagerie ; exiger une application côté famille.
 
 ## Feuille de route
-*État au 28 novembre 2026 : « livré » = code fusionné ; rien n'est encore essayé sur un vrai téléphone ([détail du launcher](roadmap-launcher.md)).*
+*État au 28 novembre 2026 : rien n'est encore essayé sur un vrai téléphone ([détail et priorités](roadmap-launcher.md)).*
 
-- **v0.1** — Launcher : accueil + contacts visuels + appel/photo/galerie. Écran : horloge, date, carte « appel manqué » via hub. **Livré.**
-- **v0.2** — Détection d'appels manqués côté téléphone → hub ; diaporama de photos ; anniversaires. **Livré** (photos lues dans un dossier du Pi).
-- **v0.3** — Dictée / TTS ; météo ; rappels. **Livré** (météo désactivée par défaut, [ADR 0006](adr/0006-meteo-open-meteo.md)).
-- **v0.4** — Musique ; télécommande TV (Zigbee/IR) ; lecture des notifications WhatsApp (à étudier, voir questions ouvertes). **Lecture WhatsApp livrée** (et réponse via la notification) ; **musique et télécommande TV restent à faire.**
-- Hors de ces versions, déjà livré : appairage par QR code, SMS/MMS (version de test seulement), réglages et guide pour la famille, anglais sur le téléphone. Le Loto n'est pas commencé.
+- **v0.1** (octobre 2026) — Accueil, contacts visuels, appel avec confirmation, appareil photo et galerie du système, messages lus dans les notifications, dictée / TTS, réglages famille, apparence par JSON. AAB envoyés en brouillon sur la piste test interne de Google Play.
+- **v0.2.0** (28 novembre 2026) — Simple est proposé comme **application SMS par défaut** dans la version Google Play (SMS, MMS) ; plus aucun accès à Internet ; réponse WhatsApp par la notification.
+- **Ensuite** — essai sur un vrai téléphone, test fermé puis production sur Google Play.
+
+## Abandonné
+**Écran maison (Raspberry Pi)** — abandonné le **2026-11-28** par le propriétaire du produit. Il devait afficher dans le salon l'heure, les photos de famille, les appels manqués, les anniversaires, les rappels et la météo, alimenté par un hub local qui recevait les événements du téléphone. Le code (`apps/hub`, `apps/display`, `packages/contracts`) a été retiré du dépôt et l'application Android ne communique plus avec lui. Les ADR qui le concernaient sont marqués caducs ([adr/](adr/)). Idées liées non reprises : musique, télécommande TV, résultats du Loto.
 
 ## Questions ouvertes
-- Fragilité du parsing des notifications selon les applications et constructeurs ([ADR 0002](adr/0002-notifications-plutot-que-journal-d-appels.md)) : prévoir des tests par application.
-- Photos de famille : comment les récupérer sans changer les habitudes (notification WhatsApp avec image, album partagé…) ? À trancher par ADR.
+- Fragilité du parsing des notifications (WhatsApp, applications de messages) selon les applications et constructeurs ([ADR 0002](adr/0002-notifications-plutot-que-journal-d-appels.md)) : prévoir des tests par application.
+- Photos de famille : comment les montrer à Jean-Pierre sans changer les habitudes de la famille (MMS, notification WhatsApp avec image…) ? À trancher par ADR.

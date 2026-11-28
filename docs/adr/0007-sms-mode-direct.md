@@ -1,5 +1,7 @@
 # 0007 — SMS en « mode direct » quand Android refuse le rôle d'application SMS
 
+> **Mise à jour (2026-11-28)** : depuis la v0.2.0, le rôle d'application SMS est proposé dans la version Google Play ; le mode direct reste **réservé aux versions de test** (`BuildConfig.SMS_DIRECT_MODE_OFFERED`, récepteur `SMS_RECEIVED` dans `src/debug/AndroidManifest.xml`). Les mentions de l'écran maison ci-dessous sont caduques : il est abandonné.
+
 Statut : accepté pour les versions de test (2026-10-09) ; complète l'[ADR 0005](0005-sms-par-defaut-et-historique-illimite.md).
 
 ## Contexte

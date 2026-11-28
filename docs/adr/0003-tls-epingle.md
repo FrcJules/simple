@@ -1,5 +1,7 @@
 # 0003 — TLS avec certificat auto-signé épinglé
 
+> **Statut : caduc (2026-11-28)** : l'écran maison est abandonné ; il n'y a plus de hub ni de connexion réseau, et l'application n'a plus la permission `INTERNET`. Conservé pour l'historique.
+
 Statut : accepté (2026-10-06)
 
 ## Contexte
