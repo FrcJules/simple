@@ -32,7 +32,7 @@ data class StoredMessage(
     val outgoing: Boolean = false,
     val address: String? = null,
     val status: MessageStatus = MessageStatus.NONE,
-    /** One-time code or banking alert: kept (it is the person's own SMS) but masked in lists and never read aloud or forwarded. */
+    /** One-time code or banking alert: kept (it is the person's own SMS) but masked in lists and never read aloud. */
     val sensitive: Boolean = false,
     /** An MMS: while [status] is SENDING for a received one it is still being downloaded; FAILED means it did not arrive (retry). */
     val mms: Boolean = false,

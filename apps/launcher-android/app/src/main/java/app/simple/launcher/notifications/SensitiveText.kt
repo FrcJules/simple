@@ -3,7 +3,7 @@ package app.simple.launcher.notifications
 import app.simple.launcher.messages.normalizeName
 
 /**
- * One-time codes and banking alerts must not be shown in a list, read aloud in a living room or sent to the home display.
+ * One-time codes and banking alerts must not be shown in a list or read aloud in a living room.
  * Still blunt (a false positive only means one message sits behind a tap, a miss would leak a secret), but not silly: words are matched
  * as words ("lapin" is not "pin"), and a phone number, a year or a time is not mistaken for a code unless the text really talks about one.
  */

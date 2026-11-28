@@ -5,11 +5,6 @@ import android.content.Context
 import app.simple.launcher.ContactsRepository
 import app.simple.launcher.messages.MessageDiagnostics
 import app.simple.launcher.messages.MessageStore
-import app.simple.launcher.messages.TextSafety
-import app.simple.launcher.notifications.Channel
-import app.simple.launcher.notifications.Incoming
-import app.simple.launcher.notifications.SensitiveText
-import app.simple.launcher.notifications.HubForwarder
 
 /** Wires the SMS pieces to the real system (receivers and services have no dependency injection). */
 object SmsComponents {
@@ -26,7 +21,6 @@ object SmsComponents {
             gateway = TelephonyGateway(app.contentResolver),
             add = store::add,
             nameFor = nameFor(app),
-            forward = { HubForwarder.forward(app, it, System.currentTimeMillis()) },
             notify = notifier::notifyIncoming,
         )
     }
@@ -96,15 +90,6 @@ object SmsComponents {
         if (result.lastId > last) edit.putLong("sms_synced_up_to", result.lastId)
         edit.apply()
         if (onlyMarker) 0 else result.count
-    }
-
-    /** The home display shows an SMS only from a known contact and never a code (same rule as when we are the SMS app). */
-    fun forwardToDisplay(context: Context, address: String, body: String) {
-        val app = context.applicationContext
-        val clean = TextSafety.clean(body)
-        if (SensitiveText.looksSensitive(clean)) return
-        val name = runCatching { ContactsRepository(app.contentResolver).byNumber(address)?.name }.getOrNull()?.takeIf { it.isNotBlank() } ?: return
-        HubForwarder.forward(app, Incoming.Message(name.take(60), Channel.SMS, clean.take(500)), System.currentTimeMillis())
     }
 
     fun importer(context: Context): SmsHistoryImporter {

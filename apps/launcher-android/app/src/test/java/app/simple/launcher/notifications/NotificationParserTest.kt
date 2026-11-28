@@ -1,6 +1,8 @@
 package app.simple.launcher.notifications
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -82,5 +84,12 @@ class NotificationParserTest {
         assertEquals(true, NotificationParser.isSmsApp("com.android.messaging"))
         assertEquals(false, NotificationParser.isSmsApp("com.whatsapp")) // WhatsApp is not an SMS app
         assertEquals(false, NotificationParser.isSmsApp("com.bank.app"))
+    }
+
+    @Test
+    fun thePhoneAppIsNotReadAnyMore() {
+        listOf("com.google.android.dialer", "com.samsung.android.dialer", "com.android.server.telecom").forEach { assertFalse(it, NotificationParser.isWatched(it)) }
+        assertTrue(NotificationParser.isWatched("com.whatsapp"))
+        assertTrue(NotificationParser.isWatched("com.google.android.apps.messaging"))
     }
 }

@@ -7,7 +7,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Sms
-import androidx.compose.material.icons.filled.Tv
 import app.simple.launcher.notifications.NotificationParser
 import app.simple.launcher.ui.SettingsCard
 import app.simple.launcher.ui.SettingsMenuItem
@@ -50,7 +49,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.simple.launcher.ui.SimpleTheme
@@ -70,26 +68,20 @@ import app.simple.launcher.config.UiConfigStore
 import app.simple.launcher.messages.MessageDiagnostics
 import app.simple.launcher.messages.MessageStore
 import app.simple.launcher.security.FamilyLock
+import app.simple.launcher.security.LegacyHubCleanup
 import app.simple.launcher.sms.SmsAccess
 import app.simple.launcher.sms.SmsComponents
 import app.simple.launcher.sms.SmsRole
 import app.simple.launcher.ui.EnterFamilyCodeScreen
 import app.simple.launcher.ui.FamilyCodeNotSetScreen
-import app.simple.launcher.ui.PairingOfferCard
 import app.simple.launcher.ui.SetFamilyCodeScreen
 import app.simple.launcher.photos.ContactPhotoStore
 import app.simple.launcher.ui.Avatar
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import app.simple.launcher.notifications.PairingConfig
-import app.simple.launcher.notifications.PairingClient
-import app.simple.launcher.notifications.PairingLink
-import app.simple.launcher.notifications.PairingOffer
-import app.simple.launcher.notifications.PairingStore
 
-/** Family-only settings (hub address, token, notification access). Not reachable from Jean-Pierre's home screen. */
+/** Family-only settings (messages, people, home screen, erasing). Not reachable from Jean-Pierre's home screen. */
 class SetupActivity : ComponentActivity() {
     private val contactsVm: ContactsViewModel by viewModels()
     private val photoStore by lazy { ContactPhotoStore(this) }
@@ -233,23 +225,23 @@ class SetupActivity : ComponentActivity() {
     /** Set just before this screen deliberately opens another one (photo or file picker, Android's notification settings). */
     private var openingChild = false
 
-    /** Opened by the hidden gesture of the home screen (not from the app list, nor by a QR code): see [FamilyCodeNotSetScreen]. */
+    /** Opened by the hidden gesture of the home screen (not from the app list): see [FamilyCodeNotSetScreen]. */
     private var fromHome = false
 
     /** Leaving the settings locks them again; opening a picker or Android settings from here does not. */
     override fun onStop() {
         super.onStop()
-        // An unused offer does not wait behind a locked screen; a request already sent is left to finish (and save its token): only "Annuler" stops it.
-        if (openingChild) openingChild = false else { unlocked = false; if (attempt == null) forgetOffer() }
+        if (openingChild) openingChild = false else unlocked = false
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         fromHome = savedInstanceState?.getBoolean(STATE_FROM_HOME) ?: intent.getBooleanExtra(EXTRA_FROM_HOME, false)
-        // The settings show the pairing address and the names of the family: keep them out of screenshots and the recent-apps view.
+        // The settings show the names and photos of the family: keep them out of screenshots and the recent-apps view.
         window.setFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE, android.view.WindowManager.LayoutParams.FLAG_SECURE)
         super.onCreate(savedInstanceState)
-        // Only a fresh launch reads the link: a recreated activity (rotation, process death) must not offer it a second time.
-        onCreateContent(readLink = savedInstanceState == null)
+        // The family may open only the settings after an update (Simple not yet the home app): the old pairing is erased here too.
+        if (savedInstanceState == null) Thread { LegacyHubCleanup(applicationContext).runOnce() }.start()
+        onCreateContent()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -269,41 +261,7 @@ class SetupActivity : ComponentActivity() {
         }
     }
 
-    /**
-     * A pairing offer opened from a QR code. It is only *shown* (after the family code) for the family to verify; nothing is saved
-     * until "Appairer" is touched. It is read once, at the first launch, and kept only in memory: it is forgotten when it is used,
-     * when the settings lock again, and a recreated activity does not read the link again. The system may still keep the original
-     * link with the task, but its secret is valid for two minutes and once, so it is worthless afterwards.
-     */
-    private var offer by mutableStateOf<PairingOffer?>(null)
-    private var offerRefused by mutableStateOf(false)
-    private var pairingStatus by mutableStateOf<Int?>(null)
-    private var pairing by mutableStateOf(false)
-
-    /** One request to the hub. Whoever settles it first wins: either the answer is saved, or the family cancelled and nothing is. */
-    private class Attempt {
-        val settled = java.util.concurrent.atomic.AtomicBoolean(false)
-        var job: Job? = null
-    }
-    private var attempt: Attempt? = null
-
-    private fun forgetOffer() {
-        attempt?.let { if (it.settled.compareAndSet(false, true)) it.job?.cancel() } // too late to cancel if it was already saved
-        attempt = null
-        offer = null
-        offerRefused = false
-        pairingStatus = null
-        pairing = false
-    }
-
-    private fun onCreateContent(readLink: Boolean) {
-        if (readLink && intent?.data != null) {
-            val data = intent.data.toString()
-            setIntent(Intent()) // the link (and the claim in it) is not kept in this activity
-            offer = PairingLink.parse(data)
-            offerRefused = offer == null
-        }
-        val store = PairingStore(this)
+    private fun onCreateContent() {
         val profile = ProfileStore(this)
         setContent {
             SimpleTheme {
@@ -333,18 +291,14 @@ class SetupActivity : ComponentActivity() {
                     }
                     return@SimpleTheme
                 }
-                var url by remember { mutableStateOf(store.load()?.baseUrl ?: "https://") }
-                var token by remember { mutableStateOf("") } // a stored token is never shown again
-                var pin by remember { mutableStateOf(store.load()?.certSha256.orEmpty()) }
                 var name by remember { mutableStateOf(profile.name()) }
-                var saved by remember { mutableStateOf<Boolean?>(null) }
-                var section by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(if (offer != null || offerRefused) Section.DISPLAY else Section.MENU) }
+                var section by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(Section.MENU) }
                 var nameSaved by remember { mutableStateOf(false) }
                 var erased by remember { mutableStateOf<Int?>(null) }
                 val scroll = rememberScrollState()
                 androidx.compose.runtime.LaunchedEffect(section) {
                     scroll.scrollTo(0)
-                    nameSaved = false; erased = null; saved = null; appearanceMessage = null // a confirmation belongs to the screen where it was given
+                    nameSaved = false; erased = null; appearanceMessage = null // a confirmation belongs to the screen where it was given
                 }
                 BackHandler(enabled = section != Section.MENU) { section = Section.MENU }
                 Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp).verticalScroll(scroll), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -367,7 +321,6 @@ class SetupActivity : ComponentActivity() {
                             SettingsMenuItem(Icons.Filled.Sms, stringResource(R.string.setup_sec_messages), stringResource(if (accessOn) R.string.setup_sec_messages_on else R.string.setup_sec_messages_off)) { section = Section.MESSAGES }
                             SettingsMenuItem(Icons.Filled.People, stringResource(R.string.setup_sec_people), stringResource(R.string.setup_sec_people_sub)) { section = Section.PEOPLE }
                             SettingsMenuItem(Icons.Filled.Palette, stringResource(R.string.setup_sec_home), stringResource(R.string.setup_sec_home_sub)) { section = Section.HOME }
-                            SettingsMenuItem(Icons.Filled.Tv, stringResource(R.string.setup_sec_display), stringResource(R.string.setup_sec_display_sub)) { section = Section.DISPLAY }
                             SettingsMenuItem(Icons.Filled.Delete, stringResource(R.string.setup_sec_erase), stringResource(R.string.setup_sec_erase_sub)) { section = Section.ERASE }
                             Text(stringResource(R.string.setup_menu_hint), fontSize = 15.sp)
                         }
@@ -545,75 +498,6 @@ class SetupActivity : ComponentActivity() {
                     }
 
                         }
-                        Section.DISPLAY -> {
-                    offer?.let { o ->
-                        PairingOfferCard(
-                            offer = o,
-                            replacing = store.load(),
-                            busy = pairing,
-                            status = pairingStatus?.let { stringResource(it) },
-                            onPair = {
-                                pairing = true
-                                pairingStatus = null
-                                val mine = Attempt()
-                                attempt = mine
-                                mine.job = lifecycleScope.launch {
-                                    val outcome = withContext(Dispatchers.IO) {
-                                        val r = PairingClient().redeem(o)
-                                        // Saved in the same step as the answer, even if the screen has gone meanwhile: the hub has
-                                        // already burnt the QR code, so a token that was received must not be lost.
-                                        if (r is PairingClient.Outcome.Paired && mine.settled.compareAndSet(false, true)) store.save(r.config)
-                                        r
-                                    }
-                                    pairing = false
-                                    attempt = null
-                                    when (outcome) {
-                                        is PairingClient.Outcome.Paired -> {
-                                            url = outcome.config.baseUrl
-                                            pin = outcome.config.certSha256
-                                            offer = null
-                                            pairingStatus = R.string.setup_paired
-                                        }
-                                        PairingClient.Outcome.Refused -> pairingStatus = R.string.setup_pair_refused
-                                        PairingClient.Outcome.TooManyAttempts -> pairingStatus = R.string.setup_pair_too_many
-                                        PairingClient.Outcome.Unreachable -> pairingStatus = R.string.setup_pair_unreachable
-                                        PairingClient.Outcome.Invalid -> pairingStatus = R.string.setup_pair_invalid
-                                    }
-                                }
-                            },
-                            onCancel = {
-                                val inFlight = pairing
-                                forgetOffer()
-                                if (inFlight) pairingStatus = R.string.setup_pair_cancelled
-                            },
-                        )
-                    }
-                    if (offer == null) pairingStatus?.let { Text(stringResource(it), fontSize = 18.sp, fontWeight = FontWeight.Bold) }
-                    if (offerRefused) Text(stringResource(R.string.setup_link_refused), fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    if (offer == null) Text(stringResource(R.string.setup_scan_hint), fontSize = 18.sp)
-                    OutlinedTextField(url, { url = it }, label = { Text(stringResource(R.string.setup_hub_url)) }, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(
-                        token, { token = it }, label = { Text(stringResource(R.string.setup_token)) },
-                        visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth(),
-                    )
-                    OutlinedTextField(pin, { pin = it }, label = { Text(stringResource(R.string.setup_fingerprint)) }, modifier = Modifier.fillMaxWidth())
-                    when (store.protectionState()) {
-                        PairingStore.Protection.ENCRYPTED -> Text(stringResource(R.string.setup_token_encrypted), fontSize = 16.sp)
-                        PairingStore.Protection.PLAIN -> Text(stringResource(R.string.setup_token_plain), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        PairingStore.Protection.UNREADABLE -> Text(stringResource(R.string.setup_token_lost), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        PairingStore.Protection.NONE -> Unit
-                    }
-                    Button(onClick = {
-                        val config = PairingConfig.parse(url, token, pin)
-                        if (config != null) store.save(config)
-                        saved = config != null
-                    }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text(stringResource(R.string.setup_save), fontSize = 18.sp) }
-                    when (saved) {
-                        true -> Text(stringResource(R.string.setup_saved), fontSize = 16.sp)
-                        false -> Text(stringResource(R.string.setup_invalid), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        null -> Unit
-                    }
-                        }
                         Section.ERASE -> {
                     ConfirmedButton(stringResource(R.string.setup_erase_messages)) {
                         MessageStore.get(this@SetupActivity).clear()
@@ -636,7 +520,7 @@ class SetupActivity : ComponentActivity() {
 
     private enum class Section(val title: Int) {
         MENU(R.string.setup_title), MESSAGES(R.string.setup_sec_messages), PEOPLE(R.string.setup_sec_people),
-        HOME(R.string.setup_sec_home), DISPLAY(R.string.setup_sec_display), ERASE(R.string.setup_sec_erase),
+        HOME(R.string.setup_sec_home), ERASE(R.string.setup_sec_erase),
     }
 
     /** Which messaging app the phone uses and whether Simple can see its notifications: the usual reason for "no messages". */

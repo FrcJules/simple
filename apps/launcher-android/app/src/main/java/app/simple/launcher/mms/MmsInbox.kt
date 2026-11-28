@@ -9,7 +9,6 @@ import app.simple.launcher.messages.MessageStore
 import app.simple.launcher.messages.StoredMessage
 import app.simple.launcher.messages.Attachment
 import app.simple.launcher.notifications.Channel
-import app.simple.launcher.notifications.Incoming
 import app.simple.launcher.notifications.SensitiveText
 import app.simple.launcher.sms.MmsDownloadedReceiver
 import app.simple.launcher.sms.smsManagerFor
@@ -44,10 +43,8 @@ class MmsInbox(
     private val files: MmsFiles,
     private val transport: MmsTransport,
     private val nameFor: (String) -> String?,
-    private val forward: (Incoming) -> Unit,
     private val notify: (StoredMessage) -> Unit,
     private val unknownSender: String,
-    private val photoLabel: String,
     /** Last check before a picture is kept: it must decode and not be absurdly large (the system decoders are the attack surface). */
     private val imageOk: (ReceivedImage) -> Boolean = { true },
     private val clock: () -> Long = System::currentTimeMillis,
@@ -116,10 +113,6 @@ class MmsInbox(
         }
         acknowledge(p)
         val message = store.messages.value.firstOrNull { it.id == id } ?: return
-        // The home display is visible from the whole room: known people only, never a picture, never a security code.
-        if (!sensitive && message.address != null && nameFor(message.address) != null) {
-            runCatching { forward(Incoming.Message(message.from.take(60), Channel.SMS, mms.text.ifBlank { photoLabel }.take(500))) }
-        }
         runCatching { notify(message) }
     }
 

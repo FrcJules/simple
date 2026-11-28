@@ -44,6 +44,7 @@ import app.simple.launcher.mms.MmsSendResult
 import app.simple.launcher.messages.MessagesViewModel
 import app.simple.launcher.feedback.Feedback
 import app.simple.launcher.security.FamilyLock
+import app.simple.launcher.security.LegacyHubCleanup
 import app.simple.launcher.messages.Speaker
 import app.simple.launcher.messages.StoredMessage
 import app.simple.launcher.notifications.Channel
@@ -227,6 +228,8 @@ class MainActivity : ComponentActivity() {
             files.transferFile(name)?.let { cameraTarget = files.uriFor(it) }
         }
         MmsFiles(this).cleanOldTransfers(System.currentTimeMillis() - STALE_TRANSFER_MS)
+        // The home display was removed: its old pairing (address, fingerprint, token, Keystore key) is erased once, off the main thread.
+        if (savedInstanceState == null) lifecycleScope.launch(Dispatchers.IO) { LegacyHubCleanup(this@MainActivity).runOnce() }
         if (savedInstanceState == null) {
             // The first start of the app, opened from its icon (not by a message, a link or a "write to" request): offer to become the home app.
             if (!handleIntent(intent) && !profile.firstStepsShown()) {

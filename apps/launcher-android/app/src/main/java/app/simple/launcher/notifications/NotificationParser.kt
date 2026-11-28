@@ -30,9 +30,11 @@ object NotificationParser {
     /** Whether this is a messaging app whose notifications Simple reads as SMS. */
     fun isSmsApp(packageName: String) = packageName in smsPackages
 
-    /** Checked first by the listener so notifications from other apps are never read at all. */
-    fun isWatched(packageName: String) =
-        packageName in dialerPackages || packageName in smsPackages || packageName in whatsappPackages
+    /**
+     * Checked first by the listener so notifications from other apps are never read at all. The phone app is not watched any more:
+     * missed calls were only shown on the home display, which is gone, so the caller's name is not read for nothing.
+     */
+    fun isWatched(packageName: String) = packageName in smsPackages || packageName in whatsappPackages
 
     fun parse(n: RawNotification): Incoming? {
         val title = n.title?.trim().orEmpty()
