@@ -179,12 +179,15 @@ private fun TabButton(label: String, selected: Boolean, modifier: Modifier, onCl
     val content: @Composable () -> Unit = {
         if (selected) {
             Icon(Icons.Filled.Check, contentDescription = null)
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(4.dp))
         }
-        Text(label, fontSize = 28.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
+        FitText(label, fontSize = 28.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
     }
     val tabModifier = modifier.heightIn(min = 72.dp).semantics { this.selected = selected; role = Role.Tab }
-    if (selected) Button(onClick, tabModifier) { content() } else OutlinedButton(onClick, tabModifier) { content() }
+    // Narrow side padding: on a small screen or with a large font, the label needs the room more than the margins do.
+    val padding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
+    if (selected) Button(onClick, tabModifier, contentPadding = padding) { content() }
+    else OutlinedButton(onClick, tabModifier, contentPadding = padding) { content() }
 }
 
 private const val SEARCH_KEY_COLUMNS = 6
@@ -332,7 +335,7 @@ internal fun ContactCard(contact: Contact, onClick: () -> Unit) {
     Card(Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onClick).semantics(mergeDescendants = true) {}) {
         Column(Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Avatar(contact, Modifier.fillMaxWidth().aspectRatio(1f))
-            Text(contact.name, fontSize = 28.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp))
+            FitText(contact.name, fontSize = 28.sp, modifier = Modifier.padding(top = 8.dp))
         }
     }
 }
@@ -351,7 +354,8 @@ internal fun Avatar(contact: Contact, modifier: Modifier, initialSize: TextUnit 
     } else {
         Box(modifier.clip(shape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
             if (contact.initial.firstOrNull()?.isLetter() == true) {
-                Text(contact.initial, fontSize = initialSize)
+                // Own colour: inside a highlighted (unread) card the inherited content colour is meant for the card, not this box.
+                Text(contact.initial, fontSize = initialSize, color = MaterialTheme.colorScheme.onPrimaryContainer)
             } else {
                 Icon(Icons.Filled.Person, contentDescription = null, modifier = Modifier.fillMaxSize(0.6f))
             }
