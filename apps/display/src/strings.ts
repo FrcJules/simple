@@ -13,7 +13,11 @@ export interface Texts {
     expires: (seconds: number) => string;
     close: string;
     qrLabel: string;
+    /** Shown a few seconds once the phone is paired, before going back home. */
+    done: string;
   };
+  /** Discreet line of the home screen after a phone was paired: "Nouveau téléphone : Téléphone de Marie (2 en tout)". */
+  newPhone: (label: string | undefined, count: number) => string;
   ok: string;
   okLabel: string;
   /** "de 12° à 19°" — the arguments are already formatted degrees. */
@@ -41,7 +45,9 @@ export const texts: Record<Lang, Texts> = {
       expires: (seconds) => `Ce code se ferme dans ${seconds} seconde${seconds > 1 ? "s" : ""}.`,
       close: "Fermer",
       qrLabel: "QR code pour ajouter un téléphone",
+      done: "C'est fait : le téléphone est ajouté.",
     },
+    newPhone: (label, n) => `${label ? `Nouveau téléphone : ${label}` : "Nouveau téléphone relié"} (${n} en tout)`,
     ok: "OK",
     okLabel: "OK, j'ai vu le rappel",
     range: (min, max) => `de ${min} à ${max}`,
@@ -66,7 +72,9 @@ export const texts: Record<Lang, Texts> = {
       expires: (seconds) => `This code closes in ${seconds} second${seconds > 1 ? "s" : ""}.`,
       close: "Close",
       qrLabel: "QR code to add a phone",
+      done: "Done: the phone is added.",
     },
+    newPhone: (label, n) => `${label ? `New phone: ${label}` : "New phone linked"} (${n} in total)`,
     ok: "OK",
     okLabel: "OK, I saw the reminder",
     range: (min, max) => `${min} to ${max}`,
@@ -108,5 +116,6 @@ export const homeText = {
   okLabel: texts[lang].okLabel,
   range: texts[lang].range,
   birthdayToday: birthdayText.today,
+  newPhone: texts[lang].newPhone,
   birthdaySoon: birthdayText.soon,
 } as const;

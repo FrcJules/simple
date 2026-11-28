@@ -15,7 +15,7 @@ describe("DeviceRegistry", () => {
   it("exchanges a claim for a device token, once", () => {
     const r = registry();
     const claim = r.createClaim();
-    const token = r.redeemClaim(claim);
+    const token = r.redeemClaim(claim)?.token;
     expect(token).toMatch(/^[A-Za-z0-9_-]{32}$/);
     expect(r.isDeviceToken(token!)).toBe(true);
     expect(r.redeemClaim(claim)).toBeNull(); // single use
@@ -42,7 +42,7 @@ describe("DeviceRegistry", () => {
     const claim = r.createClaim();
     const all = () => [...readdirSync(join(dir, "claims")), ...readdirSync(join(dir, "devices"))].join("\n");
     expect(all()).not.toContain(claim);
-    const token = r.redeemClaim(claim)!;
+    const token = r.redeemClaim(claim)!.token;
     expect(all()).not.toContain(token);
     const [file] = readdirSync(join(dir, "devices"));
     expect(readFileSync(join(dir, "devices", file!), "utf8")).not.toContain(token);
@@ -56,7 +56,7 @@ describe("DeviceRegistry", () => {
 
   it("remembers the name given at pairing and when the phone was last seen", () => {
     const r = registry();
-    const token = r.redeemClaim(r.createClaim("  Téléphone de Marie  "))!;
+    const token = r.redeemClaim(r.createClaim("  Téléphone de Marie  "))!.token;
     expect(r.devices()).toMatchObject([{ label: "Téléphone de Marie", createdAt: now, lastUsedAt: now }]);
     now += 3_600_000;
     expect(r.isDeviceToken(token)).toBe(true);
@@ -77,13 +77,13 @@ describe("DeviceRegistry", () => {
 
   it("is shared between the pairing command and the running hub (two instances, one folder)", () => {
     const claim = registry().createClaim();
-    const token = registry().redeemClaim(claim)!;
+    const token = registry().redeemClaim(claim)!.token;
     expect(registry().isDeviceToken(token)).toBe(true);
   });
 
   it("revokes every device", () => {
     const r = registry();
-    const token = r.redeemClaim(r.createClaim())!;
+    const token = r.redeemClaim(r.createClaim())!.token;
     r.revokeAll();
     expect(r.isDeviceToken(token)).toBe(false);
     expect(r.deviceCount()).toBe(0);
@@ -91,9 +91,9 @@ describe("DeviceRegistry", () => {
 
   it("revokes one device by its id and leaves the others", () => {
     const r = registry();
-    const a = r.redeemClaim(r.createClaim())!;
+    const a = r.redeemClaim(r.createClaim())!.token;
     now += 1;
-    const b = r.redeemClaim(r.createClaim())!;
+    const b = r.redeemClaim(r.createClaim())!.token;
     const [first, second] = r.devices();
     expect(r.revoke(first!.id)).toBe(true);
     expect(r.isDeviceToken(a)).toBe(false);
@@ -162,15 +162,37 @@ describe("hub pairing", () => {
     expect(post.statusCode).toBe(202);
   });
 
-  it("tells the home screen that a phone was paired, with its name and how many phones there are", async () => {
+  it("tells the home screen that a phone was paired, with its own name and how many phones there are", async () => {
     const app = hub();
-    const claim = registry().createClaim("Téléphone de Marie");
-    expect((await app.inject({ method: "POST", url: "/pair", payload: { claim } })).statusCode).toBe(200);
+    const announced = async () => {
+      const list = await app.inject({ method: "GET", url: "/events", headers: { authorization: `Bearer ${DISPLAY}` } });
+      return (list.json().events as { type: string; label?: string; devices: number }[]).filter((e) => e.type === "device_paired");
+    };
+    now = 2_000_000;
+    expect((await app.inject({ method: "POST", url: "/pair", payload: { claim: registry().createClaim("Téléphone de Marie") } })).statusCode).toBe(200);
+    expect(await announced()).toEqual([expect.objectContaining({ label: "Téléphone de Marie", devices: 1 })]);
+
+    // The Pi rebooted with a clock in the past: the new phone sorts before Marie's, yet it must not be announced with her name.
+    now = 1_000_000;
+    expect((await app.inject({ method: "POST", url: "/pair", payload: { claim: registry().createClaim() } })).statusCode).toBe(200);
+    const second = (await announced())[1];
+    expect(second?.devices).toBe(2);
+    expect(second?.label).toBeUndefined();
+  });
+
+  it("the new phone cannot push its announcement out by flooding events, and is slowed down", async () => {
+    const app = hub();
+    const pair = await app.inject({ method: "POST", url: "/pair", payload: { claim: registry().createClaim() } });
+    const deviceToken = pair.json().token as string;
+    const statuses: number[] = [];
+    for (let i = 0; i < 40; i++) {
+      const post = await app.inject({ method: "POST", url: "/events", payload: { ...event, id: `f${i}` }, headers: { authorization: `Bearer ${deviceToken}` } });
+      statuses.push(post.statusCode);
+    }
+    expect(statuses.filter((s) => s === 202)).toHaveLength(30);
+    expect(statuses.at(-1)).toBe(429);
     const list = await app.inject({ method: "GET", url: "/events", headers: { authorization: `Bearer ${DISPLAY}` } });
-    const paired = (list.json().events as { type: string; label?: string; devices: number }[]).filter((e) => e.type === "device_paired");
-    expect(paired).toHaveLength(1);
-    expect(paired[0]?.label).toBe("Téléphone de Marie");
-    expect(paired[0]?.devices).toBe(registry().deviceCount());
+    expect((list.json().events as { type: string }[]).some((e) => e.type === "device_paired")).toBe(true);
   });
 
   it("a refused claim announces nothing", async () => {
@@ -230,7 +252,7 @@ describe("hub pairing", () => {
   it("works without any static pairing token", async () => {
     const reg = registry();
     const app = buildApp({ displayToken: DISPLAY, devices: reg });
-    const deviceToken = reg.redeemClaim(reg.createClaim())!;
+    const deviceToken = reg.redeemClaim(reg.createClaim())!.token;
     expect((await app.inject({ method: "POST", url: "/events", payload: event, headers: { authorization: `Bearer ${deviceToken}` } })).statusCode).toBe(202);
     expect((await app.inject({ method: "POST", url: "/events", payload: event, headers: { authorization: "Bearer " } })).statusCode).toBe(401);
     expect(() => buildApp({ displayToken: DISPLAY })).toThrow();
@@ -239,7 +261,7 @@ describe("hub pairing", () => {
   it("a revoked device can no longer write", async () => {
     const reg = registry();
     const app = buildApp({ pairingToken: TOKEN, displayToken: DISPLAY, devices: reg });
-    const deviceToken = reg.redeemClaim(reg.createClaim())!;
+    const deviceToken = reg.redeemClaim(reg.createClaim())!.token;
     reg.revokeAll();
     expect((await app.inject({ method: "POST", url: "/events", payload: event, headers: { authorization: `Bearer ${deviceToken}` } })).statusCode).toBe(401);
   });
@@ -258,7 +280,7 @@ describe("hub pairing", () => {
   it("a valid device token is never blocked, even from an address that failed a lot; and a bad body is refused before it is parsed", async () => {
     const reg = registry();
     const app = buildApp({ pairingToken: TOKEN, displayToken: DISPLAY, devices: reg });
-    const deviceToken = reg.redeemClaim(reg.createClaim())!;
+    const deviceToken = reg.redeemClaim(reg.createClaim())!.token;
     for (let i = 0; i < 12; i++) await app.inject({ method: "POST", url: "/events", remoteAddress: "10.0.0.9", payload: event, headers: { authorization: "Bearer wrong-wrong-wrong-wrong" } });
     expect((await app.inject({ method: "POST", url: "/events", remoteAddress: "10.0.0.9", payload: event, headers: { authorization: `Bearer ${deviceToken}` } })).statusCode).toBe(202);
     expect((await app.inject({ method: "POST", url: "/events", remoteAddress: "10.0.0.9", payload: event, headers: { authorization: `Bearer ${TOKEN}` } })).statusCode).toBe(429);
@@ -317,7 +339,7 @@ describe("hub pairing", () => {
   it("a device token can write but not read the display stream", async () => {
     const reg = registry();
     const app = buildApp({ pairingToken: TOKEN, displayToken: DISPLAY, devices: reg });
-    const deviceToken = reg.redeemClaim(reg.createClaim())!;
+    const deviceToken = reg.redeemClaim(reg.createClaim())!.token;
     expect((await app.inject({ method: "GET", url: "/events", headers: { authorization: `Bearer ${deviceToken}` } })).statusCode).toBe(401);
   });
 });

@@ -34,6 +34,14 @@ describe("replayFor", () => {
     expect(seqs(replayFor(buffer, "boot-0", "boot", NOW))).toEqual([2, 3, 4]);
   });
 
+  it("always replays a pairing announcement, however many events came after it", () => {
+    const paired: StoredEvent = { seq: 1, receivedAt: NOW, event: { schemaVersion: 1, id: "p", type: "device_paired", occurredAt: "2026-11-28T09:30:00+01:00", devices: 2 } };
+    const flood = Array.from({ length: 80 }, (_, i) => stored(i + 2, 0));
+    const replayed = replayFor([paired, ...flood], undefined, "boot", NOW);
+    expect(replayed[0]?.event.type).toBe("device_paired");
+    expect(replayed).toHaveLength(51);
+  });
+
   it("never replays more than the screen keeps", () => {
     const many = Array.from({ length: 80 }, (_, i) => stored(i + 1, 0));
     const replayed = replayFor(many, undefined, "boot", NOW);

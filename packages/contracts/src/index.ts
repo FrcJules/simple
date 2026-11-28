@@ -150,5 +150,9 @@ export const DISPLAY_RETENTION_MS: Record<DisplayEvent["type"], number> = {
   device_paired: 24 * HOUR_MS,
 };
 
+/** A phone's clock may be a little ahead; an event dated further in the future is not shown (it would stay on screen for ever). */
+export const MAX_CLOCK_AHEAD_MS = 5 * 60_000;
+
 /** True while an event of this age (ms) may still be kept and shown. */
-export const isStillShown = (event: DisplayEvent, ageMs: number): boolean => ageMs <= DISPLAY_RETENTION_MS[event.type];
+export const isStillShown = (event: DisplayEvent, ageMs: number): boolean =>
+  ageMs >= -MAX_CLOCK_AHEAD_MS && ageMs <= DISPLAY_RETENTION_MS[event.type];

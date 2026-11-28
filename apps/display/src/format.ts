@@ -1,5 +1,6 @@
 import { isStillShown, type DisplayEvent } from "@simple/contracts";
 import { lang, type Lang } from "./lang";
+import { texts } from "./strings";
 
 const LOCALE: Record<Lang, string> = { fr: "fr-FR", en: "en-US" };
 const fmtDate = (l: Lang) => new Intl.DateTimeFormat(LOCALE[l], { weekday: "long", day: "numeric", month: "long" });
@@ -40,26 +41,19 @@ export function headline(e: DisplayEvent, l: Lang = lang): string {
     case "new_message": return en ? `Message from ${e.from.name}` : `Message de ${e.from.name}`;
     case "new_photo": return en ? `New photo sent by ${e.from.name}` : `Nouvelle photo envoyée par ${e.from.name}`;
     case "birthday": return en ? `${e.who.name}'s birthday today` : `Anniversaire de ${e.who.name} aujourd'hui`;
-    case "device_paired":
-      if (e.label) return en ? `Phone added: ${e.label}` : `Téléphone ajouté : ${e.label}`;
-      return en ? "A phone was added" : "Un téléphone a été ajouté";
+    case "device_paired": return texts[l].newPhone(e.label, e.devices); // normally shown as a panel line, not as the card
   }
 }
 
 export const icon = (e: DisplayEvent) =>
   ({ missed_call: "📞", new_photo: "📷", new_message: "💬", birthday: "🎂", device_paired: "📱" })[e.type];
 
-/** Extra line under the headline: the message body, or how many phones are paired (so the family notices one too many). */
-export function body(e: DisplayEvent, l: Lang = lang): string | undefined {
-  if (e.type === "new_message") return e.text;
-  if (e.type !== "device_paired") return undefined;
-  if (l === "en") return e.devices === 1 ? "1 phone linked to this screen" : `${e.devices} phones linked to this screen`;
-  return e.devices === 1 ? "1 téléphone relié à l'écran" : `${e.devices} téléphones reliés à l'écran`;
-}
+/** Extra line under the headline (message body), if the event carries one. */
+export const body = (e: DisplayEvent): string | undefined => (e.type === "new_message" ? e.text : undefined);
 
 /**
  * The event the home screen shows: the newest one that may still be shown (a day for a missed call, a few hours for a
  * message's text: DISPLAY_RETENTION_MS). An old message does not stay on the living-room screen for days.
  */
-export const currentEvent = (events: readonly DisplayEvent[], now: Date): DisplayEvent | undefined =>
+export const currentEvent = <E extends DisplayEvent>(events: readonly E[], now: Date): E | undefined =>
   events.find((e) => isStillShown(e, now.getTime() - new Date(e.occurredAt).getTime()));

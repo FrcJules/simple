@@ -26,7 +26,11 @@ export const sseId = (bootId: string, seq: number): string => `${bootId}-${seq}`
 export function replayFor(stored: readonly StoredEvent[], lastEventId: string | undefined, bootId: string, now: number): StoredEvent[] {
   const recent = stored.filter((s) => isStillShown(s.event, now - s.receivedAt));
   const seen = seenSeq(lastEventId, bootId, stored.at(-1)?.seq ?? 0);
-  return (seen === undefined ? recent : recent.filter((s) => s.seq > seen)).slice(-MAX_REPLAY);
+  const missed = seen === undefined ? recent : recent.filter((s) => s.seq > seen);
+  // Pairing announcements always go through: 50 later events must not hide that a phone was paired.
+  const pairings = missed.filter((s) => s.event.type === "device_paired");
+  const others = missed.filter((s) => s.event.type !== "device_paired").slice(-MAX_REPLAY);
+  return [...pairings, ...others].sort((a, b) => a.seq - b.seq);
 }
 
 /** The sequence number in a `Last-Event-ID` sent back by a screen, if it is one of ours (this run, digits only, not in the future). */

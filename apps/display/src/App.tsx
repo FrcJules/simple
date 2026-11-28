@@ -24,19 +24,26 @@ export function useNow(intervalMs = 15_000): Date {
 /** Five touches on the clock within four seconds: nobody does that by accident, and it needs no extra button on Jean-Pierre's screen. */
 export const SECRET_TAPS = 5;
 const SECRET_WINDOW_MS = 4000;
+export const PAIRED_CONFIRMATION_MS = 4000;
 
 export function App() {
   const now = useNow();
-  const events = useEvents();
+  const { events, pairings } = useEvents();
   const latest = currentEvent(events, now);
+  const newPhone = currentEvent(pairings, now);
   const [pairing, setPairing] = useState(false);
-  const pairingSince = useRef(0);
-  // The phone was paired: the QR code screen closes by itself and the home screen says "Téléphone ajouté".
-  // Same device as the hub, so the hub's occurredAt and this clock agree.
-  const newest = events[0];
+  const [paired, setPaired] = useState(false);
+  // Announcements already known when the QR code opened: only a new one means "this code was just used". No clock involved.
+  const knownPairings = useRef<Set<string>>(new Set());
   useEffect(() => {
-    if (pairing && newest?.type === "device_paired" && Date.parse(newest.occurredAt) >= pairingSince.current) setPairing(false);
-  }, [pairing, newest]);
+    if (pairing && !paired && pairings.some((p) => !knownPairings.current.has(p.id))) setPaired(true);
+  }, [pairing, paired, pairings]);
+  // "C'est fait" stays a few seconds, then home: the screen does not just vanish under the family's eyes.
+  useEffect(() => {
+    if (!paired) return;
+    const timer = setTimeout(() => { setPairing(false); setPaired(false); }, PAIRED_CONFIRMATION_MS);
+    return () => clearTimeout(timer);
+  }, [paired]);
   const photo = useSlideshow();
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [weather, setWeather] = useState<Weather | null>(null);
@@ -77,11 +84,11 @@ export function App() {
     taps.current = [...taps.current.filter((x) => t - x < SECRET_WINDOW_MS), t];
     if (taps.current.length >= SECRET_TAPS) {
       taps.current = [];
-      pairingSince.current = Date.now();
+      knownPairings.current = new Set(pairings.map((p) => p.id));
       setPairing(true);
     }
   };
-  if (pairing) return <PairingScreen onClose={closePairing} />;
+  if (pairing) return <PairingScreen onClose={closePairing} done={paired} />;
   if (card.length > 0) {
     return (
       <main className="screen reminder">
@@ -117,6 +124,9 @@ export function App() {
             <span aria-hidden="true">🎂</span>{" "}
             {homeText.birthdayToday(today.map((b) => b.name), plausibleAge(turnsAge(today[0] as Birthday, now)))}
           </p>
+        )}
+        {newPhone && (
+          <p className="next new-phone"><span aria-hidden="true">📱</span> {homeText.newPhone(newPhone.label, newPhone.devices)}</p>
         )}
         {today.length === 0 && soon && (
           <p className="next">

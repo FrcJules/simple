@@ -173,7 +173,7 @@
     <string name="pair_offer_working">Pairing…</string>
     <string name="pair_offer_cancel">Cancel</string>
     <string name="setup_paired">Paired. The pairing code is protected.</string>
-    <string name="setup_pair_refused">The home display refused: this QR code was already used or is more than 2 minutes old. Run “npm run pair” again.</string>
+    <string name="setup_pair_refused">The home display refused: this QR code was already used or is more than 2 minutes old. Make a new QR code (touch the clock of the home display 5 times, or run “npm run pair”). If nobody else scanned it, another phone may have used it: the home display shows “New phone” and the number of phones.</string>
     <string name="setup_pair_unreachable">Cannot reach the home display. Check that the phone is on the home Wi-Fi.</string>
     <string name="setup_pair_too_many">Too many failed tries from this phone. Wait a minute, then run “npm run pair” again and scan the new QR code.</string>
     <string name="setup_pair_cancelled">Pairing cancelled: nothing was saved.</string>
