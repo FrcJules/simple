@@ -21,10 +21,13 @@ Matin : date, anniversaire du jour, nouvelle photo, météo. Journée : « 📞 
 Créer une nouvelle messagerie ; exiger une application côté famille.
 
 ## Feuille de route
-- **v0.1** — Launcher : accueil + contacts visuels + appel/photo/galerie. Écran : horloge, date, carte « appel manqué » via hub.
-- **v0.2** — Détection d'appels manqués côté téléphone → hub ; diaporama de photos ; anniversaires.
-- **v0.3** — Dictée / TTS ; météo ; rappels.
-- **v0.4** — Musique ; télécommande TV (Zigbee/IR) ; lecture des notifications WhatsApp (à étudier, voir questions ouvertes).
+*État au 28 novembre 2026 : « livré » = code fusionné ; rien n'est encore essayé sur un vrai téléphone ([détail du launcher](roadmap-launcher.md)).*
+
+- **v0.1** — Launcher : accueil + contacts visuels + appel/photo/galerie. Écran : horloge, date, carte « appel manqué » via hub. **Livré.**
+- **v0.2** — Détection d'appels manqués côté téléphone → hub ; diaporama de photos ; anniversaires. **Livré** (photos lues dans un dossier du Pi).
+- **v0.3** — Dictée / TTS ; météo ; rappels. **Livré** (météo désactivée par défaut, [ADR 0006](adr/0006-meteo-open-meteo.md)).
+- **v0.4** — Musique ; télécommande TV (Zigbee/IR) ; lecture des notifications WhatsApp (à étudier, voir questions ouvertes). **Lecture WhatsApp livrée** (et réponse via la notification) ; **musique et télécommande TV restent à faire.**
+- Hors de ces versions, déjà livré : appairage par QR code, SMS/MMS (version de test seulement), réglages et guide pour la famille, anglais sur le téléphone. Le Loto n'est pas commencé.
 
 ## Questions ouvertes
 - Fragilité du parsing des notifications selon les applications et constructeurs ([ADR 0002](adr/0002-notifications-plutot-que-journal-d-appels.md)) : prévoir des tests par application.

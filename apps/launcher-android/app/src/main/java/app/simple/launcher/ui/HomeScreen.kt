@@ -36,6 +36,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.simple.launcher.R
@@ -65,7 +66,7 @@ fun HomeScreen(
         ) {
             if (status != null) StatusBar(status, onSecretTap)
             val greeting = if (seniorName.isBlank()) stringResource(R.string.greeting_anonymous) else stringResource(R.string.greeting, seniorName)
-            Text(greeting, fontSize = 32.sp, textAlign = TextAlign.Center)
+            Text(greeting, fontSize = 32.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(), maxLines = 2, overflow = TextOverflow.Ellipsis)
             config.home.tiles.chunked(config.home.columns).forEach { rowTiles ->
                 Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     // More than four rubriques: smaller pictures so that eight still fit one screen without scrolling (a hidden gesture).
@@ -133,9 +134,10 @@ private fun RowScope.Tile(tile: TileConfig, badge: Int, app: AppInfo?, pictureSi
 @Composable
 private fun StatusBar(status: HomeStatus, onSecretTap: () -> Unit) {
     val counter = remember { SecretTapCounter() }
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+    // Both halves may shrink and wrap (large system font, narrow screen): nothing is clipped or pushed off screen.
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(
-            Modifier.heightIn(min = 64.dp).clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) {
+            Modifier.weight(1f, fill = false).heightIn(min = 64.dp).clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) {
                 if (counter.tap(System.currentTimeMillis())) onSecretTap()
             },
         ) {
@@ -150,7 +152,7 @@ private fun StatusBar(status: HomeStatus, onSecretTap: () -> Unit) {
                 status.batteryLow -> stringResource(R.string.battery_low, pct)
                 else -> stringResource(R.string.battery_level, pct)
             }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.weight(1f, fill = false), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(
                     when {
                         status.charging -> Icons.Filled.BatteryChargingFull
@@ -160,7 +162,13 @@ private fun StatusBar(status: HomeStatus, onSecretTap: () -> Unit) {
                     contentDescription = null,
                     modifier = Modifier.size(40.dp),
                 )
-                Text(label, fontSize = 24.sp, fontWeight = if (status.batteryLow && !status.charging) FontWeight.Bold else FontWeight.Normal)
+                Text(
+                    label,
+                    fontSize = 24.sp,
+                    fontWeight = if (status.batteryLow && !status.charging) FontWeight.Bold else FontWeight.Normal,
+                    textAlign = TextAlign.End,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
             }
         }
     }

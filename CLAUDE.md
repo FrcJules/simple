@@ -32,6 +32,18 @@ Monorepo open source (Apache-2.0) d'un assistant numérique pour personne âgée
 ## Personnalisation
 L'apparence de l'accueil (thème, tuiles) vient d'un JSON validé : `docs/customization.md`, `apps/launcher-android/app/src/main/java/app/simple/launcher/config/`. Toute nouvelle couleur ou action passe par ce format ; une couleur en dur dans l'interface est un défaut.
 
-## Agents (`.claude/agents`)
-`android-dev`, `display-dev`, `senior-ux-reviewer`, `privacy-reviewer`, `ci-release`. Les utiliser en revue : tout changement d'UI passe par `senior-ux-reviewer`, tout accès à des données personnelles par `privacy-reviewer`.
-Commandes : `/check` (qualité complète), `/adr <titre>` (nouvel ADR).
+## Pièges connus
+- Les tests instrumentés / UI ne tournent qu'en CI (job `android-emulator`, captures dans l'artefact `emulator-screenshots-and-reports-*`) : une machine sans KVM ne peut pas les lancer.
+- Jamais de test Robolectric qui lance `SetupActivity` : il bloque.
+- Après un changement de format stocké (SQLite, DataStore, JSON), chercher les anciennes hypothèses dans `androidTest`.
+- Deux PR qui touchent `apps/display/src/App.tsx` entrent en conflit : fusionner `main` dans la seconde.
+- L'émulateur de CI force la langue de l'app en `fr` (`cmd locale set-app-locales`) : les tests cherchent les textes français.
+- Release : `versionCode` = `run_number` GitHub ; le workflow envoie l'AAB en test interne Play à l'état brouillon (déploiement = clic manuel).
+
+## Agents (`.claude/agents`) et revue
+- Dév : `android-dev` (launcher), `display-dev` (display, hub, contracts), `ci-release` (`.github/`, versions).
+- Revue (lecture seule) : `code-reviewer` (bugs, tests, règles), `senior-ux-reviewer` (accessibilité, compréhension par le senior), `ui-designer-reviewer` (cohérence visuelle, états), `privacy-reviewer` (données personnelles, minimisation), `security-reviewer` (surface d'attaque : hub, appairage, TLS, composants Android, dépendances, CI).
+- Avant chaque PR : `code-reviewer` ; + `senior-ux-reviewer` et `ui-designer-reviewer` si l'UI change (leur fournir les captures d'écran) ; + `privacy-reviewer` si photos, appels, messages, contacts, réseau ou stockage sont touchés ; + `security-reviewer` si le hub, l'appairage, le réseau, le manifeste, les permissions, le stockage, les dépendances ou `.github/` changent. Corriger, re-pousser, CI verte sur le dernier commit avant fusion.
+- Donner aux relecteurs le chemin d'un `git worktree` de la branche ; ne pas changer de branche dans le dépôt principal pendant qu'ils lisent.
+
+Commandes : `/check` (qualité complète), `/review` (relectures adaptées au diff), `/adr <titre>` (nouvel ADR).

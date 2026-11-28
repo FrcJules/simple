@@ -6,7 +6,7 @@ cd /opt/simple
 sudo -u simple git fetch --tags --quiet
 if [ "${1:-}" ]; then sudo -u simple git checkout --quiet "$1"; else sudo -u simple git pull --ff-only --quiet; fi
 sudo -u simple npm ci --silent
-set -a; . /etc/simple/hub.env; set +a   # VITE_DISPLAY_TOKEN, VITE_SENIOR_NAME... sont lus à la construction de l'écran
-sudo -u simple --preserve-env=VITE_DISPLAY_TOKEN,VITE_SENIOR_NAME,VITE_HUB_URL npm run build --silent
+set -a; . /etc/simple/hub.env; set +a   # VITE_DISPLAY_TOKEN, VITE_SENIOR_NAME, VITE_LANG... sont lus à la construction de l'écran
+sudo -u simple --preserve-env=VITE_DISPLAY_TOKEN,VITE_SENIOR_NAME,VITE_HUB_URL,VITE_LANG npm run build --silent
 systemctl restart simple-hub simple-display
 systemctl is-active simple-hub simple-display
