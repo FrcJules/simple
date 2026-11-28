@@ -27,8 +27,16 @@ const SECRET_WINDOW_MS = 4000;
 
 export function App() {
   const now = useNow();
-  const latest = currentEvent(useEvents(), now);
+  const events = useEvents();
+  const latest = currentEvent(events, now);
   const [pairing, setPairing] = useState(false);
+  const pairingSince = useRef(0);
+  // The phone was paired: the QR code screen closes by itself and the home screen says "Téléphone ajouté".
+  // Same device as the hub, so the hub's occurredAt and this clock agree.
+  const newest = events[0];
+  useEffect(() => {
+    if (pairing && newest?.type === "device_paired" && Date.parse(newest.occurredAt) >= pairingSince.current) setPairing(false);
+  }, [pairing, newest]);
   const photo = useSlideshow();
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [weather, setWeather] = useState<Weather | null>(null);
@@ -69,6 +77,7 @@ export function App() {
     taps.current = [...taps.current.filter((x) => t - x < SECRET_WINDOW_MS), t];
     if (taps.current.length >= SECRET_TAPS) {
       taps.current = [];
+      pairingSince.current = Date.now();
       setPairing(true);
     }
   };

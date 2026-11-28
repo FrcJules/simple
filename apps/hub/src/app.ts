@@ -1,7 +1,7 @@
 import cors from "@fastify/cors";
-import { simpleEvent } from "@simple/contracts";
+import { simpleEvent, type DisplayEvent } from "@simple/contracts";
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
-import { randomBytes, timingSafeEqual } from "node:crypto";
+import { randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { DeviceRegistry } from "./devices";
 import { FailureLimiter } from "./limiter";
@@ -69,6 +69,14 @@ export function buildApp(opts: HubOptions): FastifyInstance {
   // Distinguishes this run of the hub in SSE ids: after a restart, ids a screen remembers no longer mean anything.
   const bootId = randomBytes(6).toString("hex");
   let seq = 0;
+  /** Keeps an event for the screens (until it may no longer be shown) and sends it to those connected. */
+  const publish = (event: DisplayEvent) => {
+    const stored: StoredEvent = { seq: ++seq, receivedAt: performance.now(), event };
+    purgeExpired(events, stored.receivedAt);
+    events.push(stored);
+    if (events.length > maxEvents) events.shift();
+    listeners.forEach((l) => l(stored));
+  };
   const app = Fastify({ logger: false });
 
   void app.register(cors, { origin });
@@ -95,6 +103,17 @@ export function buildApp(opts: HubOptions): FastifyInstance {
     if (!body.success) return fail(400, "invalid_claim");
     const deviceToken = devices.redeemClaim(body.data.claim);
     if (!deviceToken) return fail(403, "claim_refused");
+    // Said on the home screen (and the QR code closes): a code photographed and used by someone else does not go unnoticed.
+    const paired = devices.devices();
+    const label = paired.at(-1)?.label;
+    publish({
+      schemaVersion: 1,
+      id: randomUUID(),
+      type: "device_paired",
+      occurredAt: new Date().toISOString(),
+      devices: Math.max(1, paired.length),
+      ...(label ? { label } : {}),
+    });
     return reply.code(200).send({ token: deviceToken });
   });
 
@@ -153,11 +172,7 @@ export function buildApp(opts: HubOptions): FastifyInstance {
   app.post("/events", { bodyLimit: 16_384, onRequest: authenticateWriter }, async (req, reply) => {
     const parsed = simpleEvent.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: "invalid_event" });
-    const stored: StoredEvent = { seq: ++seq, receivedAt: performance.now(), event: parsed.data };
-    purgeExpired(events, stored.receivedAt);
-    events.push(stored);
-    if (events.length > maxEvents) events.shift();
-    listeners.forEach((l) => l(stored));
+    publish(parsed.data);
     return reply.code(202).send({ accepted: true });
   });
 

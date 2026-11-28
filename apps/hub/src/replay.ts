@@ -1,4 +1,4 @@
-import { isStillShown, type SimpleEvent } from "@simple/contracts";
+import { isStillShown, type DisplayEvent } from "@simple/contracts";
 
 /** An accepted event as the hub keeps it in memory: [seq] orders events since the hub started. */
 export interface StoredEvent {
@@ -8,7 +8,7 @@ export interface StoredEvent {
    * when NTP syncs after boot, which would make a minute-old missed call look days old.
    */
   receivedAt: number;
-  event: SimpleEvent;
+  event: DisplayEvent;
 }
 
 /** Same limit as the display's own list (apps/display/src/useEvents.ts). */

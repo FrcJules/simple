@@ -43,3 +43,14 @@ describe("currentEvent", () => {
     expect(currentEvent([message(5), call(30)], now)).toBeUndefined();
   });
 });
+
+describe("device_paired", () => {
+  const paired = { schemaVersion: 1 as const, id: "p", type: "device_paired" as const, occurredAt: "2026-11-28T12:00:00Z", devices: 1 };
+  it("names the phone when it has a name, and counts the phones", () => {
+    expect(headline({ ...paired, label: "Téléphone de Marie" }, "fr")).toBe("Téléphone ajouté : Téléphone de Marie");
+    expect(headline(paired, "fr")).toBe("Un téléphone a été ajouté");
+    expect(headline(paired, "en")).toBe("A phone was added");
+    expect(body(paired, "fr")).toBe("1 téléphone relié à l'écran");
+    expect(body({ ...paired, devices: 3 }, "en")).toBe("3 phones linked to this screen");
+  });
+});

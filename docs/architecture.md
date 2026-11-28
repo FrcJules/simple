@@ -11,7 +11,7 @@
                                               └───────────────────────────┘
 ```
 
-- **Contrats** (`packages/contracts`) : types d'événements (`missed_call`, `new_message`, `new_photo`, `birthday`) validés avec Zod. Versionnés (`schemaVersion`).
+- **Contrats** (`packages/contracts`) : types d'événements envoyés par le téléphone (`missed_call`, `new_message`, `new_photo`, `birthday`) validés avec Zod ; l'écran reçoit en plus `device_paired`, émis par le hub seul (un téléphone ne peut pas l'envoyer). Versionnés (`schemaVersion`).
 - **Hub** : reçoit les événements authentifiés par jeton d'appareil (ou le jeton statique facultatif), garde les 200 derniers **en mémoire** (perdus au redémarrage) et les diffuse en SSE. Il oublie un événement dès que l'écran ne peut plus l'afficher (`DISPLAY_RETENTION_MS` dans `packages/contracts` : 24 h pour un appel manqué, 4 h pour le texte d'un message). Un écran qui redémarre (navigateur rechargé) ou se reconnecte (coupure réseau) reçoit d'abord ce qu'il a manqué, 50 au plus (identifiants SSE `<démarrage>-<numéro>`, renvoyés par le navigateur dans `Last-Event-ID`). Un redémarrage du **hub** (ou du Pi) efface tout : ce qui arrive pendant ce temps est perdu, le téléphone ne renvoie pas. Il sert aussi à l'écran les rappels et anniversaires (fichiers JSON dans `data/`), les photos d'un dossier du Pi (`SIMPLE_PHOTOS_DIR`) et la météo Open-Meteo, désactivée par défaut ([ADR 0006](adr/0006-meteo-open-meteo.md)). Pas de base de données.
 - **Display** : s'abonne au flux ; reste utile sans internet (heure, date, photos du Pi). Installation sur le Pi : [pi-install.md](pi-install.md).
 - **Réseau** : tout reste sur le réseau local ; aucun cloud par défaut ([privacy.md](privacy.md)).

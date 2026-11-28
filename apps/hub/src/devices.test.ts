@@ -162,6 +162,32 @@ describe("hub pairing", () => {
     expect(post.statusCode).toBe(202);
   });
 
+  it("tells the home screen that a phone was paired, with its name and how many phones there are", async () => {
+    const app = hub();
+    const claim = registry().createClaim("Téléphone de Marie");
+    expect((await app.inject({ method: "POST", url: "/pair", payload: { claim } })).statusCode).toBe(200);
+    const list = await app.inject({ method: "GET", url: "/events", headers: { authorization: `Bearer ${DISPLAY}` } });
+    const paired = (list.json().events as { type: string; label?: string; devices: number }[]).filter((e) => e.type === "device_paired");
+    expect(paired).toHaveLength(1);
+    expect(paired[0]?.label).toBe("Téléphone de Marie");
+    expect(paired[0]?.devices).toBe(registry().deviceCount());
+  });
+
+  it("a refused claim announces nothing", async () => {
+    const app = hub();
+    registry().createClaim();
+    expect((await app.inject({ method: "POST", url: "/pair", payload: { claim: "not-the-right-claim-0123456789" } })).statusCode).toBe(403);
+    const list = await app.inject({ method: "GET", url: "/events", headers: { authorization: `Bearer ${DISPLAY}` } });
+    expect(list.json().events).toEqual([]);
+  });
+
+  it("a phone cannot pretend that a phone was paired", async () => {
+    const app = hub();
+    const forged = { schemaVersion: 1, id: "f1", type: "device_paired", occurredAt: "2026-10-06T09:30:00+02:00", devices: 1 };
+    const post = await app.inject({ method: "POST", url: "/events", payload: forged, headers: { authorization: `Bearer ${TOKEN}` } });
+    expect(post.statusCode).toBe(400);
+  });
+
   it("the claim works once", async () => {
     const app = hub();
     const claim = registry().createClaim();
