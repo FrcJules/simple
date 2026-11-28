@@ -56,6 +56,25 @@ export const simpleEvent = z.discriminatedUnion("type", [
 ]);
 
 export type SimpleEvent = z.infer<typeof simpleEvent>;
+
+/**
+ * Made by the hub itself, never accepted from a phone (`POST /events` validates [simpleEvent] only): a phone was just paired.
+ * The home screen says so, so that a QR code photographed by someone else does not go unnoticed.
+ */
+export const devicePairedEvent = z.object({
+  ...base,
+  type: z.literal("device_paired"),
+  /** Name given when the QR code was made ("Téléphone de Marie"), if any. */
+  label: z.string().min(1).max(40).optional(),
+  /** Phones paired with the hub, this one included. */
+  devices: z.number().int().min(1).max(1000),
+});
+
+/** What the home display receives on its stream: what phones send, plus what the hub announces itself. */
+export const displayEvent = z.discriminatedUnion("type", [...simpleEvent.options, devicePairedEvent]);
+
+export type DevicePairedEvent = z.infer<typeof devicePairedEvent>;
+export type DisplayEvent = z.infer<typeof displayEvent>;
 export type NewMessageEvent = z.infer<typeof newMessageEvent>;
 export type MissedCallEvent = z.infer<typeof missedCallEvent>;
 
@@ -123,12 +142,16 @@ const HOUR_MS = 3_600_000;
  * How long the home display may show an event, and the hub keep it in memory (docs/privacy.md). A missed call stays useful for a day
  * ("Marie vous a appelé, il y a 2 heures"); the text of a message is more private and leaves the living-room screen sooner.
  */
-export const DISPLAY_RETENTION_MS: Record<SimpleEvent["type"], number> = {
+export const DISPLAY_RETENTION_MS: Record<DisplayEvent["type"], number> = {
   missed_call: 24 * HOUR_MS,
   new_photo: 24 * HOUR_MS,
   birthday: 24 * HOUR_MS,
   new_message: 4 * HOUR_MS,
+  device_paired: 24 * HOUR_MS,
 };
 
-/** True while an event of this age (ms) may still be kept and shown. */
-export const isStillShown = (event: SimpleEvent, ageMs: number): boolean => ageMs <= DISPLAY_RETENTION_MS[event.type];
+/**
+ * True while an event of this age (ms) may still be kept and shown. A negative age (event "in the future") counts as new: a Pi that
+ * boots with its clock behind, before NTP, must still show the calls it receives.
+ */
+export const isStillShown = (event: DisplayEvent, ageMs: number): boolean => ageMs <= DISPLAY_RETENTION_MS[event.type];

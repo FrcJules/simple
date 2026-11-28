@@ -72,8 +72,11 @@ export class DeviceRegistry {
     });
   }
 
-  /** Exchanges a claim for a device token, once. Null if the claim is unknown, expired or already used. */
-  redeemClaim(secret: string): string | null {
+  /**
+   * Exchanges a claim for a device token, once, with the name given to the QR code (if any). Null if the claim is unknown,
+   * expired or already used. The name comes from this claim, never from the device list (sorted by a wall clock that can be wrong).
+   */
+  redeemClaim(secret: string): { token: string; label?: string } | null {
     const file = join(this.claimsDir, sha256(secret));
     const parsed = claimFile.safeParse(this.readJson(file));
     if (!parsed.success) return null;
@@ -84,7 +87,7 @@ export class DeviceRegistry {
     const path = join(this.devicesDir, sha256(deviceToken));
     this.write(path, { createdAt: this.clock(), ...(parsed.data.label ? { label: parsed.data.label } : {}) });
     this.setTimes(path, this.clock());
-    return deviceToken;
+    return { token: deviceToken, ...(parsed.data.label ? { label: parsed.data.label } : {}) };
   }
 
   isDeviceToken(candidate: string): boolean {

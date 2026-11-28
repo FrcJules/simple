@@ -1,7 +1,7 @@
 import cors from "@fastify/cors";
-import { simpleEvent } from "@simple/contracts";
+import { devicePairedEvent, simpleEvent, type DisplayEvent } from "@simple/contracts";
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
-import { randomBytes, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { DeviceRegistry } from "./devices";
 import { FailureLimiter } from "./limiter";
@@ -16,6 +16,10 @@ const LOOPBACK = new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1"]);
 const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]"]);
 const MAX_PAIR_FAILURES_PER_MINUTE = 5;
 const MAX_AUTH_FAILURES_PER_MINUTE = 10;
+/** A real phone sends a few events a minute at most; more is a flood meant to push other events (and alerts) out. */
+const MAX_EVENTS_PER_DEVICE_PER_MINUTE = 60;
+/** Pairing announcements kept apart from the event buffer, so no flood of events can push them out. */
+const MAX_PAIRINGS = 20;
 
 export interface HubOptions {
   /** Optional shared token a phone can present as `Authorization: Bearer <token>`; paired devices (see `devices`) do not need it. */
@@ -65,10 +69,28 @@ export function buildApp(opts: HubOptions): FastifyInstance {
     return tokenMatches(opts.displayToken, bearer(req.headers.authorization) || (typeof q === "string" ? q : ""));
   };
   const events: StoredEvent[] = [];
+  // Kept apart: a phone paired with a photographed QR code could otherwise hide its own announcement behind events it sends.
+  const pairings: StoredEvent[] = [];
   const listeners = new Set<(e: StoredEvent) => void>();
   // Distinguishes this run of the hub in SSE ids: after a restart, ids a screen remembers no longer mean anything.
   const bootId = randomBytes(6).toString("hex");
   let seq = 0;
+  /** Keeps an event for the screens (until it may no longer be shown) and sends it to those connected. */
+  const publish = (event: DisplayEvent) => {
+    const stored: StoredEvent = { seq: ++seq, receivedAt: performance.now(), event };
+    const [list, max] = event.type === "device_paired" ? [pairings, MAX_PAIRINGS] : [events, maxEvents];
+    purgeExpired(list, stored.receivedAt);
+    list.push(stored);
+    if (list.length > max) list.shift();
+    listeners.forEach((l) => l(stored));
+  };
+  /** Everything a screen may still show, oldest first (pairing announcements included). */
+  const shown = () => {
+    const now = performance.now();
+    purgeExpired(events, now);
+    purgeExpired(pairings, now);
+    return [...events, ...pairings].sort((a, b) => a.seq - b.seq);
+  };
   const app = Fastify({ logger: false });
 
   void app.register(cors, { origin });
@@ -93,9 +115,21 @@ export function buildApp(opts: HubOptions): FastifyInstance {
     };
     const body = pairBody.safeParse(req.body);
     if (!body.success) return fail(400, "invalid_claim");
-    const deviceToken = devices.redeemClaim(body.data.claim);
-    if (!deviceToken) return fail(403, "claim_refused");
-    return reply.code(200).send({ token: deviceToken });
+    const redeemed = devices.redeemClaim(body.data.claim);
+    if (!redeemed) return fail(403, "claim_refused");
+    // Said on the home screen (and the QR code closes): a code photographed and used by someone else does not go unnoticed.
+    // At least 1 (this phone) even if a revoke ran in between; at most what the contract allows, so the screen never drops it.
+    const announced = devicePairedEvent.safeParse({
+      schemaVersion: 1,
+      id: randomUUID(),
+      type: "device_paired",
+      occurredAt: new Date().toISOString(),
+      devices: Math.min(1000, Math.max(1, devices.deviceCount())),
+      ...(redeemed.label ? { label: redeemed.label } : {}),
+    });
+    // Never silent: should the name not fit the contract, the announcement goes without it.
+    publish(announced.success ? announced.data : { schemaVersion: 1, id: randomUUID(), type: "device_paired", occurredAt: new Date().toISOString(), devices: 1 });
+    return reply.code(200).send({ token: redeemed.token });
   });
 
   // Wrong tokens on the other routes are counted too: the display token or a static pairing token chosen by a human cannot be
@@ -108,10 +142,17 @@ export function buildApp(opts: HubOptions): FastifyInstance {
   const tooMany = (reply: FastifyReply) => reply.code(429).send({ error: "too_many_attempts" });
 
   // Authenticated *before* the body is read (onRequest), and the body is small: an unauthenticated client cannot make the hub parse megabytes.
-  // A valid device token (192 bits, not guessable) is never blocked: phones behind the same NAT as a noisy neighbour keep working.
+  // A valid device token (192 bits, not guessable) is never blocked by the failure limiter: phones behind the same NAT as a noisy
+  // neighbour keep working. Its own sending rate is capped instead (per token, not per address).
+  const deviceWrites = new FailureLimiter(MAX_EVENTS_PER_DEVICE_PER_MINUTE);
   const authenticateWriter = async (req: FastifyRequest, reply: FastifyReply) => {
     const given = bearer(req.headers.authorization);
-    if (opts.devices?.isDeviceToken(given)) return;
+    if (opts.devices?.isDeviceToken(given)) {
+      const key = createHash("sha256").update(given).digest("hex");
+      if (deviceWrites.blocked(key)) return reply.code(429).send({ error: "too_many_events" });
+      deviceWrites.record(key);
+      return;
+    }
     if (authFailures.blocked(req.ip)) return tooMany(reply);
     if (!canWrite(given)) return unauthorized(req.ip, reply);
   };
@@ -153,11 +194,7 @@ export function buildApp(opts: HubOptions): FastifyInstance {
   app.post("/events", { bodyLimit: 16_384, onRequest: authenticateWriter }, async (req, reply) => {
     const parsed = simpleEvent.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: "invalid_event" });
-    const stored: StoredEvent = { seq: ++seq, receivedAt: performance.now(), event: parsed.data };
-    purgeExpired(events, stored.receivedAt);
-    events.push(stored);
-    if (events.length > maxEvents) events.shift();
-    listeners.forEach((l) => l(stored));
+    publish(parsed.data);
     return reply.code(202).send({ accepted: true });
   });
 
@@ -165,8 +202,7 @@ export function buildApp(opts: HubOptions): FastifyInstance {
   app.get("/events", async (req, reply) => {
     if (authFailures.blocked(req.ip)) return tooMany(reply);
     if (!canRead(req)) return unauthorized(req.ip, reply);
-    purgeExpired(events, performance.now());
-    return { events: events.map((s) => s.event) };
+    return { events: shown().map((s) => s.event) };
   });
 
   app.get("/reminders", async (req, reply) => {
@@ -226,8 +262,7 @@ export function buildApp(opts: HubOptions): FastifyInstance {
     const send = (s: StoredEvent) => reply.raw.write(`id: ${sseId(bootId, s.seq)}\ndata: ${JSON.stringify(s.event)}\n\n`);
     // A screen that just started, or reconnected after a Wi-Fi drop, first gets what it missed: a missed call is never lost.
     const lastEventId = req.headers["last-event-id"];
-    purgeExpired(events, performance.now());
-    replayFor(events, typeof lastEventId === "string" ? lastEventId : undefined, bootId, performance.now()).forEach(send);
+    replayFor(shown(), typeof lastEventId === "string" ? lastEventId : undefined, bootId, performance.now()).forEach(send);
     listeners.add(send);
     req.raw.on("close", () => listeners.delete(send));
     reply.hijack();

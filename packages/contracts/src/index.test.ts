@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { birthday, DISPLAY_RETENTION_MS, isStillShown, simpleEvent, reminder, weather, type SimpleEvent } from "./index";
+import { birthday, displayEvent, DISPLAY_RETENTION_MS, isStillShown, simpleEvent, reminder, weather, type SimpleEvent } from "./index";
 
 const base = { schemaVersion: 1, id: "e1", occurredAt: "2026-10-06T09:30:00+02:00" };
 
@@ -94,7 +94,33 @@ describe("display retention", () => {
     expect(isStillShown(message, 5 * HOUR)).toBe(false);
   });
 
+  it("shows an event that looks like it is in the future (the Pi clock is behind after a boot)", () => {
+    expect(isStillShown(call, -24 * HOUR)).toBe(true);
+  });
+
   it("covers every event type, never longer than a day", () => {
     for (const ms of Object.values(DISPLAY_RETENTION_MS)) expect(ms).toBeLessThanOrEqual(24 * HOUR);
+  });
+});
+
+describe("device_paired", () => {
+  const paired = { ...base, type: "device_paired", label: "Téléphone de Marie", devices: 2 };
+
+  it("is something the display accepts", () => {
+    expect(displayEvent.safeParse(paired).success).toBe(true);
+    expect(displayEvent.safeParse({ ...paired, label: undefined }).success).toBe(true);
+  });
+
+  it("can never be sent by a phone", () => {
+    expect(simpleEvent.safeParse(paired).success).toBe(false);
+  });
+
+  it("is bounded", () => {
+    expect(displayEvent.safeParse({ ...paired, devices: 0 }).success).toBe(false);
+    expect(displayEvent.safeParse({ ...paired, label: "x".repeat(41) }).success).toBe(false);
+  });
+
+  it("still accepts every phone event", () => {
+    expect(displayEvent.safeParse({ ...base, type: "missed_call", from: { name: "Marie" } }).success).toBe(true);
   });
 });

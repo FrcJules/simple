@@ -173,7 +173,7 @@
     <string name="pair_offer_working">Appairage…</string>
     <string name="pair_offer_cancel">Annuler</string>
     <string name="setup_paired">Appairé. Le code d\'appairage est protégé.</string>
-    <string name="setup_pair_refused">L\'écran maison a refusé : ce QR code a déjà servi ou a plus de 2 minutes. Relancez «&#160;npm run pair&#160;».</string>
+    <string name="setup_pair_refused">L\'écran maison a refusé : ce QR code a déjà servi ou a plus de 2 minutes. Faites un nouveau QR code (5 touches sur l\'heure de l\'écran, ou «&#160;npm run pair&#160;»). Si personne d\'autre ne l\'a scanné, un autre téléphone l\'a peut-être utilisé : l\'écran maison affiche «&#160;Nouveau téléphone&#160;» et le nombre de téléphones.</string>
     <string name="setup_pair_unreachable">Impossible de joindre l\'écran maison. Vérifiez que le téléphone est sur le Wi-Fi de la maison.</string>
     <string name="setup_pair_too_many">Trop d\'essais ratés depuis ce téléphone. Attendez une minute, puis relancez «&#160;npm run pair&#160;» et scannez le nouveau QR code.</string>
     <string name="setup_pair_cancelled">Appairage annulé : rien n\'a été enregistré.</string>

@@ -24,11 +24,26 @@ export function useNow(intervalMs = 15_000): Date {
 /** Five touches on the clock within four seconds: nobody does that by accident, and it needs no extra button on Jean-Pierre's screen. */
 export const SECRET_TAPS = 5;
 const SECRET_WINDOW_MS = 4000;
+export const PAIRED_CONFIRMATION_MS = 4000;
 
 export function App() {
   const now = useNow();
-  const latest = currentEvent(useEvents(), now);
+  const { events, pairings } = useEvents();
+  const latest = currentEvent(events, now);
+  const newPhone = currentEvent(pairings, now);
   const [pairing, setPairing] = useState(false);
+  const [paired, setPaired] = useState(false);
+  // Announcements already known when the QR code opened: only a new one means "this code was just used". No clock involved.
+  const knownPairings = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (pairing && !paired && pairings.some((p) => !knownPairings.current.has(p.id))) setPaired(true);
+  }, [pairing, paired, pairings]);
+  // "C'est fait" stays a few seconds, then home: the screen does not just vanish under the family's eyes.
+  useEffect(() => {
+    if (!paired) return;
+    const timer = setTimeout(() => { setPairing(false); setPaired(false); }, PAIRED_CONFIRMATION_MS);
+    return () => clearTimeout(timer);
+  }, [paired]);
   const photo = useSlideshow();
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [weather, setWeather] = useState<Weather | null>(null);
@@ -69,10 +84,12 @@ export function App() {
     taps.current = [...taps.current.filter((x) => t - x < SECRET_WINDOW_MS), t];
     if (taps.current.length >= SECRET_TAPS) {
       taps.current = [];
+      knownPairings.current = new Set(pairings.map((p) => p.id));
       setPairing(true);
     }
   };
-  if (pairing) return <PairingScreen onClose={closePairing} />;
+  const justPaired = paired ? pairings.find((p) => !knownPairings.current.has(p.id)) : undefined;
+  if (pairing) return <PairingScreen onClose={closePairing} done={justPaired && homeText.newPhone(justPaired.label, justPaired.devices)} />;
   if (card.length > 0) {
     return (
       <main className="screen reminder">
@@ -108,6 +125,9 @@ export function App() {
             <span aria-hidden="true">🎂</span>{" "}
             {homeText.birthdayToday(today.map((b) => b.name), plausibleAge(turnsAge(today[0] as Birthday, now)))}
           </p>
+        )}
+        {newPhone && (
+          <p className="next new-phone"><span aria-hidden="true">📱</span> {homeText.newPhone(newPhone.label, newPhone.devices)}</p>
         )}
         {today.length === 0 && soon && (
           <p className="next">

@@ -54,3 +54,6 @@ h1 { overflow-wrap: anywhere; }
   .reminder .headline { font-size: clamp(1.5rem, 6vmin, 2.25rem); margin: 0; }
   .reminder .ok { min-height: 4rem; padding: 0 2.5rem; }
 }
+
+/* Pairing done: a large tick and a short sentence, a few seconds before going back home. */
+.pairing .done { font-size: 3rem; font-weight: 700; margin: 2rem 0; }

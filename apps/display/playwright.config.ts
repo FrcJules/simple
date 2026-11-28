@@ -7,12 +7,13 @@ import { defineConfig, devices } from "@playwright/test";
 export const HUB = "http://127.0.0.1:18787";
 export const DISPLAY = "http://127.0.0.1:14173";
 export const WRITER_TOKEN = "e2e-writer-token-0123456789";
+export const HUB_TLS_PORT = 18788;
 export const DISPLAY_TOKEN = "e2e-display-token-0123456789";
 
 const hubEnv = [
   "PORT=18787",
   "SIMPLE_TLS_PORT=18788",
-  "SIMPLE_HOST=127.0.0.1",
+  "SIMPLE_HOST=simple-e2e.local", // only written in the QR code (must be a home-network name); the test pairs through 127.0.0.1
   "SIMPLE_DATA_DIR=test-results/hub-data",
   "SIMPLE_TLS_DIR=test-results/hub-data/tls",
   "SIMPLE_PHOTOS_DIR=test-results/hub-data/photos",
