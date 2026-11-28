@@ -36,7 +36,7 @@ L'apparence de l'accueil (thème, tuiles) vient d'un JSON validé : `docs/custom
 - Après un changement de format stocké (SQLite, DataStore, JSON), chercher les anciennes hypothèses dans `androidTest`.
 - Permissions SMS : utilisées **seulement avec le rôle d'application SMS par défaut** dans la version Play (politique Google) ; le « mode direct » est réservé aux versions de test (`SMS_DIRECT_MODE_OFFERED`, `SmsAccess.directModeAllowed`).
 - L'émulateur de CI force la langue de l'app en `fr` (`cmd locale set-app-locales`) : les tests cherchent les textes français.
-- Release : `versionCode` = `run_number` GitHub ; le workflow envoie l'AAB en test interne Play à l'état brouillon (déploiement = clic manuel).
+- Release : `versionCode` = `run_number` GitHub ; le workflow publie l'AAB sur la piste test interne de Play après validation de l'environnement `release` ; test fermé et production restent des promotions manuelles dans la Console.
 
 ## Agents (`.claude/agents`) et revue
 - Dév : `android-dev` (launcher), `ci-release` (`.github/`, versions, publication Play).

@@ -27,7 +27,7 @@ Simple est une **application Android** ([`apps/launcher-android`](apps/launcher-
 - les **messages WhatsApp** lus dans leurs notifications, avec réponse par la notification ;
 - des **réglages famille** protégés par un code, et une apparence modifiable ([docs/customization.md](docs/customization.md)).
 
-État : v0.2.0, AAB envoyés en brouillon sur la piste test interne de Google Play ; pas encore essayé sur un vrai téléphone ([état et plan](docs/roadmap-launcher.md)).
+État : v0.2.0, AAB publiés sur la piste test interne de Google Play ; pas encore essayé sur un vrai téléphone ([état et plan](docs/roadmap-launcher.md)).
 
 L'écran maison (Raspberry Pi) prévu au départ a été abandonné le 28 novembre 2026 ([vision](docs/vision.md#abandonné)).
 
