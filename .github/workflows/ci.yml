@@ -63,11 +63,18 @@ jobs:
         with: { distribution: temurin, java-version: 17 }
       - uses: gradle/actions/setup-gradle@v6
         with: { gradle-version: 9.6.0 }
-      - run: gradle :app:lintDebug :app:testDebugUnitTest :app:assembleDebug
+      # roborazzi.test.record: the JVM screenshot tests (ScreenshotsTest) also write their images, uploaded below for review.
+      - run: gradle :app:lintDebug :app:testDebugUnitTest :app:assembleDebug -Proborazzi.test.record=true
       - uses: actions/upload-artifact@v4
         with:
           name: launcher-debug-apk
           path: apps/launcher-android/app/build/outputs/apk/debug/*.apk
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: launcher-screenshots-jvm
+          if-no-files-found: warn
+          path: apps/launcher-android/app/build/outputs/roborazzi/*.png
 
   # The 61+ UI tests take ~5 of the ~9 minutes of this job: two emulators each run half of them (AndroidJUnitRunner sharding), in parallel.
   # The SMS tests (which need the default-SMS role) run in shard 0 only. A third shard would add ~3 runner-minutes for ~40 s less.

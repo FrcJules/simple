@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("io.github.takahirom.roborazzi")
 }
 
 kotlin {
@@ -78,6 +79,11 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     testImplementation("com.vaadin.external.google:android-json:0.0.20131108.vaadin1") // Apache-2.0 org.json for plain JVM tests
     // Test-only (Apache-2.0): runs SQLite, receivers and SMS code on the JVM, so they can be checked without an emulator.
-    testImplementation("org.robolectric:robolectric:4.14.1")
+    testImplementation("org.robolectric:robolectric:4.18.1")
+    // Screenshot tests on the JVM (Roborazzi, Apache-2.0): every screen rendered without an emulator, see docs/testing.md.
+    testImplementation(platform("androidx.compose:compose-bom:2026.11.01"))
+    testImplementation("androidx.compose.ui:ui-test-junit4")
+    testImplementation("io.github.takahirom.roborazzi:roborazzi:1.79.0")
+    testImplementation("io.github.takahirom.roborazzi:roborazzi-compose:1.79.0")
     testImplementation("androidx.test:core:1.7.0")
 }
