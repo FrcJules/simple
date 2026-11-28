@@ -2,6 +2,11 @@
 Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
+
+## [0.2.1] - 2026-11-28
+### Modifié
+- Publication : chaque version est publiée directement sur la piste de test interne de Google Play (et plus en brouillon), après validation dans GitHub.
+- Dépôt : code de l'écran maison retiré, CodeQL analyse le Kotlin/Java de l'application.
 ### Retiré
 - Code de l'écran maison Raspberry Pi (`apps/hub`, `apps/display`, `packages/contracts`, `deploy/`) et outillage JavaScript : le projet est désormais l'application Android seule. L'historique git le conserve.
 ### Modifié

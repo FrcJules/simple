@@ -3,7 +3,7 @@
 1. Mettre à jour `CHANGELOG.md` et `distribution/whatsnew/`, fusionner dans `main`.
 2. `git tag vX.Y.Z && git push origin vX.Y.Z`.
 3. Le workflow **Release** démarre : le job `android` (signature + envoi sur Google Play) **attend une validation** dans l'onglet *Actions* → *Review deployments* → environnement `release` → *Approve and deploy*.
-4. L'AAB arrive en **brouillon** sur la piste *test interne* de la Play Console ; le déploiement est un clic manuel.
+4. L'AAB est **publié directement sur la piste *test interne*** (vos testeurs internes, sans revue Google) depuis la v0.2.1. Le passage en test fermé ou en production reste manuel dans la Play Console.
 5. Le job `publish` crée la GitHub Release avec l'AAB en pièce jointe.
 
 ## Pourquoi cette validation
