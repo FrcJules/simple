@@ -55,7 +55,7 @@ jobs:
       # End-to-end: real hub + built display in Chromium, at the Pi screen sizes (apps/display/e2e, docs/testing.md).
       - run: npx playwright install --with-deps chromium
       - run: npm run e2e -w @simple/display
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: display-screenshots-e2e
@@ -87,11 +87,11 @@ jobs:
           manifest=$(find app/build/intermediates -path '*release*' -name AndroidManifest.xml | grep -i merged | head -1)
           test -n "$manifest"
           ! grep -q 'android.permission.INTERNET' "$manifest"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: launcher-debug-apk
           path: apps/launcher-android/app/build/outputs/apk/debug/*.apk
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: launcher-screenshots-jvm
@@ -130,7 +130,7 @@ jobs:
           script: SHARD=${{ matrix.shard }} NUM_SHARDS=2 bash scripts/ci-emulator-tests.sh
       - name: Upload screenshots and reports
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: emulator-screenshots-and-reports-${{ matrix.shard }}
           if-no-files-found: warn

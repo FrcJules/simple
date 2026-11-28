@@ -17,7 +17,7 @@ jobs:
       # The tag name goes through an environment variable, never into the script text (shell injection via a crafted tag).
       - env: { REF_NAME: "${{ github.ref_name }}" }
         run: tar -czf "simple-pi-${REF_NAME}.tar.gz" apps/hub/dist apps/display/dist .env.example
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with: { name: pi, path: "simple-pi-*.tar.gz" }
 
   # Signs the bundle and uploads it to Play. The "release" environment requires a maintainer's approval before this job starts;
@@ -54,7 +54,7 @@ jobs:
       - name: Remove keystore
         if: always()
         run: rm -f "$RUNNER_TEMP/release.jks"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with: { name: launcher-aab, path: "apps/launcher-android/app/build/outputs/bundle/release/*.aab" }
       - name: Is a Play service account configured?
         id: play
