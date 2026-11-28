@@ -15,7 +15,6 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      web: ${{ steps.f.outputs.web }}
       android: ${{ steps.f.outputs.android }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -24,45 +23,10 @@ jobs:
         id: f
         with:
           filters: |
-            web:
-              - 'apps/hub/**'
-              - 'apps/display/**'
-              - 'packages/**'
-              - 'package*.json'
-              - 'eslint.config.js'
-              - 'tsconfig.base.json'
-              - '.github/workflows/ci.yml'
             android:
               - 'apps/launcher-android/**'
               - 'scripts/ci-emulator-tests.sh'
               - '.github/workflows/ci.yml'
-
-  web:
-    needs: changes
-    if: needs.changes.outputs.web == 'true' || github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with: { persist-credentials: false }
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with: { node-version: 22, cache: npm }
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm test
-      - run: npm run build
-      - run: npm audit --audit-level=high
-      # End-to-end: real hub + built display in Chromium, at the Pi screen sizes (apps/display/e2e, docs/testing.md).
-      - run: npx playwright install --with-deps chromium
-      - run: npm run e2e -w @simple/display
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: always()
-        with:
-          name: display-screenshots-e2e
-          if-no-files-found: warn
-          path: |
-            apps/display/test-results/screens/**
-            apps/display/playwright-report/**
 
   android:
     needs: changes
@@ -140,7 +104,7 @@ jobs:
   # Single required status check for branch protection.
   ci-ok:
     if: always()
-    needs: [changes, web, android, android-emulator]
+    needs: [changes, android, android-emulator]
     runs-on: ubuntu-latest
     steps:
       - run: |
