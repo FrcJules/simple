@@ -9,7 +9,7 @@ import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
 
 /**
- * The family code that protects "Réglages famille" (pairing, erasing, appearance) from whoever holds the phone. Only a salted
+ * The family code that protects "Réglages famille" (messages, people, erasing, appearance) from whoever holds the phone. Only a salted
  * hash (PBKDF2) is kept, never the code, and where the phone has a Keystore that hash is itself sealed with a key that never leaves
  * it: a copy of the app's files (root, a forensic image) cannot be tried offline against all the 4-to-8-digit codes. After repeated mistakes the screen locks for longer and longer, so the code cannot
  * be tried exhaustively on the phone. There is no recovery: forgetting it means clearing the app's data in Android settings.

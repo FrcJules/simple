@@ -11,7 +11,7 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 /**
- * Encrypts a small secret (the pairing token) with AES-GCM. The key lives in the Android Keystore (hardware-backed where
+ * Encrypts a small secret (the family code's hash) with AES-GCM. The key lives in the Android Keystore (hardware-backed where
  * available) and never leaves it: a copy of the app's files is not enough to read the secret.
  */
 class SecretBox(private val key: () -> SecretKey) {
@@ -24,7 +24,7 @@ class SecretBox(private val key: () -> SecretKey) {
         } catch (e: GeneralSecurityException) {
             null
         } catch (e: RuntimeException) {
-            null // e.g. ProviderException from a faulty Keystore: "cannot seal", never a crash of the notification service
+            null // e.g. ProviderException from a faulty Keystore: "cannot seal", never a crash
         }
 
     /** The secret, or null if [sealed] was altered, was sealed with another key, or cannot be read. */
@@ -48,7 +48,7 @@ class SecretBox(private val key: () -> SecretKey) {
         private const val TAG_BITS = 128
 
         /** The app's key in the Android Keystore, created on first use. Throws [GeneralSecurityException] if there is no Keystore. */
-        fun keystoreKey(alias: String = "simple-pairing"): SecretKey {
+        fun keystoreKey(alias: String): SecretKey {
             val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
             (store.getKey(alias, null) as? SecretKey)?.let { return it }
             val gen = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
@@ -62,22 +62,23 @@ class SecretBox(private val key: () -> SecretKey) {
             return gen.generateKey()
         }
 
-        @Volatile private var cached: SecretBox? = null
+        /** Removes [alias] from the Android Keystore (nothing happens if it is not there). Throws [GeneralSecurityException] if there is no Keystore. */
+        fun deleteKey(alias: String) {
+            KeyStore.getInstance("AndroidKeyStore").apply { load(null) }.deleteEntry(alias)
+        }
+
         @Volatile private var cachedFamilyCode: SecretBox? = null
 
-        /** Its own key, apart from the pairing token's: losing one never takes the other with it. */
-        fun familyCode(): SecretBox? = cachedFamilyCode ?: forKeystore("simple-family-code")?.also { cachedFamilyCode = it }
-
         /**
-         * The Keystore box, probed once it works. A probe that fails is not remembered: the Keystore can be briefly unavailable
+         * The family code's box, probed once it works. A probe that fails is not remembered: the Keystore can be briefly unavailable
          * (right after boot, low memory), and a lasting "no Keystore" must not be decided by one bad moment.
          */
-        fun shared(): SecretBox? = cached ?: forKeystore()?.also { cached = it }
+        fun familyCode(): SecretBox? = cachedFamilyCode ?: forKeystore("simple-family-code")?.also { cachedFamilyCode = it }
 
         /** The Keystore-backed box, or null if this phone has no usable Keystore (the caller then keeps the old behaviour). */
-        fun forKeystore(alias: String = "simple-pairing"): SecretBox? =
+        fun forKeystore(alias: String): SecretBox? =
             try {
-                val key = keystoreKey(alias) // the key handle is kept: the Keystore is not queried again for every notification
+                val key = keystoreKey(alias) // the key handle is kept: the Keystore is not queried again for every use
             SecretBox { key }.also { it.seal("probe") ?: return null }
             } catch (e: GeneralSecurityException) {
                 null

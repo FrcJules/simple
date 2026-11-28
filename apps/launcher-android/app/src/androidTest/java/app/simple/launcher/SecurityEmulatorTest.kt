@@ -7,8 +7,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.test.platform.app.InstrumentationRegistry
-import app.simple.launcher.notifications.PairingConfig
-import app.simple.launcher.notifications.PairingStore
+import app.simple.launcher.security.LegacyHubCleanup
 import app.simple.launcher.security.SecretBox
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -35,7 +34,7 @@ class SecurityEmulatorTest {
 
     @Test
     fun theRealKeystoreSealsAndOpensASecret() {
-        val box = SecretBox.forKeystore()
+        val box = SecretBox.forKeystore("simple-test")
         assertNotNull("this emulator must have a usable Keystore", box)
         val sealed = box!!.seal("0123456789abcdef0123")!!
         assertFalse(sealed.contains("0123456789"))
@@ -44,12 +43,11 @@ class SecurityEmulatorTest {
     }
 
     @Test
-    fun theTokenOfThePairingIsEncryptedWithTheKeystore() {
-        val config = PairingConfig.parse("https://192.168.1.20:8788", "0123456789abcdef0123", "B".repeat(64))!!
-        PairingStore(context).save(config)
-        val prefs = context.getSharedPreferences("pairing", Context.MODE_PRIVATE)
-        assertTrue(prefs.contains("token_sealed") && !prefs.contains("token"))
-        assertEquals(config, PairingStore(context).load())
+    fun theOldPairingKeyIsRemovedFromTheRealKeystore() {
+        SecretBox.keystoreKey(LegacyHubCleanup.PAIRING_KEY_ALIAS) // as an earlier version left it
+        SecretBox.deleteKey(LegacyHubCleanup.PAIRING_KEY_ALIAS)
+        val store = java.security.KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+        assertFalse(store.containsAlias(LegacyHubCleanup.PAIRING_KEY_ALIAS))
     }
 
     @Test
