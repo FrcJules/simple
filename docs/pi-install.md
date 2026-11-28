@@ -34,7 +34,7 @@ sudo chown -R simple:simple /opt/simple
 sudo install -d -m 0750 -o root -g simple /etc/simple
 sudo install -m 0640 -o root -g simple /opt/simple/deploy/pi/hub.env.example /etc/simple/hub.env
 ```
-Éditez `/etc/simple/hub.env` : mettez dans `SIMPLE_DISPLAY_TOKEN` **et** `VITE_DISPLAY_TOKEN` la même valeur, obtenue avec `openssl rand -hex 24`, et le prénom dans `VITE_SENIOR_NAME`.
+Éditez `/etc/simple/hub.env` : mettez dans `SIMPLE_DISPLAY_TOKEN` **et** `VITE_DISPLAY_TOKEN` la même valeur, obtenue avec `openssl rand -hex 24`, et le prénom dans `VITE_SENIOR_NAME`. `VITE_LANG` choisit la langue de l'écran maison (`fr` par défaut, `en` pour l'anglais) ; il est lu à la construction, donc relancez `deploy/pi/update.sh` après l'avoir changé.
 
 Construisez puis démarrez (la mise à jour fait la même chose, voir plus bas) :
 ```sh

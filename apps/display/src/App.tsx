@@ -97,7 +97,7 @@ export function App() {
         <p className="date">{formatDate(now)}</p>
         {weather && sky && (
           <p className="weather">
-            <span aria-hidden="true">{sky.icon}</span> {sky.label}, {degrees(weather.temperature)} <span className="range">(de {degrees(weather.min)} à {degrees(weather.max)})</span>
+            <span aria-hidden="true">{sky.icon}</span> {sky.label}, {degrees(weather.temperature)} <span className="range">({homeText.range(degrees(weather.min), degrees(weather.max))})</span>
             <span className="credit"> Open-Meteo.com</span>
           </p>
         )}
