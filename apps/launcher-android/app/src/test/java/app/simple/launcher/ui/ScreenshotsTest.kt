@@ -99,6 +99,19 @@ class ScreenshotsTest {
         ReplyConfirmScreen(items[0], "Oui, venez à 15 heures, je vous attends avec le goûter.", onListen = {}, onSend = {}, onRedo = {}, onCancel = {})
     }
 
+    /** For the Play listing: a short exchange that fits on one screen, as the default SMS app sends it (directSend). */
+    @Test fun conversationShort() {
+        val thread = listOf(
+            message("a", "Bonjour papa, je passe demain après-midi avec les enfants.", 40),
+            message("b", "Avec plaisir, je vous attends !", 30, outgoing = true, status = MessageStatus.DELIVERED),
+        )
+        shoot("26_conversation_short") { ConversationScreen(items[0], thread, now, canDictate = true, notice = null, onListen = {}, onReply = {}, onBack = {}) }
+    }
+
+    @Test fun replyDirect() = shoot("27_reply_direct") {
+        ReplyConfirmScreen(items[0], "Oui, venez à 15 heures, je vous attends avec le goûter.", onListen = {}, onSend = {}, onRedo = {}, onCancel = {}, directSend = true)
+    }
+
     @Test fun pickRecipient() = shoot("25_pick_recipient") { PickContactScreen(R.string.write_to_title, listOf(marie, jules), listOf(marie, jules), onPick = {}, onBack = {}) }
 
     @Test fun photoChoice() = shoot("30_photo_choice") { PhotoChoiceScreen(marie, known = true, canTakePhoto = true, notice = null, onTake = {}, onPick = {}, onBack = {}) }
