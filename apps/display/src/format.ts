@@ -1,4 +1,4 @@
-import type { SimpleEvent } from "@simple/contracts";
+import { isStillShown, type SimpleEvent } from "@simple/contracts";
 import { lang, type Lang } from "./lang";
 
 const LOCALE: Record<Lang, string> = { fr: "fr-FR", en: "en-US" };
@@ -48,3 +48,10 @@ export const icon = (e: SimpleEvent) =>
 
 /** Extra line under the headline (message body), if the event carries one. */
 export const body = (e: SimpleEvent): string | undefined => (e.type === "new_message" ? e.text : undefined);
+
+/**
+ * The event the home screen shows: the newest one that may still be shown (a day for a missed call, a few hours for a
+ * message's text: DISPLAY_RETENTION_MS). An old message does not stay on the living-room screen for days.
+ */
+export const currentEvent = (events: readonly SimpleEvent[], now: Date): SimpleEvent | undefined =>
+  events.find((e) => isStillShown(e, now.getTime() - new Date(e.occurredAt).getTime()));

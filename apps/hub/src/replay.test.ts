@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { replayFor, type StoredEvent } from "./replay";
+import { purgeExpired, replayFor, type StoredEvent } from "./replay";
 
 const HOUR = 3_600_000;
 const NOW = 1_800_000_000_000;
@@ -39,5 +39,18 @@ describe("replayFor", () => {
     const replayed = replayFor(many, undefined, "boot", NOW);
     expect(replayed).toHaveLength(50);
     expect(replayed.at(-1)?.seq).toBe(80);
+  });
+});
+
+describe("purgeExpired", () => {
+  it("forgets a missed call after a day and a message text after a few hours", () => {
+    const message: StoredEvent = {
+      seq: 9,
+      receivedAt: NOW - 5 * HOUR,
+      event: { schemaVersion: 1, id: "m", type: "new_message", channel: "sms", occurredAt: "2026-11-28T09:30:00+01:00", from: { name: "Marie" }, text: "Bonjour" },
+    };
+    const list = [...buffer, message];
+    purgeExpired(list, NOW);
+    expect(seqs(list)).toEqual([2, 3, 4]); // the 30 h old call and the 5 h old message are gone
   });
 });

@@ -5,7 +5,7 @@ import { randomBytes, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { DeviceRegistry } from "./devices";
 import { FailureLimiter } from "./limiter";
-import { replayFor, sseId, type StoredEvent } from "./replay";
+import { purgeExpired, replayFor, sseId, type StoredEvent } from "./replay";
 import type { BirthdaysStore } from "./birthdays";
 import type { PhotosStore } from "./photos";
 import type { WeatherService } from "./weather";
@@ -154,6 +154,7 @@ export function buildApp(opts: HubOptions): FastifyInstance {
     const parsed = simpleEvent.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: "invalid_event" });
     const stored: StoredEvent = { seq: ++seq, receivedAt: performance.now(), event: parsed.data };
+    purgeExpired(events, stored.receivedAt);
     events.push(stored);
     if (events.length > maxEvents) events.shift();
     listeners.forEach((l) => l(stored));
@@ -164,6 +165,7 @@ export function buildApp(opts: HubOptions): FastifyInstance {
   app.get("/events", async (req, reply) => {
     if (authFailures.blocked(req.ip)) return tooMany(reply);
     if (!canRead(req)) return unauthorized(req.ip, reply);
+    purgeExpired(events, performance.now());
     return { events: events.map((s) => s.event) };
   });
 
@@ -216,7 +218,7 @@ export function buildApp(opts: HubOptions): FastifyInstance {
     if (listeners.size >= maxStreams) return reply.code(503).send({ error: "too_many_streams" });
     reply.raw.writeHead(200, {
       "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
+      "Cache-Control": "no-store",
       Connection: "keep-alive",
       "Access-Control-Allow-Origin": origin,
     });
@@ -224,6 +226,7 @@ export function buildApp(opts: HubOptions): FastifyInstance {
     const send = (s: StoredEvent) => reply.raw.write(`id: ${sseId(bootId, s.seq)}\ndata: ${JSON.stringify(s.event)}\n\n`);
     // A screen that just started, or reconnected after a Wi-Fi drop, first gets what it missed: a missed call is never lost.
     const lastEventId = req.headers["last-event-id"];
+    purgeExpired(events, performance.now());
     replayFor(events, typeof lastEventId === "string" ? lastEventId : undefined, bootId, performance.now()).forEach(send);
     listeners.add(send);
     req.raw.on("close", () => listeners.delete(send));

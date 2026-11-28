@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { body, formatDate, formatTime, greeting, headline, icon, timeAgo } from "./format";
+import { body, currentEvent, formatDate, formatTime, greeting, headline, icon, timeAgo } from "./format";
 import { birthdaysToday, fetchBirthdays, nextBirthdays, plausibleAge, turnsAge } from "./birthdays";
 import { PairingScreen } from "./PairingScreen";
 import { degrees, describeWeather, fetchWeather } from "./weather";
@@ -27,7 +27,7 @@ const SECRET_WINDOW_MS = 4000;
 
 export function App() {
   const now = useNow();
-  const latest = useEvents()[0];
+  const latest = currentEvent(useEvents(), now);
   const [pairing, setPairing] = useState(false);
   const photo = useSlideshow();
   const [reminders, setReminders] = useState<Reminder[]>([]);

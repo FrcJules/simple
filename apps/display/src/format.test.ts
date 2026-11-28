@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { body, greeting, headline, timeAgo } from "./format";
+import { body, currentEvent, greeting, headline, timeAgo } from "./format";
 
 describe("format", () => {
   const now = new Date("2026-10-06T10:00:00Z");
@@ -22,5 +22,24 @@ describe("format", () => {
   it("headlines a missed call", () => {
     expect(headline({ schemaVersion: 1, id: "1", type: "missed_call", occurredAt: "2026-10-06T10:00:00Z", from: { name: "Marie" } }))
       .toBe("Marie vous a appelé");
+  });
+});
+
+describe("currentEvent", () => {
+  const now = new Date("2026-11-28T12:00:00Z");
+  const at = (hoursAgo: number) => new Date(now.getTime() - hoursAgo * 3_600_000).toISOString();
+  const call = (hoursAgo: number) => ({ schemaVersion: 1 as const, id: `c${hoursAgo}`, type: "missed_call" as const, occurredAt: at(hoursAgo), from: { name: "Marie" } });
+  const message = (hoursAgo: number) => ({ schemaVersion: 1 as const, id: `m${hoursAgo}`, type: "new_message" as const, channel: "sms" as const, occurredAt: at(hoursAgo), from: { name: "Paul" }, text: "Bonjour" });
+
+  it("shows the newest event", () => {
+    expect(currentEvent([message(1), call(2)], now)?.id).toBe("m1");
+  });
+
+  it("drops a message after a few hours and falls back to a missed call of the day", () => {
+    expect(currentEvent([message(5), call(6)], now)?.id).toBe("c6");
+  });
+
+  it("shows nothing once everything is too old", () => {
+    expect(currentEvent([message(5), call(30)], now)).toBeUndefined();
   });
 });

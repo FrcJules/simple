@@ -38,7 +38,7 @@ export const newMessageEvent = z.object({
   type: z.literal("new_message"),
   from: person,
   channel: messageChannel,
-  /** Message body, shown (and read aloud) on the home display; kept in memory only. */
+  /** Message body, shown on the home display for a few hours (DISPLAY_RETENTION_MS); kept in memory only. */
   text: z.string().min(1).max(500),
 });
 
@@ -116,3 +116,19 @@ export const birthday = z
 export const birthdaysResponse = z.object({ birthdays: z.array(birthday).max(100) });
 
 export type Birthday = z.infer<typeof birthday>;
+
+const HOUR_MS = 3_600_000;
+
+/**
+ * How long the home display may show an event, and the hub keep it in memory (docs/privacy.md). A missed call stays useful for a day
+ * ("Marie vous a appelé, il y a 2 heures"); the text of a message is more private and leaves the living-room screen sooner.
+ */
+export const DISPLAY_RETENTION_MS: Record<SimpleEvent["type"], number> = {
+  missed_call: 24 * HOUR_MS,
+  new_photo: 24 * HOUR_MS,
+  birthday: 24 * HOUR_MS,
+  new_message: 4 * HOUR_MS,
+};
+
+/** True while an event of this age (ms) may still be kept and shown. */
+export const isStillShown = (event: SimpleEvent, ageMs: number): boolean => ageMs <= DISPLAY_RETENTION_MS[event.type];
