@@ -353,7 +353,8 @@ internal fun Avatar(contact: Contact, modifier: Modifier, initialSize: TextUnit 
     } else {
         Box(modifier.clip(shape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
             if (contact.initial.firstOrNull()?.isLetter() == true) {
-                Text(contact.initial, fontSize = initialSize)
+                // Own colour: inside a highlighted (unread) card the inherited content colour is meant for the card, not this box.
+                Text(contact.initial, fontSize = initialSize, color = MaterialTheme.colorScheme.onPrimaryContainer)
             } else {
                 Icon(Icons.Filled.Person, contentDescription = null, modifier = Modifier.fillMaxSize(0.6f))
             }

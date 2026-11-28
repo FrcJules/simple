@@ -7,6 +7,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.text
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
@@ -16,7 +20,7 @@ import androidx.compose.ui.unit.sp
 
 /**
  * A short label (tile, tab, name) that never breaks inside a word: "Message / s" is unreadable for someone who reads little.
- * Lines break between words (a hyphenated name such as "Marie-Christine" counts as one word); if the widest word does not fit on one line (large system font, small screen),
+ * Lines break between words or just after a hyphen ("Marie-" / "Christine"); if the widest word does not fit on one line (large system font, small screen),
  * the text gets smaller instead of being cut in the middle, but never smaller on screen than [minFontSize] at the normal font size
  * (24 sp, the project's minimum): someone who enlarged the system font still gets at least what everyone else gets.
  */
@@ -28,6 +32,7 @@ fun FitText(
     fontWeight: FontWeight? = null,
     textAlign: TextAlign = TextAlign.Center,
     minFontSize: TextUnit = 24.sp,
+    onTextLayout: (TextLayoutResult) -> Unit = {},
 ) {
     BoxWithConstraints(modifier) {
         val measurer = rememberTextMeasurer()
@@ -42,10 +47,15 @@ fun FitText(
             while (s - 1f >= floor && widest(s) > maxWidth) s -= 1f
             s.sp
         }
-        Text(text, fontSize = size, fontWeight = fontWeight, textAlign = textAlign, maxLines = MAX_LINES, overflow = TextOverflow.Ellipsis)
+        // A zero-width space after each hyphen lets the line break there; screen readers and tests still get the plain text.
+        Text(
+            text.replace("-", "-\u200B"),
+            fontSize = size, fontWeight = fontWeight, textAlign = textAlign, maxLines = MAX_LINES, overflow = TextOverflow.Ellipsis, onTextLayout = onTextLayout,
+            modifier = Modifier.clearAndSetSemantics { this.text = AnnotatedString(text) },
+        )
     }
 }
 
-/** Where a line may break. Not after a hyphen: the platform line breaker does not reliably break there. */
-private val WORD_BREAK = Regex("\\s+")
+/** Where a line may break: spaces, and just after a hyphen. */
+private val WORD_BREAK = Regex("\\s+|(?<=-)")
 private const val MAX_LINES = 3

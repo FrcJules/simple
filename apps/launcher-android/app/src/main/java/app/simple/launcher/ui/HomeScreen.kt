@@ -121,6 +121,7 @@ private fun RowScope.Tile(tile: TileConfig, badge: Int, app: AppInfo?, pictureSi
                         },
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
                     )
                 }
             }

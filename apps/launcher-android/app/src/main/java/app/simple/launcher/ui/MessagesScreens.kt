@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -303,22 +304,25 @@ private fun statusText(status: MessageStatus): String? = when (status) {
 private fun StackedLabel(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Icon(icon, contentDescription = null)
-        Text(label, fontSize = 24.sp, maxLines = 1, softWrap = false)
+        FitText(label, fontSize = 24.sp)
     }
 }
+
+/** Two of these buttons share a row: narrow side padding leaves the label room to fit without breaking a word. */
+private val PAIR_BUTTON_PADDING = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
 
 @Composable
 private fun ListenButton(onClick: () -> Unit, main: Boolean, modifier: Modifier = Modifier) {
     val content: @Composable () -> Unit = { StackedLabel(Icons.Filled.VolumeUp, stringResource(R.string.message_listen)) }
-    if (main) Button(onClick = onClick, modifier = modifier.heightIn(min = 88.dp)) { content() }
-    else OutlinedButton(onClick = onClick, modifier = modifier.heightIn(min = 88.dp)) { content() }
+    if (main) Button(onClick = onClick, modifier = modifier.heightIn(min = 88.dp), contentPadding = PAIR_BUTTON_PADDING) { content() }
+    else OutlinedButton(onClick = onClick, modifier = modifier.heightIn(min = 88.dp), contentPadding = PAIR_BUTTON_PADDING) { content() }
 }
 
 @Composable
 private fun ReplyButton(onClick: () -> Unit, main: Boolean, isNew: Boolean, modifier: Modifier = Modifier) {
     val content: @Composable () -> Unit = { StackedLabel(Icons.Filled.Mic, stringResource(if (isNew) R.string.message_dictate else R.string.message_reply)) }
-    if (main) Button(onClick = onClick, modifier = modifier.heightIn(min = 88.dp)) { content() }
-    else OutlinedButton(onClick = onClick, modifier = modifier.heightIn(min = 88.dp)) { content() }
+    if (main) Button(onClick = onClick, modifier = modifier.heightIn(min = 88.dp), contentPadding = PAIR_BUTTON_PADDING) { content() }
+    else OutlinedButton(onClick = onClick, modifier = modifier.heightIn(min = 88.dp), contentPadding = PAIR_BUTTON_PADDING) { content() }
 }
 
 /**
