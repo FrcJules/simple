@@ -29,6 +29,6 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "VITE_");
   return {
     plugins: [react(), contentSecurityPolicy(env.VITE_HUB_URL ?? "http://localhost:8787")],
-    test: { environment: "jsdom" },
+    test: { environment: "jsdom", exclude: ["e2e/**", "node_modules/**"] }, // e2e/ = Playwright
   };
 });

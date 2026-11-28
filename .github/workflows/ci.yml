@@ -50,6 +50,17 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm audit --audit-level=high
+      # End-to-end: real hub + built display in Chromium, at the Pi screen sizes (apps/display/e2e, docs/testing.md).
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e -w @simple/display
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: display-screenshots-e2e
+          if-no-files-found: warn
+          path: |
+            apps/display/test-results/screens/**
+            apps/display/playwright-report/**
 
   android:
     needs: changes

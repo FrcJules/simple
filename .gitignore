@@ -29,3 +29,5 @@ captures/
 # Hub runtime data (TLS key!)
 data/
 .kotlin/
+apps/display/test-results/
+apps/display/playwright-report/
