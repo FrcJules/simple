@@ -129,6 +129,8 @@ class ScreenshotsTest {
             Triple("phone", PHONE, 1f),
             Triple("small", "fr-rFR-w320dp-h568dp-xhdpi", 1f),
             Triple("font200", PHONE, 2f),
+            // Google Play phone screenshots: 1080 × 1920 px (9:16, within Play's 2:1 limit), copied to fastlane/metadata/android/*/images/phoneScreenshots.
+            Triple("store", "fr-rFR-w360dp-h640dp-xxhdpi", 1f),
         )
     }
 }
