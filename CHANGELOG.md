@@ -2,6 +2,10 @@
 Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
+### Retiré
+- Code de l'écran maison Raspberry Pi (`apps/hub`, `apps/display`, `packages/contracts`, `deploy/`) et outillage JavaScript : le projet est désormais l'application Android seule. L'historique git le conserve.
+### Modifié
+- CodeQL analyse maintenant le code Kotlin/Java de l'application et les workflows GitHub.
 
 ## [0.2.0] - 2026-11-28
 ### Ajouté
