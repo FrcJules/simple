@@ -559,9 +559,9 @@ class MainActivity : ComponentActivity() {
 
     // ---- SMS role ----
 
-    // The offer comes first only while neither the role nor the direct permissions are there (debug builds: they carry the SMS permissions).
+    // The offer comes first only while neither the role nor (in test builds) the direct permissions are there, and the phone can grant the role.
     private fun shouldOfferSmsRole() =
-        BuildConfig.SMS_ROLE_OFFERED && !SmsAccess.direct(this) && !profile.smsRoleDeclined() && !smsRoleLater
+        !SmsAccess.direct(this) && !profile.smsRoleDeclined() && !smsRoleLater && SmsRole.requestIntent(this) != null
 
     private fun openMessages() {
         screen = if (shouldOfferSmsRole()) Screen.SMS_ROLE else Screen.MESSAGES
@@ -678,7 +678,7 @@ class MainActivity : ComponentActivity() {
         when {
             SmsAccess.direct(this) -> screen = Screen.PICK_RECIPIENT
             // Neither the SMS role nor the SMS permissions yet: ask here (it may have been refused once) instead of sending the person to another app.
-            BuildConfig.SMS_ROLE_OFFERED -> {
+            SmsRole.requestIntent(this) != null -> {
                 profile.setSmsRoleDeclined(false)
                 smsRoleLater = false
                 pendingWrite = true
