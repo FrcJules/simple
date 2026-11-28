@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import https from "node:https";
 import { connect, type Socket } from "node:net";
-import { connect as tlsConnect } from "node:tls";
+import { connect as tlsConnect, type PeerCertificate } from "node:tls";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, afterEach, describe, expect, it } from "vitest";
@@ -12,6 +12,13 @@ import { loadOrCreateTls } from "./tls";
 const dir = mkdtempSync(join(tmpdir(), "simple-phone-"));
 const tls = loadOrCreateTls(dir);
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
+
+/** Like the phone: the hub's self-signed certificate is trusted only if its SHA-256 matches the pinned fingerprint. */
+const pinned = {
+  ca: tls.cert,
+  checkServerIdentity: (_host: string, cert: PeerCertificate) =>
+    cert.fingerprint256.replaceAll(":", "") === tls.fingerprint ? undefined : new Error("certificate does not match the pinned fingerprint"),
+};
 
 const opened: Socket[] = [];
 const servers: https.Server[] = [];
@@ -42,7 +49,7 @@ function silentConnection(port: number): Promise<number> {
 
 function request(port: number, method: string, path: string): Promise<number> {
   return new Promise((resolve, reject) => {
-    const req = https.request({ host: "127.0.0.1", port, method, path, rejectUnauthorized: false }, (res) => {
+    const req = https.request({ host: "127.0.0.1", port, method, path, ...pinned }, (res) => {
       res.resume();
       resolve(res.statusCode ?? 0);
     });
@@ -82,7 +89,7 @@ describe("phone server", () => {
     const port = await start({ ...PHONE_SERVER_LIMITS, headersMs: 300, requestMs: 400, checkIntervalMs: 100 });
     const keptOpen = await new Promise<number>((resolve) => {
       const started = Date.now();
-      const socket = tlsConnect({ host: "127.0.0.1", port, rejectUnauthorized: false }, () => {
+      const socket = tlsConnect({ host: "127.0.0.1", port, ...pinned }, () => {
         socket.write("POST /events HTTP/1.1\r\nHost: x\r\n"); // headers started, never finished
       });
       socket.resume(); // read the server's 408, or "close" would wait for it
@@ -96,7 +103,7 @@ describe("phone server", () => {
     const port = await start({ ...PHONE_SERVER_LIMITS, idleMs: 300 });
     const keptOpen = await new Promise<number>((resolve) => {
       const started = Date.now();
-      const socket = tlsConnect({ host: "127.0.0.1", port, rejectUnauthorized: false });
+      const socket = tlsConnect({ host: "127.0.0.1", port, ...pinned });
       socket.on("error", () => undefined);
       socket.on("close", () => resolve(Date.now() - started));
     });
