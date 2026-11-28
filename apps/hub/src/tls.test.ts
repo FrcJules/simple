@@ -44,9 +44,18 @@ describe("tls", () => {
     await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
     const port = (server.address() as { port: number }).port;
     const { status, seen } = await new Promise<{ status: number; seen: string }>((resolve, reject) => {
-      https.get({ host: "127.0.0.1", port, path: "/health", rejectUnauthorized: false }, (res) => {
-        const seen = (res.socket as unknown as { getPeerCertificate: () => { fingerprint256: string } })
-          .getPeerCertificate().fingerprint256.replaceAll(":", "");
+      // Like the phone: no CA chain, the certificate is trusted only if its SHA-256 matches the pinned fingerprint.
+      let seen = "";
+      https.get({
+        host: "127.0.0.1",
+        port,
+        path: "/health",
+        ca: t.cert,
+        checkServerIdentity: (_host, cert) => {
+          seen = cert.fingerprint256.replaceAll(":", "");
+          return seen === t.fingerprint ? undefined : new Error("certificate does not match the pinned fingerprint");
+        },
+      }, (res) => {
         res.resume();
         resolve({ status: res.statusCode ?? 0, seen });
       }).on("error", reject);

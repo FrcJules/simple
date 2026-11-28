@@ -1,6 +1,8 @@
 package app.simple.launcher.ui
 
 import android.net.Uri
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -47,7 +49,7 @@ private fun Recipient(contact: Contact, known: Boolean) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Avatar(contact, Modifier.size(72.dp), initialSize = 36.sp)
-            Text(contact.name, fontSize = 32.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(contact.name, fontSize = 32.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
         }
         if (!known) Text(stringResource(R.string.reply_unknown_number), fontSize = 24.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
     }
@@ -68,7 +70,7 @@ fun PhotoChoiceScreen(
         Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text(stringResource(R.string.photo_send_to), fontSize = 28.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
             Recipient(contact, known)
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically)) {
+            Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically)) {
                 if (canTakePhoto) {
                     Button(onClick = onTake, modifier = Modifier.fillMaxWidth().heightIn(min = 96.dp)) {
                         Icon(Icons.Filled.PhotoCamera, contentDescription = null)
@@ -115,7 +117,7 @@ fun PhotoConfirmScreen(
             if (notice != null) {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.Warning, contentDescription = null, modifier = Modifier.size(36.dp))
-                    Text(notice, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                    Text(notice, fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                 }
             }
             // A picture we cannot even see must not be sent; and a second touch while it goes must not send it twice.
