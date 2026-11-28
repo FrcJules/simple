@@ -1,13 +1,5 @@
 version: 2
 updates:
-  - package-ecosystem: npm
-    directory: "/"
-    schedule: { interval: weekly }
-    # Packages that only work at the same version are bumped together (a lone @eslint/js major cannot install).
-    groups:
-      eslint: { patterns: ["eslint", "@eslint/*", "typescript-eslint"] }
-      react: { patterns: ["react", "react-dom", "@types/react", "@types/react-dom"] }
-      vite-vitest: { patterns: ["vite", "vitest", "@vitejs/*"] }
   - package-ecosystem: gradle
     directory: "/apps/launcher-android"
     schedule: { interval: weekly }

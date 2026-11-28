@@ -9,14 +9,32 @@ permissions:
   actions: read
 jobs:
   analyze:
-    # Code scanning is free only on public repos; this activates once the repo is public.
+    # Code scanning is free only on public repos.
     if: ${{ !github.event.repository.private }}
     runs-on: ubuntu-latest
     strategy:
-      matrix: { language: [javascript-typescript] }
+      fail-fast: false
+      matrix:
+        include:
+          # The Android app (Kotlin + the vendored Java MMS library): compiled for the analysis.
+          - { language: java-kotlin, build-mode: manual }
+          # The GitHub workflows themselves (injection, permissions, untrusted checkouts).
+          - { language: actions, build-mode: none }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with: { persist-credentials: false }
       - uses: github/codeql-action/init@915412ff23e8b7659517e607487dbeae018f2934 # v4
-        with: { languages: "${{ matrix.language }}" }
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+      - if: matrix.language == 'java-kotlin'
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with: { distribution: temurin, java-version: 17 }
+      - if: matrix.language == 'java-kotlin'
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6
+        with: { gradle-version: 9.6.0 }
+      - if: matrix.language == 'java-kotlin'
+        working-directory: apps/launcher-android
+        run: gradle --no-daemon --no-build-cache :app:compileDebugKotlin :app:compileDebugJavaWithJavac
       - uses: github/codeql-action/analyze@915412ff23e8b7659517e607487dbeae018f2934 # v4
+        with: { category: "/language:${{ matrix.language }}" }
