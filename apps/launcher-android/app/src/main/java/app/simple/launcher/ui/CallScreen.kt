@@ -145,12 +145,13 @@ fun CallScreen(favorites: List<Contact>, all: List<Contact>, onBack: () -> Unit,
             Dialog(onDismissRequest = { selected = null }) {
                 Surface(shape = RoundedCornerShape(28.dp), color = MaterialTheme.colorScheme.surface) {
                     Column(
-                        Modifier.padding(24.dp),
+                        Modifier.verticalScroll(rememberScrollState()).padding(24.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Text(stringResource(R.string.call_confirm, c.name), fontSize = 28.sp, textAlign = TextAlign.Center)
-                        Avatar(c, Modifier.fillMaxWidth().aspectRatio(1f))
+                        // Capped so that both buttons stay in view on a small screen or with a large system font.
+                        Avatar(c, Modifier.fillMaxWidth(0.6f).aspectRatio(1f))
                         // Full-width stacked buttons: easier targets, no unequal right-aligned pair.
                         Button(
                             onClick = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); selected = null; onCall(c) },
@@ -302,7 +303,7 @@ fun CallingScreen(contact: Contact, onCancel: () -> Unit, onLaunch: () -> Unit) 
     }
     SimpleTheme {
         Column(
-            Modifier.fillMaxSize().padding(16.dp),
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
