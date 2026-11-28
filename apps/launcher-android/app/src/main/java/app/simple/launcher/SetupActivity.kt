@@ -68,6 +68,7 @@ import app.simple.launcher.config.UiConfigStore
 import app.simple.launcher.messages.MessageDiagnostics
 import app.simple.launcher.messages.MessageStore
 import app.simple.launcher.security.FamilyLock
+import app.simple.launcher.security.LegacyHubCleanup
 import app.simple.launcher.sms.SmsAccess
 import app.simple.launcher.sms.SmsComponents
 import app.simple.launcher.sms.SmsRole
@@ -238,6 +239,8 @@ class SetupActivity : ComponentActivity() {
         // The settings show the names and photos of the family: keep them out of screenshots and the recent-apps view.
         window.setFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE, android.view.WindowManager.LayoutParams.FLAG_SECURE)
         super.onCreate(savedInstanceState)
+        // The family may open only the settings after an update (Simple not yet the home app): the old pairing is erased here too.
+        if (savedInstanceState == null) Thread { LegacyHubCleanup(applicationContext).runOnce() }.start()
         onCreateContent()
     }
 
