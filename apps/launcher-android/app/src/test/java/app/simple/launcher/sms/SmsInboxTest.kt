@@ -69,6 +69,13 @@ class SmsInboxTest {
     }
 
     @Test
+    fun aFailingHistoryStillTellsThePerson() {
+        val told = mutableListOf<Any?>()
+        SmsInbox(FakeGateway(), { throw IllegalStateException("history down") }, { "Marie" }, { told += it }).onReceived("0611223344", "Bonjour", 0L, -1)
+        assertEquals(1, told.size)
+    }
+
+    @Test
     fun whenTheSystemInboxRefusesTheMessageIsStillKept() {
         val refusing = FakeGateway(writable = false)
         val kept = mutableListOf<StoredMessage>()

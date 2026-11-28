@@ -221,7 +221,7 @@
     <string name="setup_save">Save</string>
     <string name="setup_saved">Saved.</string>
     <string name="setup_access_on">Notification access: on</string>
-    <string name="setup_access_off">Notification access: off. It is only used for missed calls, SMS and WhatsApp, and nothing leaves the phone.</string>
+    <string name="setup_access_off">Notification access: off. It is only used for SMS and WhatsApp messages, and nothing leaves the phone.</string>
     <string name="setup_open_access">Open notification access</string>
     <string name="setup_refresh">Check again</string>
     <string name="messages_title">My messages</string>

@@ -48,6 +48,16 @@ class LegacyHubCleanupTest {
     }
 
     @Test
+    fun ifThePairingCouldNotBeErasedItTriesAgainAtTheNextStart() {
+        oldPairing()
+        assertTrue(LegacyHubCleanup(context, { deleted += it }, erasePairing = { throw java.io.IOException("disk error") }).runOnce())
+        assertTrue(pairingFile().exists()) // still there: not marked done
+        assertTrue(cleanup().runOnce()) // next start: tried again, and this time it works
+        assertFalse(pairingFile().exists())
+        assertFalse(cleanup().runOnce())
+    }
+
+    @Test
     fun itRunsOnlyOnce() {
         oldPairing()
         assertTrue(cleanup().runOnce())

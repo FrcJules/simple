@@ -40,12 +40,18 @@ class SecurityEmulatorTest {
         assertFalse(sealed.contains("0123456789"))
         assertEquals("0123456789abcdef0123", box.open(sealed))
         assertNull(box.open(sealed.dropLast(4) + "AAAA")) // altered
+        SecretBox.deleteKey("simple-test")
     }
 
     @Test
-    fun theOldPairingKeyIsRemovedFromTheRealKeystore() {
-        SecretBox.keystoreKey(LegacyHubCleanup.PAIRING_KEY_ALIAS) // as an earlier version left it
-        SecretBox.deleteKey(LegacyHubCleanup.PAIRING_KEY_ALIAS)
+    fun theOldPairingAndItsKeyAreRemovedFromTheRealPhone() {
+        val context = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext
+        // As an earlier version left them: a Keystore key and the pairing preferences; and not cleaned yet.
+        SecretBox.keystoreKey(LegacyHubCleanup.PAIRING_KEY_ALIAS)
+        context.getSharedPreferences(LegacyHubCleanup.PAIRING_PREFS, android.content.Context.MODE_PRIVATE).edit().putString("token", "x").commit()
+        context.getSharedPreferences("profile", android.content.Context.MODE_PRIVATE).edit().remove("legacy_hub_data_removed").commit()
+        LegacyHubCleanup(context).runOnce()
+        assertFalse(java.io.File(context.dataDir, "shared_prefs/${LegacyHubCleanup.PAIRING_PREFS}.xml").exists())
         val store = java.security.KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
         assertFalse(store.containsAlias(LegacyHubCleanup.PAIRING_KEY_ALIAS))
     }
