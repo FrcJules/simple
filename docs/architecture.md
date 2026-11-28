@@ -28,7 +28,7 @@ Décisions : [adr/](adr/).
 ## CI/CD
 - `ci.yml` : lint/typecheck/test/build/`npm audit` web (Node 22), lint/tests unitaires/APK debug Android, tests d'interface sur émulateur (`android-emulator`), filtré par chemins ; job `ci-ok` = check requis.
 - `codeql.yml` : analyse statique hebdomadaire et sur PR.
-- `release.yml` : tag `vX.Y.Z` → archive Pi + AAB signé → GitHub Release, et envoi de l'AAB sur la piste **test interne** de Google Play, **en brouillon** (si le secret `PLAY_SERVICE_ACCOUNT_JSON` est présent). Le passage en test fermé ou en production se fait à la main dans la Play Console. Secrets de signature : `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`.
+- `release.yml` : tag `vX.Y.Z` → archive Pi + AAB signé → GitHub Release, et envoi de l'AAB sur la piste **test interne** de Google Play, **en brouillon** (si le secret `PLAY_SERVICE_ACCOUNT_JSON` est présent). Le passage en test fermé ou en production se fait à la main dans la Play Console. Secrets de signature : `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`. Le job de signature attend une validation manuelle (environnement `release`) : voir [release.md](release.md).
 
 ## Tests
 - **Web** : Vitest pour `apps/hub`, `apps/display` et `packages/contracts` (`npm test`).
