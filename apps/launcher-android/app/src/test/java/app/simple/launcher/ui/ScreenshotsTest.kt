@@ -99,6 +99,19 @@ class ScreenshotsTest {
         ReplyConfirmScreen(items[0], "Oui, venez à 15 heures, je vous attends avec le goûter.", onListen = {}, onSend = {}, onRedo = {}, onCancel = {})
     }
 
+    /** For the Play listing: a short exchange that fits on one screen, as the default SMS app sends it (directSend). */
+    @Test fun conversationShort() {
+        val thread = listOf(
+            message("a", "Bonjour papa, je passe demain après-midi avec les enfants.", 40),
+            message("b", "Avec plaisir, je vous attends !", 30, outgoing = true, status = MessageStatus.DELIVERED),
+        )
+        shoot("26_conversation_short") { ConversationScreen(items[0], thread, now, canDictate = true, notice = null, onListen = {}, onReply = {}, onBack = {}) }
+    }
+
+    @Test fun replyDirect() = shoot("27_reply_direct") {
+        ReplyConfirmScreen(items[0], "Oui, venez à 15 heures, je vous attends avec le goûter.", onListen = {}, onSend = {}, onRedo = {}, onCancel = {}, directSend = true)
+    }
+
     @Test fun pickRecipient() = shoot("25_pick_recipient") { PickContactScreen(R.string.write_to_title, listOf(marie, jules), listOf(marie, jules), onPick = {}, onBack = {}) }
 
     @Test fun photoChoice() = shoot("30_photo_choice") { PhotoChoiceScreen(marie, known = true, canTakePhoto = true, notice = null, onTake = {}, onPick = {}, onBack = {}) }
@@ -129,6 +142,8 @@ class ScreenshotsTest {
             Triple("phone", PHONE, 1f),
             Triple("small", "fr-rFR-w320dp-h568dp-xhdpi", 1f),
             Triple("font200", PHONE, 2f),
+            // Google Play phone screenshots: 1080 × 1920 px (9:16, within Play's 2:1 limit), copied to fastlane/metadata/android/*/images/phoneScreenshots.
+            Triple("store", "fr-rFR-w360dp-h640dp-xxhdpi", 1f),
         )
     }
 }
