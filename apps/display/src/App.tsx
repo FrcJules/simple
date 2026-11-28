@@ -88,7 +88,8 @@ export function App() {
       setPairing(true);
     }
   };
-  if (pairing) return <PairingScreen onClose={closePairing} done={paired} />;
+  const justPaired = paired ? pairings.find((p) => !knownPairings.current.has(p.id)) : undefined;
+  if (pairing) return <PairingScreen onClose={closePairing} done={justPaired && homeText.newPhone(justPaired.label, justPaired.devices)} />;
   if (card.length > 0) {
     return (
       <main className="screen reminder">

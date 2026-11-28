@@ -62,7 +62,8 @@ describe("App", () => {
     vi.useFakeTimers();
     // Arrives in the same batch as an event from the new phone: the QR code must still close.
     act(() => { FakeStream.last?.emit(paired("p1", "Téléphone de Marie")); FakeStream.last?.emit(call("c1")); });
-    expect(screen.getByText("C'est fait : le téléphone est ajouté.")).toBeTruthy();
+    expect(screen.getByText("C'est fait.")).toBeTruthy();
+    expect(screen.getByText("Nouveau téléphone : Téléphone de Marie (2 en tout)")).toBeTruthy(); // how many, under the family's eyes
     expect(screen.queryByText(OFFER.fingerprint)).toBeNull();
     act(() => { vi.advanceTimersByTime(PAIRED_CONFIRMATION_MS); });
     expect(screen.getByText("Nouveau téléphone : Téléphone de Marie (2 en tout)")).toBeTruthy();

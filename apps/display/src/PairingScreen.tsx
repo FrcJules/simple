@@ -11,7 +11,8 @@ const GIVE_UP_MS = 30_000;
  * Full-screen QR code for the family to add a phone. Shown only after someone touched the clock on purpose; closes itself when the
  * one-time code expires or when the hub does not answer. The fingerprint is shown beside the code to compare with the phone's.
  */
-export function PairingScreen({ onClose: close, done = false }: { onClose: () => void; done?: boolean }) {
+/** [done]: the line to show once a phone was paired ("Nouveau téléphone relié (3 en tout)"), so the family sees how many there are. */
+export function PairingScreen({ onClose: close, done }: { onClose: () => void; done?: string }) {
   const onClose = useCallback(() => { void cancelPairing(); close(); }, [close]);
   const [state, setState] = useState<State>({ kind: "loading" });
   const [left, setLeft] = useState(0);
@@ -61,7 +62,12 @@ export function PairingScreen({ onClose: close, done = false }: { onClose: () =>
           <button className="retry" onClick={() => setAttempt((n) => n + 1)}>{t.retry}</button>
         </>
       )}
-      {done && <p className="done" role="status"><span aria-hidden="true">✓</span> {t.done}</p>}
+      {done && (
+        <div role="status">
+          <p className="done"><span aria-hidden="true">✓</span> {t.done}</p>
+          <p className="body">{done}</p>
+        </div>
+      )}
       {!done && state.kind === "ready" && qr && (
         <>
           <svg className="qr" viewBox={`-4 -4 ${qr.size + 8} ${qr.size + 8}`} role="img" aria-label={t.qrLabel} shapeRendering="crispEdges">

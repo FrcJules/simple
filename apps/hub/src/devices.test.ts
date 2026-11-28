@@ -185,11 +185,11 @@ describe("hub pairing", () => {
     const pair = await app.inject({ method: "POST", url: "/pair", payload: { claim: registry().createClaim() } });
     const deviceToken = pair.json().token as string;
     const statuses: number[] = [];
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 70; i++) {
       const post = await app.inject({ method: "POST", url: "/events", payload: { ...event, id: `f${i}` }, headers: { authorization: `Bearer ${deviceToken}` } });
       statuses.push(post.statusCode);
     }
-    expect(statuses.filter((s) => s === 202)).toHaveLength(30);
+    expect(statuses.filter((s) => s === 202)).toHaveLength(60);
     expect(statuses.at(-1)).toBe(429);
     const list = await app.inject({ method: "GET", url: "/events", headers: { authorization: `Bearer ${DISPLAY}` } });
     expect((list.json().events as { type: string }[]).some((e) => e.type === "device_paired")).toBe(true);

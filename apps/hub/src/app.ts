@@ -17,7 +17,7 @@ const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]"]);
 const MAX_PAIR_FAILURES_PER_MINUTE = 5;
 const MAX_AUTH_FAILURES_PER_MINUTE = 10;
 /** A real phone sends a few events a minute at most; more is a flood meant to push other events (and alerts) out. */
-const MAX_EVENTS_PER_DEVICE_PER_MINUTE = 30;
+const MAX_EVENTS_PER_DEVICE_PER_MINUTE = 60;
 /** Pairing announcements kept apart from the event buffer, so no flood of events can push them out. */
 const MAX_PAIRINGS = 20;
 
@@ -127,7 +127,8 @@ export function buildApp(opts: HubOptions): FastifyInstance {
       devices: Math.min(1000, Math.max(1, devices.deviceCount())),
       ...(redeemed.label ? { label: redeemed.label } : {}),
     });
-    if (announced.success) publish(announced.data);
+    // Never silent: should the name not fit the contract, the announcement goes without it.
+    publish(announced.success ? announced.data : { schemaVersion: 1, id: randomUUID(), type: "device_paired", occurredAt: new Date().toISOString(), devices: 1 });
     return reply.code(200).send({ token: redeemed.token });
   });
 

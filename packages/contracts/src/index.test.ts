@@ -94,9 +94,8 @@ describe("display retention", () => {
     expect(isStillShown(message, 5 * HOUR)).toBe(false);
   });
 
-  it("does not show an event dated in the future (it would never go away)", () => {
-    expect(isStillShown(call, -60_000)).toBe(true); // a phone clock one minute ahead
-    expect(isStillShown(call, -24 * HOUR)).toBe(false);
+  it("shows an event that looks like it is in the future (the Pi clock is behind after a boot)", () => {
+    expect(isStillShown(call, -24 * HOUR)).toBe(true);
   });
 
   it("covers every event type, never longer than a day", () => {
