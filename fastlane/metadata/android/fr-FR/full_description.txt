@@ -1,19 +1,21 @@
-Simple est un écran d'accueil ultra-simplifié pour les personnes âgées, pensé pour garder le lien avec la famille.
+Simple est un téléphone ultra-simplifié pour les personnes âgées : un écran d'accueil et une application de messages pensés pour quelqu'un qui lit peu et préfère les images.
 
-Pour Jean-Pierre (ou n'importe quel proche qui lit peu et préfère les images) :
+Pour la personne âgée :
 • Quatre gros boutons : Appeler, Messages, Photo, Mes photos.
 • Les proches sont affichés par leur photo : on reconnaît la personne, on touche, on confirme, on appelle.
-• Une confirmation claire avant chaque appel, avec un bouton pour annuler.
-• Texte très grand, contraste élevé, l'heure et la batterie toujours visibles.
+• Les messages (SMS, MMS et WhatsApp) en grand, avec la photo de l'expéditeur, lus à voix haute sur demande.
+• Répondre en parlant : on dicte, on vérifie, on envoie. Envoyer une photo en deux gestes.
+• Une confirmation claire avant chaque appel ou envoi, avec un bouton pour annuler.
+• Texte très grand, contraste élevé, l'heure et la batterie toujours visibles. Fonctionne avec la police agrandie d'Android.
 
 Pour la famille :
-• Rien à changer : vous continuez à utiliser le téléphone, les SMS et WhatsApp comme d'habitude.
-• Vous choisissez les proches à afficher dans les réglages famille, protégés par un code que seule la famille connaît.
-• Facultatif : avec un écran maison (Raspberry Pi), Simple peut afficher « Marie vous a appelé » ou le dernier message reçu en grand sur l'écran du salon. Cela demande d'autoriser l'accès aux notifications (appels manqués, SMS, WhatsApp) dans les réglages famille.
+• Rien à changer : vous continuez à appeler, envoyer des SMS et des messages WhatsApp comme d'habitude.
+• Vous choisissez les proches à afficher et leur photo dans les réglages famille, protégés par un code que seule la famille connaît.
+• Les codes de sécurité et alertes bancaires reçus par SMS sont masqués et jamais lus à voix haute.
 
 Vie privée :
-• Aucune publicité, aucun traceur, aucun compte.
-• Vos contacts et messages ne quittent jamais votre domicile : les informations sont transmises uniquement à votre propre écran maison, sur votre réseau Wi-Fi, de façon chiffrée.
+• Aucune publicité, aucun traceur, aucun compte, aucun accès à Internet.
+• Vos contacts, appels et messages ne quittent jamais le téléphone.
 • Application libre et ouverte : le code source est public.
 
-Simple se déclare comme application d'accueil : vous pouvez revenir à votre ancien écran d'accueil à tout moment dans les réglages d'Android.
+Simple peut devenir l'application d'accueil et l'application de messages du téléphone, avec votre accord ; vous pouvez revenir à vos anciennes applications à tout moment dans les réglages d'Android.
