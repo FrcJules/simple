@@ -1,4 +1,3 @@
-import { createServer } from "node:https";
 import { buildApp } from "./app";
 import { DeviceRegistry } from "./devices";
 import { BirthdaysStore } from "./birthdays";
@@ -6,6 +5,7 @@ import { PhotosStore } from "./photos";
 import { WeatherService } from "./weather";
 import { RemindersStore } from "./reminders";
 import { buildPairingLink, groupFingerprint, lanAddress } from "./pairing";
+import { createPhoneServer } from "./phone-server";
 import { loadOrCreateTls } from "./tls";
 
 function required(name: string, hint: string): string {
@@ -43,15 +43,8 @@ const app = buildApp({
 const port = Number(process.env.PORT ?? 8787);
 await app.listen({ port, host: "127.0.0.1" });
 
-// Only what a phone needs is reachable from the network: pairing and pushing events. Reading events (the display token) stays on loopback.
-const phoneRoutes = new Set(["POST /pair", "POST /events"]);
-createServer({ key: tls.key, cert: tls.cert }, (req, res) => {
-  if (!phoneRoutes.has(`${req.method} ${(req.url ?? "").split("?")[0]}`)) {
-    res.writeHead(404).end();
-    return;
-  }
-  app.routing(req, res);
-}).listen(tlsPort, "0.0.0.0");
+// Only POST /pair and POST /events, with short timeouts and connection caps (phone-server.ts).
+createPhoneServer(app, tls).listen(tlsPort, "0.0.0.0");
 
 const lan = lanAddress() ?? "<ip-du-pi>";
 console.log(`Simple hub: display on http://127.0.0.1:${port}`);
