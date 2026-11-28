@@ -108,9 +108,9 @@ private fun RowScope.Tile(tile: TileConfig, badge: Int, app: AppInfo?, pictureSi
                     else if (gone) Icon(Icons.Filled.Warning, contentDescription = null, modifier = Modifier.size(pictureSize))
                     else Icon(tile.icon.vector(), contentDescription = null, modifier = Modifier.size(pictureSize))
                 }
-                Text(
+                FitText(
                     if (gone) stringResource(R.string.tile_app_gone) else (if (tile.action == TileAction.APP) app?.label else tile.label) ?: stringResource(tile.action.defaultLabel),
-                    fontSize = 24.sp, textAlign = TextAlign.Center, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    fontSize = 24.sp,
                 )
                 if (badge > 0) {
                     Text(
