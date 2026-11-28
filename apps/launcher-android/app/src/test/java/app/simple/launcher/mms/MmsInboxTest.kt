@@ -7,7 +7,6 @@ import androidx.test.core.app.ApplicationProvider
 import app.simple.launcher.messages.MessageStatus
 import app.simple.launcher.messages.MessageStore
 import app.simple.launcher.messages.StoredMessage
-import app.simple.launcher.notifications.Incoming
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -30,7 +29,6 @@ class MmsInboxTest {
     private lateinit var store: MessageStore
     private lateinit var files: MmsFiles
     private val transport = FakeMmsTransport()
-    private val forwarded = mutableListOf<Incoming>()
     private val notified = mutableListOf<StoredMessage>()
     private var now = 1_800_000_000_000L
     private val jpeg = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 9, 8, 7, 0xFF.toByte(), 0xD9.toByte())
@@ -57,8 +55,8 @@ class MmsInboxTest {
     @After fun tearDown() { context.deleteDatabase(dbName) }
 
     private fun inbox(contacts: Map<String, String> = mapOf("+33611223344" to "Marie")) = MmsInbox(
-        context, store, files, transport, contacts::get, forwarded::add, notified::add,
-        unknownSender = "Numéro inconnu", photoLabel = "Photo", imageOk = { imageOk(it) }, clock = { now },
+        context, store, files, transport, contacts::get, notified::add,
+        unknownSender = "Numéro inconnu", imageOk = { imageOk(it) }, clock = { now },
     )
 
     private fun notification(tx: String = "tx1", from: String? = "+33611223344", size: Long = 40_000) =
@@ -114,26 +112,16 @@ class MmsInboxTest {
         assertArrayEquals(jpeg, File(m.attachments[0].path).readBytes())
         assertNull(store.pending(id))
         assertEquals(1, transport.posts.size) // the acknowledgement to the operator
-        assertEquals(listOf<Incoming>(Incoming.Message("Marie", app.simple.launcher.notifications.Channel.SMS, "Regarde !")), forwarded)
+        assertEquals("Marie", m.from)
         assertEquals(1, notified.size)
         assertFalse(files.transferFile(name)!!.exists()) // the transfer file is removed
     }
 
     @Test
-    fun aPictureOnlyMessageIsForwardedAsPhotoNeverAsAPicture() {
-        val box = inbox()
-        box.onNotification(notification(), -1)
-        val name = platformDownloads(MmsTestPdus.retrieveConf(parts = listOf(MmsTestPdus.typedPart("image/jpeg", jpeg))))
-        box.onDownloaded(message().id, name, ok = true)
-        assertEquals(listOf<Incoming>(Incoming.Message("Marie", app.simple.launcher.notifications.Channel.SMS, "Photo")), forwarded)
-    }
-
-    @Test
-    fun strangersAndSecurityCodesNeverReachTheHomeDisplay() {
+    fun strangersAreShownByNumberAndSecurityCodesAreFlagged() {
         val stranger = inbox(contacts = emptyMap())
         stranger.onNotification(notification("a"), -1)
         stranger.onDownloaded(message().id, platformDownloads(retrieveWithPhoto), ok = true)
-        assertTrue(forwarded.isEmpty())
         assertEquals("+33611223344", message().from) // shown by number
 
         context.deleteDatabase(dbName)
@@ -142,7 +130,6 @@ class MmsInboxTest {
         box.onNotification(notification("b"), -1)
         box.onDownloaded(message().id, platformDownloads(MmsTestPdus.retrieveConf(parts = listOf(MmsTestPdus.textPart("Votre code de confirmation : 482913")))), ok = true)
         assertTrue(message().sensitive)
-        assertTrue(forwarded.isEmpty())
     }
 
     @Test

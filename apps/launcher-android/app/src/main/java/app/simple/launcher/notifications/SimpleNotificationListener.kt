@@ -3,7 +3,6 @@ package app.simple.launcher.notifications
 import android.app.Notification
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
-import app.simple.launcher.ContactsRepository
 import app.simple.launcher.R
 import app.simple.launcher.messages.MessageDiagnostics
 import app.simple.launcher.messages.MessageStore
@@ -45,28 +44,16 @@ class SimpleNotificationListener : NotificationListenerService() {
             return
         }
         MessageDiagnostics.record(applicationContext, getString(if (incoming is Incoming.Message) R.string.diag_notif_message else R.string.diag_notif_missed, source))
-        if (incoming is Incoming.Message && incoming.channel == Channel.SMS) {
-            // The home display is visible from the whole room: only SMS from people we know appear there, never a stranger's or a company's.
-            val known = runCatching { ContactsRepository(applicationContext.contentResolver).byName(incoming.from) != null }.getOrDefault(false)
-            // Direct mode: the SMS themselves are copied from the system database (a copy made from this notification would double them).
-            if (SmsAccess.canRead(applicationContext)) {
-                worker.execute { runCatching { SmsComponents.syncNew(applicationContext) } } // never on the main thread: the first copy reads the whole history
-                // One path to the display per SMS: the broadcast receiver sends it when RECEIVE_SMS is granted, this notification otherwise.
-                if (known && !SmsAccess.canReceive(applicationContext)) HubForwarder.forward(applicationContext, incoming, sbn.postTime)
-                return
-            }
-            if (!known) {
-                MessageStore.get(applicationContext).add(StoredMessage(UUID.randomUUID().toString(), incoming.from, incoming.channel, incoming.text, sbn.postTime))
-                return
-            }
+        if (incoming !is Incoming.Message) return // a missed call is only noted in the trail above: nothing is kept
+        // Direct mode: the SMS themselves are copied from the system database (a copy made from this notification would double them).
+        if (incoming.channel == Channel.SMS && SmsAccess.canRead(applicationContext)) {
+            worker.execute { runCatching { SmsComponents.syncNew(applicationContext) } } // never on the main thread: the first copy reads the whole history
+            return
         }
-        if (incoming is Incoming.Message) {
-            // Kept on the phone so the launcher can show it; independent of the home display being paired.
-            MessageStore.get(applicationContext).add(
-                StoredMessage(UUID.randomUUID().toString(), incoming.from, incoming.channel, incoming.text, sbn.postTime),
-            )
-        }
-        HubForwarder.forward(applicationContext, incoming, sbn.postTime)
+        // Kept on the phone so the launcher can show it; nothing leaves the phone.
+        MessageStore.get(applicationContext).add(
+            StoredMessage(UUID.randomUUID().toString(), incoming.from, incoming.channel, incoming.text, sbn.postTime),
+        )
     }
 
     private fun shortName(packageName: String) = when (packageName) {

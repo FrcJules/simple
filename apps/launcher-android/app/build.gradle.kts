@@ -36,11 +36,12 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("boolean", "SMS_ROLE_OFFERED", "true")
+            // Direct mode (SMS permissions without the default-SMS role) is for tests and hand-installed builds only: Play allows
+            // SMS permissions to the default SMS handler, so the Play build only ever uses the role (ADR 0005, ADR 0007).
+            buildConfigField("boolean", "SMS_DIRECT_MODE_OFFERED", "true")
         }
         release {
-            // Do NOT offer the default-SMS role in a release until MMS are handled: an MMS we cannot read would be lost.
-            buildConfigField("boolean", "SMS_ROLE_OFFERED", "false")
+            buildConfigField("boolean", "SMS_DIRECT_MODE_OFFERED", "false")
             isMinifyEnabled = true
             // Play asks for native debug symbols so crash reports of the bundled native libraries are readable.
             ndk { debugSymbolLevel = "SYMBOL_TABLE" }

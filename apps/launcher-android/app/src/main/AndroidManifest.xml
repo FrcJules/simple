@@ -3,8 +3,15 @@
 
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-permission android:name="android.permission.CALL_PHONE" />
-    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.VIBRATE" /> <!-- normal permission: short confirmation / error vibration -->
+
+    <!-- Default SMS app (ADR 0005, issue #48): used only while Simple holds the SMS role; declared in the Play "SMS and Call Log" form. -->
+    <uses-permission android:name="android.permission.READ_SMS" />
+    <uses-permission android:name="android.permission.SEND_SMS" />
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.RECEIVE_MMS" />
+    <uses-permission android:name="android.permission.RECEIVE_WAP_PUSH" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-feature android:name="android.hardware.telephony" android:required="false" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
@@ -49,6 +56,15 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Required of an SMS app: "write to this number" from other apps and links (mms:/mmsto: once handled). -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SENDTO" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="sms" />
+                <data android:scheme="smsto" />
+            </intent-filter>
         </activity>
         <activity
             android:name=".SetupActivity"
@@ -58,16 +74,53 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- The QR code of the home display: any camera app opens this link in Simple (family settings, behind the code). -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="simple" android:host="pair" />
-            </intent-filter>
         </activity>
 
         <receiver android:name=".sms.SmsStatusReceiver" android:exported="false" />
+
+        <receiver
+            android:name=".sms.SmsDeliverReceiver"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_SMS">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.SMS_DELIVER" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".sms.MmsDeliverReceiver"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_WAP_PUSH">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.WAP_PUSH_DELIVER" />
+                <data android:mimeType="application/vnd.wap.mms-message" />
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name=".sms.MmsDownloadedReceiver" android:exported="false" />
+        <receiver android:name=".sms.MmsSentReceiver" android:exported="false" />
+
+        <!-- The platform's MMS service reads and writes our short-lived transfer files through this. Not exported: the system's
+             MmsServiceBroker grants the phone process access to the URI we pass to SmsManager, which needs grantUriPermissions. -->
+        <provider
+            android:name=".mms.MmsFileProvider"
+            android:authorities="${applicationId}.mms"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+
+        <service
+            android:name=".sms.RespondViaMessageService"
+            android:exported="true"
+            android:permission="android.permission.SEND_RESPOND_VIA_MESSAGE">
+            <intent-filter>
+                <action android:name="android.intent.action.RESPOND_VIA_MESSAGE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="sms" />
+                <data android:scheme="smsto" />
+                <data android:scheme="mms" />
+                <data android:scheme="mmsto" />
+            </intent-filter>
+        </service>
 
         <service
             android:name=".notifications.SimpleNotificationListener"

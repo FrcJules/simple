@@ -28,7 +28,7 @@ echo "$out1"
 out2="OK (0 tests)"
 if [ "$SHARD" = "0" ]; then
   # The role is granted *before* the tests start: granting it to a running app kills its
-  #    process (the test runner too). This also proves the debug manifest meets the role's requirements.
+  #    process (the test runner too). This also proves the app manifest meets the role's requirements.
   adb shell cmd role add-role-holder --user 0 android.app.role.SMS app.simple.launcher || echo "could not grant the SMS role"
   out2=$(adb shell am instrument -w -e class "$SMS_TEST" "$RUNNER" 2>&1)
   echo "$out2"

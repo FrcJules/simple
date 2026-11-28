@@ -47,19 +47,10 @@ class SmsDeliverReceiver : BroadcastReceiver() {
 class SmsReceivedReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Telephony.Sms.Intents.SMS_RECEIVED_ACTION || SmsRole.isHeld(context)) return
-        val parts = Telephony.Sms.Intents.getMessagesFromIntent(intent)?.filterNotNull().orEmpty()
-        val address = parts.firstOrNull()?.originatingAddress.orEmpty()
-        val body = parts.joinToString("") { it.messageBody.orEmpty() }
         MessageDiagnostics.record(context, context.getString(R.string.diag_sms_received))
         val pending: PendingResult? = goAsync()
         thread(name = "sms-received") {
             try {
-                // The display first, on its own: it does not depend on the copy below.
-                try {
-                    if (address.isNotEmpty() && body.isNotEmpty()) SmsComponents.forwardToDisplay(context, address, body)
-                } catch (e: RuntimeException) {
-                    MessageDiagnostics.record(context, context.getString(R.string.diag_sms_forward_error))
-                }
                 Thread.sleep(WRITE_DELAY_MS) // the messaging app writes the row to the system database first
                 SmsComponents.syncNew(context, allowFirstCopy = false)
             } catch (e: RuntimeException) {

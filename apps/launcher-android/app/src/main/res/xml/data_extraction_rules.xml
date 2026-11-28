@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The pairing token, stored messages and contact photos must never leave the device through cloud backup or device transfer. -->
+<!-- Stored messages, contact photos and the family code must never leave the device through cloud backup or device transfer. -->
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="sharedpref" path="." />

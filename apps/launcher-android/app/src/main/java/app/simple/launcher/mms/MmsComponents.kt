@@ -4,7 +4,6 @@ import android.content.Context
 import app.simple.launcher.ContactsRepository
 import app.simple.launcher.R
 import app.simple.launcher.messages.MessageStore
-import app.simple.launcher.notifications.HubForwarder
 import app.simple.launcher.sms.MessageNotifier
 
 /** Wires the MMS pieces to the real system (receivers have no dependency injection). */
@@ -31,10 +30,8 @@ object MmsComponents {
             files = MmsFiles(app),
             transport = SmsManagerMmsTransport(app),
             nameFor = { number -> contacts.byNumber(number)?.name },
-            forward = { HubForwarder.forward(app, it, System.currentTimeMillis()) },
             notify = notifier::notifyIncoming,
             unknownSender = app.getString(R.string.mms_unknown_sender),
-            photoLabel = app.getString(R.string.message_photo),
             imageOk = ::decodesSafely,
         )
     }
