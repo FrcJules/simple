@@ -1,10 +1,11 @@
 import cors from "@fastify/cors";
-import { simpleEvent, type SimpleEvent } from "@simple/contracts";
+import { simpleEvent } from "@simple/contracts";
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
-import { timingSafeEqual } from "node:crypto";
+import { randomBytes, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { DeviceRegistry } from "./devices";
 import { FailureLimiter } from "./limiter";
+import { replayFor, sseId, type StoredEvent } from "./replay";
 import type { BirthdaysStore } from "./birthdays";
 import type { PhotosStore } from "./photos";
 import type { WeatherService } from "./weather";
@@ -63,8 +64,11 @@ export function buildApp(opts: HubOptions): FastifyInstance {
     const q = (req.query as { token?: unknown }).token;
     return tokenMatches(opts.displayToken, bearer(req.headers.authorization) || (typeof q === "string" ? q : ""));
   };
-  const events: SimpleEvent[] = [];
-  const listeners = new Set<(e: SimpleEvent) => void>();
+  const events: StoredEvent[] = [];
+  const listeners = new Set<(e: StoredEvent) => void>();
+  // Distinguishes this run of the hub in SSE ids: after a restart, ids a screen remembers no longer mean anything.
+  const bootId = randomBytes(6).toString("hex");
+  let seq = 0;
   const app = Fastify({ logger: false });
 
   void app.register(cors, { origin });
@@ -149,9 +153,10 @@ export function buildApp(opts: HubOptions): FastifyInstance {
   app.post("/events", { bodyLimit: 16_384, onRequest: authenticateWriter }, async (req, reply) => {
     const parsed = simpleEvent.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: "invalid_event" });
-    events.push(parsed.data);
+    const stored: StoredEvent = { seq: ++seq, receivedAt: Date.now(), event: parsed.data };
+    events.push(stored);
     if (events.length > maxEvents) events.shift();
-    listeners.forEach((l) => l(parsed.data));
+    listeners.forEach((l) => l(stored));
     return reply.code(202).send({ accepted: true });
   });
 
@@ -159,7 +164,7 @@ export function buildApp(opts: HubOptions): FastifyInstance {
   app.get("/events", async (req, reply) => {
     if (authFailures.blocked(req.ip)) return tooMany(reply);
     if (!canRead(req)) return unauthorized(req.ip, reply);
-    return { events };
+    return { events: events.map((s) => s.event) };
   });
 
   app.get("/reminders", async (req, reply) => {
@@ -216,9 +221,12 @@ export function buildApp(opts: HubOptions): FastifyInstance {
       "Access-Control-Allow-Origin": origin,
     });
     reply.raw.write(": connected\n\n");
-    const listener = (e: SimpleEvent) => reply.raw.write(`data: ${JSON.stringify(e)}\n\n`);
-    listeners.add(listener);
-    req.raw.on("close", () => listeners.delete(listener));
+    const send = (s: StoredEvent) => reply.raw.write(`id: ${sseId(bootId, s.seq)}\ndata: ${JSON.stringify(s.event)}\n\n`);
+    // A screen that just started, or reconnected after a Wi-Fi drop, first gets what it missed: a missed call is never lost.
+    const lastEventId = req.headers["last-event-id"];
+    replayFor(events, typeof lastEventId === "string" ? lastEventId : undefined, bootId, Date.now()).forEach(send);
+    listeners.add(send);
+    req.raw.on("close", () => listeners.delete(send));
     reply.hijack();
   });
 

@@ -1,0 +1,36 @@
+import { describe, expect, it } from "vitest";
+import { replayFor, type StoredEvent } from "./replay";
+
+const HOUR = 3_600_000;
+const NOW = 1_800_000_000_000;
+const stored = (seq: number, ageHours: number): StoredEvent => ({
+  seq,
+  receivedAt: NOW - ageHours * HOUR,
+  event: { schemaVersion: 1, id: `e${seq}`, type: "missed_call", occurredAt: "2026-11-28T09:30:00+01:00", from: { name: "Marie" } },
+});
+const buffer = [stored(1, 30), stored(2, 5), stored(3, 1), stored(4, 0)];
+const seqs = (list: StoredEvent[]) => list.map((s) => s.seq);
+
+describe("replayFor", () => {
+  it("gives a newly opened screen what happened in the last day, oldest first", () => {
+    expect(seqs(replayFor(buffer, undefined, "boot", NOW))).toEqual([2, 3, 4]);
+  });
+
+  it("gives a reconnecting screen only what it missed", () => {
+    expect(seqs(replayFor(buffer, "boot-2", "boot", NOW))).toEqual([3, 4]);
+    expect(seqs(replayFor(buffer, "boot-4", "boot", NOW))).toEqual([]);
+  });
+
+  it("treats an id from before a hub restart, or a malformed one, as a new screen", () => {
+    expect(seqs(replayFor(buffer, "old-2", "boot", NOW))).toEqual([2, 3, 4]);
+    expect(seqs(replayFor(buffer, "boot-x", "boot", NOW))).toEqual([2, 3, 4]);
+    expect(seqs(replayFor(buffer, "boot-99", "boot", NOW))).toEqual([2, 3, 4]);
+  });
+
+  it("never replays more than the screen keeps", () => {
+    const many = Array.from({ length: 80 }, (_, i) => stored(i + 1, 0));
+    const replayed = replayFor(many, undefined, "boot", NOW);
+    expect(replayed).toHaveLength(50);
+    expect(replayed.at(-1)?.seq).toBe(80);
+  });
+});

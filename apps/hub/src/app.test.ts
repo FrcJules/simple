@@ -68,3 +68,56 @@ describe("hub", () => {
     expect(() => buildApp({ ...opts, displayToken: "short" })).toThrow();
   });
 });
+
+describe("event stream", () => {
+  /** Opens the stream of the hub listening at [address] and returns the text received until [until] matches (or 2 s pass). */
+  async function readStream(address: string, headers: Record<string, string>, until: RegExp): Promise<string> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 2_000);
+    let text = "";
+    try {
+      const res = await fetch(`${address}/events/stream`, { headers: { authorization: `Bearer ${DISPLAY}`, ...headers }, signal: controller.signal });
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      while (reader && !until.test(text)) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        text += decoder.decode(value);
+      }
+    } catch {
+      // aborted after 2 s: return what arrived
+    } finally {
+      clearTimeout(timer);
+      controller.abort();
+    }
+    return text;
+  }
+
+  async function hubWith(...names: string[]): Promise<{ app: ReturnType<typeof buildApp>; address: string }> {
+    const app = buildApp(opts);
+    for (const [i, name] of names.entries()) {
+      await app.inject({ method: "POST", url: "/events", headers: { authorization: `Bearer ${TOKEN}` }, payload: { ...event, id: `e${i}`, from: { name } } });
+    }
+    return { app, address: await app.listen({ port: 0, host: "127.0.0.1" }) };
+  }
+
+  it("sends a screen that opens the stream the events it was not there for, oldest first, with ids", async () => {
+    const { app, address } = await hubWith("Marie", "Paul");
+    const text = await readStream(address, {}, /Paul/);
+    await app.close();
+    expect(text).toMatch(/id: [0-9a-f]+-1\ndata: .*Marie/);
+    expect(text).toMatch(/id: [0-9a-f]+-2\ndata: .*Paul/);
+    expect(text.indexOf("Marie")).toBeLessThan(text.indexOf("Paul"));
+  });
+
+  it("sends a reconnecting screen only what came after the last id it saw", async () => {
+    const { app, address } = await hubWith("Marie", "Paul");
+    const first = await readStream(address, {}, /Paul/);
+    const marieId = /id: ([0-9a-f]+-1)\n/.exec(first)?.[1] ?? "";
+    const text = await readStream(address, { "last-event-id": marieId }, /Paul/);
+    await app.close();
+    expect(marieId).not.toBe("");
+    expect(text).toContain("Paul");
+    expect(text).not.toContain("Marie");
+  });
+});
