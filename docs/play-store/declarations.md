@@ -29,7 +29,7 @@ Play Console → *Contenu de l'application* → *Autorisations sensibles* → **
 |---|---|
 | `READ_CONTACTS` | Afficher les proches en photos, les appeler et leur écrire, reconnaître l'expéditeur d'un message. Lecture seule |
 | `CALL_PHONE` | Lancer l'appel après la confirmation de l'utilisateur (repli sur le composeur si refusée) |
-| Accès aux notifications (`BIND_NOTIFICATION_LISTENER_SERVICE`) | **Facultatif** : afficher dans Simple les messages WhatsApp et les appels manqués, et répondre à WhatsApp par l'action « Répondre » de sa notification. Ne lit que Téléphone, Messages et WhatsApp ; rien ne quitte le téléphone. Divulgation : fiche, politique de confidentialité, écran « Réglages famille » |
+| Accès aux notifications (`BIND_NOTIFICATION_LISTENER_SERVICE`) | **Facultatif** : afficher dans Simple les messages WhatsApp, et répondre à WhatsApp par l'action « Répondre » de sa notification. Ne lit que Messages et WhatsApp ; rien ne quitte le téléphone. Divulgation : fiche, politique de confidentialité, écran « Réglages famille » |
 | Application d'accueil (`HOME`) | Simple remplace l'écran d'accueil à la demande de l'utilisateur ; retour possible dans les réglages d'Android |
 
 ## Instructions pour l'équipe de revue Google
