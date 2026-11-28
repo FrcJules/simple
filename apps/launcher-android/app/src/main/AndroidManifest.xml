@@ -56,7 +56,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- Required of an SMS app: "write to this number" from other apps and links. -->
+            <!-- Required of an SMS app: "write to this number" from other apps and links (mms:/mmsto: once handled). -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <action android:name="android.intent.action.SENDTO" />
@@ -64,8 +64,6 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="sms" />
                 <data android:scheme="smsto" />
-                <data android:scheme="mms" />
-                <data android:scheme="mmsto" />
             </intent-filter>
         </activity>
         <activity
@@ -102,11 +100,13 @@
         <receiver android:name=".sms.MmsDownloadedReceiver" android:exported="false" />
         <receiver android:name=".sms.MmsSentReceiver" android:exported="false" />
 
-        <!-- The platform's MMS service reads and writes our short-lived transfer files through this (random 128-bit names only). -->
+        <!-- The platform's MMS service reads and writes our short-lived transfer files through this. Not exported: the system's
+             MmsServiceBroker grants the phone process access to the URI we pass to SmsManager, which needs grantUriPermissions. -->
         <provider
             android:name=".mms.MmsFileProvider"
             android:authorities="${applicationId}.mms"
-            android:exported="true" />
+            android:exported="false"
+            android:grantUriPermissions="true" />
 
         <service
             android:name=".sms.RespondViaMessageService"

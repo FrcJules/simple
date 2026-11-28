@@ -54,6 +54,7 @@ import app.simple.launcher.sms.SendResult
 import app.simple.launcher.sms.SmsAccess
 import app.simple.launcher.sms.SmsComponents
 import app.simple.launcher.sms.SmsRole
+import app.simple.launcher.sms.SmsSender
 import app.simple.launcher.ui.CallScreen
 import app.simple.launcher.ui.CallingScreen
 import app.simple.launcher.ui.ConversationScreen
@@ -505,6 +506,8 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        // Another app cannot interrupt a call being placed with a "write to" request.
+        if (calling != null && isWriteRequest(intent)) return
         calling = null
         if (!handleIntent(intent)) {
             leaveConversation()
@@ -520,15 +523,25 @@ class MainActivity : ComponentActivity() {
             return true
         }
         val uri = intent.data
-        if ((intent.action == Intent.ACTION_SENDTO || intent.action == Intent.ACTION_SEND) && uri != null && uri.scheme in SMS_SCHEMES) {
+        if (isWriteRequest(intent) && uri != null) {
+            // From another app or a link: never trusted. A real number only, and a text prefilled only for someone the person knows:
+            // an app must not be able to put "OUI" to a premium number one tap away from being sent.
             val number = Uri.decode(uri.schemeSpecificPart).substringBefore('?').trim()
-            if (number.isBlank()) return false
-            val body = (intent.getStringExtra("sms_body") ?: intent.getStringExtra(Intent.EXTRA_TEXT))?.trim().orEmpty()
-            startConversationWithNumber(number, body)
+            if (number.isBlank() || !NUMBER_FORMAT.matches(number) || !isDialable(number)) return false
+            val known = try {
+                ContactsRepository(contentResolver).byNumber(number)
+            } catch (e: SecurityException) {
+                null
+            }
+            val body = if (known == null) "" else (intent.getStringExtra("sms_body") ?: intent.getStringExtra(Intent.EXTRA_TEXT))?.trim().orEmpty().take(SmsSender.MAX_CHARS)
+            startConversationWithNumber(number, body, known)
             return true
         }
         return false
     }
+
+    private fun isWriteRequest(intent: Intent) =
+        (intent.action == Intent.ACTION_SENDTO || intent.action == Intent.ACTION_SEND) && intent.data?.scheme in SMS_SCHEMES
 
     private fun onTile(tile: TileConfig) = when (tile.action) {
         TileAction.CALL -> openCallScreen()
@@ -570,14 +583,27 @@ class MainActivity : ComponentActivity() {
     private fun requestSmsRole() {
         val intent = SmsRole.requestIntent(this)
         if (intent == null) {
-            requestSmsPermissions() // this phone offers no SMS role: the permissions alone still give the direct mode
+            withoutSmsRole() // this phone offers no SMS role
             return
         }
         try {
             smsRole.launch(intent)
         } catch (e: ActivityNotFoundException) {
-            requestSmsPermissions()
+            withoutSmsRole()
         }
+    }
+
+    /**
+     * Not the SMS app. Test builds fall back on the direct mode (SMS permissions alone). The Play build never asks for SMS permissions
+     * without the role (Play policy): messages keep arriving through notifications, and writing says it is not ready yet.
+     */
+    private fun withoutSmsRole() {
+        if (BuildConfig.SMS_DIRECT_MODE_OFFERED) {
+            requestSmsPermissions()
+            return
+        }
+        screen = if (pendingWrite) Screen.WRITE_NOT_READY else Screen.MESSAGES
+        pendingWrite = false
     }
 
     /** Asks for the two SMS permissions; the answer arrives in [onSmsPermissionsAnswered]. Nothing to ask when they are already given. */
@@ -639,8 +665,8 @@ class MainActivity : ComponentActivity() {
             }
         } else {
             profile.setSmsRoleDeclined(true)
-            // Android did not make us the SMS app (refused, or no dialog on this phone): the SMS permissions give the direct mode.
-            requestSmsPermissions()
+            // Android did not make us the SMS app (refused, or no dialog on this phone).
+            withoutSmsRole()
             return
         }
         screen = if (pendingWrite && SmsAccess.direct(this)) Screen.PICK_RECIPIENT else Screen.MESSAGES

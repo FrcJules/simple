@@ -80,6 +80,13 @@ jobs:
       # roborazzi.test.record: the JVM screenshot tests (ScreenshotsTest) also write their images, uploaded below for review.
       # lintRelease too: the Play build differs (no direct SMS mode, minified) and only the Release workflow builds it.
       - run: gradle :app:lintDebug :app:lintRelease :app:testDebugUnitTest :app:assembleDebug -Proborazzi.test.record=true
+      # The app has no Internet access (privacy policy, Play data safety): fail if any dependency brings the permission back.
+      - name: No INTERNET permission in the release manifest
+        run: |
+          gradle :app:processReleaseMainManifest
+          manifest=$(find app/build/intermediates -path '*release*' -name AndroidManifest.xml | grep -i merged | head -1)
+          test -n "$manifest"
+          ! grep -q 'android.permission.INTERNET' "$manifest"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: launcher-debug-apk

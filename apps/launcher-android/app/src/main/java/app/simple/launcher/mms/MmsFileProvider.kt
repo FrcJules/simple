@@ -11,7 +11,8 @@ import java.io.FileNotFoundException
 /**
  * Lets the platform's MMS service read and write our transfer files (it runs in another process and needs a `content://`
  * address). It serves nothing else: only files with the random names created by [MmsFiles], from one cache folder.
- * Exported because the platform must reach it; the 128-bit file names are the access control, and the files live minutes.
+ * Not exported: the system's MmsServiceBroker grants the phone process access to the exact URI passed to SmsManager
+ * (grantUriPermissions in the manifest). The random 128-bit names and the files' short life remain a second barrier.
  */
 class MmsFileProvider : ContentProvider() {
     override fun onCreate() = true
