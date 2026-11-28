@@ -2,6 +2,13 @@
 Format [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/), versionnage [SemVer](https://semver.org/lang/fr/).
 
 ## [Non publié]
+
+## [0.2.0] - 2026-11-28
+### Ajouté
+- **Simple est proposé comme application SMS par défaut** dans la version Google Play : réception et envoi des SMS et MMS, lecture à voix haute, réponse dictée et confirmée avant l'envoi. Le « mode direct » (permissions SMS sans le rôle) reste réservé aux versions de test.
+### Modifié
+- Texte et boutons toujours lisibles avec la police agrandie d'Android ou un petit écran ; plus aucun mot coupé au milieu.
+- Liens `sms:` venant d'autres applications : numéro vérifié, texte prérempli seulement pour un contact connu.
 ### Retiré
 - Écran maison (Raspberry Pi) dans l'application : plus d'envoi des appels et messages au hub, plus d'appairage par QR code ni de réglages « Écran maison ». **L'application n'a plus aucun accès à Internet** (permission `INTERNET` retirée). Les données d'appairage d'une version précédente sont effacées au premier démarrage.
 - Lecture des notifications de l'application Téléphone (elles ne servaient qu'à l'écran maison).
