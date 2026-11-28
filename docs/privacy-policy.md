@@ -1,36 +1,40 @@
 # Politique de confidentialité — Simple
 
-*Dernière mise à jour : 7 octobre 2026*
+*Dernière mise à jour : 28 novembre 2026*
 
-Simple est une application libre et gratuite. Elle n'a **ni compte, ni publicité, ni outil de mesure d'audience**. Le développeur ne reçoit **aucune donnée** vous concernant.
+Simple est une application libre et gratuite. Elle n'a **ni compte, ni publicité, ni outil de mesure d'audience**, et **aucun accès à Internet**. Le développeur ne reçoit **aucune donnée** vous concernant.
 
 ## Ce que l'application utilise, et pourquoi
 
 | Donnée | Pourquoi | Où elle va |
 |---|---|---|
-| Contacts marqués d'une étoile (nom, photo, numéro) | Afficher les proches en photos et les appeler | Reste sur le téléphone |
+| Contacts (nom, photo, numéro) | Afficher les proches en photos, les appeler, leur écrire, reconnaître l'expéditeur d'un message | Reste sur le téléphone |
 | Autorisation d'appeler | Lancer l'appel après votre confirmation | Reste sur le téléphone |
-| Notifications d'appel manqué, de SMS et de WhatsApp (expéditeur, heure, texte) — **facultatif**, uniquement si la famille active l'accès aux notifications | Afficher « Marie vous a appelé » ou le dernier message sur l'écran maison de la famille | Envoyé **uniquement** à l'écran maison que vous avez vous-même installé (Raspberry Pi) sur votre réseau Wi-Fi, chiffré (HTTPS). Jamais vers Internet ni vers le développeur |
-| Prénom, adresse de l'écran maison, code d'appairage | Réglages de la famille | Reste sur le téléphone, exclu des sauvegardes |
-| Photos choisies par la famille pour les proches (depuis le sélecteur de photos d'Android, sans autorisation supplémentaire) | Reconnaître la personne | Copiées dans l'application, restent sur le téléphone |
+| SMS et MMS (si Simple est votre application de messages) | Recevoir, afficher, lire à voix haute et envoyer vos messages | Reste sur le téléphone |
+| Notifications de SMS et de WhatsApp (expéditeur, heure, texte) — **facultatif**, si la famille active l'accès aux notifications | Afficher les messages WhatsApp (et les SMS si Simple n'est pas votre application de messages) dans Simple, et répondre à WhatsApp | Reste sur le téléphone |
+| Photos choisies par la famille pour les proches (sélecteur de photos d'Android, sans autorisation supplémentaire) | Reconnaître la personne | Copiées dans l'application, restent sur le téléphone |
+| Prénom, code famille, réglages d'apparence | Réglages de la famille | Restent sur le téléphone, exclus des sauvegardes |
 
-L'application ne lit que les notifications des applications Téléphone, Messages et WhatsApp, et ignore toutes les autres.
+L'application ne lit que les notifications des applications Messages et WhatsApp, et ignore toutes les autres (y compris celles de l'application Téléphone).
+
+## Simple comme application de messages (SMS)
+Simple peut devenir votre application de messages par défaut ; c'est vous (ou votre famille) qui l'acceptez dans la question posée par Android, et vous pouvez revenir à une autre application à tout moment dans les réglages d'Android. Simple reçoit alors vos SMS et MMS : ils sont enregistrés dans la boîte de réception d'Android (comme avec toute application de messages) et dans l'historique de Simple, **sur votre téléphone uniquement**. Les messages existants sont copiés à l'activation. Les photos reçues par MMS sont téléchargées par Android auprès de votre opérateur, puis gardées dans le stockage privé de Simple, jamais dans votre galerie. Les messages que vous envoyez partent par votre opérateur, au destinataire que vous avez choisi, comme avec toute application de messages. Les codes de sécurité et alertes bancaires sont conservés mais masqués, et jamais lus à voix haute.
 
 ## Conservation
-- Sur le téléphone : les réglages ci-dessus, et **l'historique des messages** (SMS et WhatsApp), **conservé sans limite de durée** tant que vous ne l'effacez pas, pour pouvoir les afficher et les lire à voix haute dans l'application. Ils restent dans le stockage privé de l'application, exclus des sauvegardes, et disparaissent à la désinstallation. Les appels manqués ne sont pas enregistrés.
-- Photos choisies pour les proches : copiées dans le stockage privé de l'application, jamais dans vos contacts, et supprimées à la désinstallation.
-- Sur l'écran maison : les 200 derniers événements sont gardés **en mémoire** et disparaissent au redémarrage.
+- **Historique des messages** (SMS, MMS, WhatsApp) : conservé sans limite de durée tant que vous ne l'effacez pas, pour pouvoir le relire et l'écouter ; stockage privé de l'application, exclu des sauvegardes, supprimé à la désinstallation. Les SMS enregistrés dans la boîte de réception d'Android, eux, **restent** dans Android, comme avec toute application de messages, même après la désinstallation de Simple.
+- Photos choisies pour les proches : stockage privé de l'application, jamais dans vos contacts, supprimées à la désinstallation.
 
 ## Dictée et lecture à voix haute
-Ces deux fonctions sont **facultatives** et ne se déclenchent que lorsque vous touchez le bouton. Elles utilisent les services de reconnaissance et de synthèse vocales **de votre téléphone** (généralement ceux de Google). L'application demande un traitement hors ligne, mais votre téléphone peut envoyer l'audio à ces services selon ses réglages : consultez la politique de confidentialité de votre fournisseur. L'application ne reçoit que le texte dicté.
+Ces deux fonctions sont **facultatives** et ne se déclenchent que lorsque vous touchez le bouton. Elles utilisent les services de reconnaissance et de synthèse vocales **de votre téléphone** (généralement ceux de Google). Simple demande un traitement hors ligne, mais votre téléphone peut envoyer l'audio à ces services selon ses réglages : consultez la politique de confidentialité de votre fournisseur. Simple ne reçoit que le texte dicté.
 
-Les messages qui ressemblent à un code à usage unique ou à une alerte bancaire ne sont ni lus à voix haute ni transmis à l'écran maison. Reçus par les notifications, ils sont ignorés ; reçus directement par SMS (si Simple est votre application de messages), ils sont conservés sur le téléphone mais masqués.
+## Répondre à WhatsApp
+Si vous répondez à un message WhatsApp avec Simple, votre texte est remis à WhatsApp par sa notification ; Simple ne se connecte pas à WhatsApp et ne partage rien d'autre.
 
 ## Partage
-Aucune donnée n'est vendue, partagée ou transmise à un tiers.
+Aucune donnée n'est vendue, partagée ou transmise au développeur ni à un tiers.
 
 ## Vos droits
-Vous pouvez effacer les messages conservés et les photos des proches dans « Réglages famille ». Vous pouvez à tout moment retirer l'accès aux notifications ou aux contacts dans les réglages d'Android, ou désinstaller l'application, ce qui supprime toutes les données stockées sur le téléphone.
+Vous pouvez effacer les messages conservés et les photos des proches dans « Réglages famille ». Vous pouvez à tout moment retirer l'accès aux contacts, aux notifications ou le rôle d'application de messages dans les réglages d'Android, ou désinstaller l'application, ce qui supprime toutes les données que Simple a stockées (sauf la boîte SMS d'Android, voir plus haut).
 
 ## Enfants
 Simple ne s'adresse pas aux enfants.
@@ -39,12 +43,3 @@ Simple ne s'adresse pas aux enfants.
 Questions : ouvrez une issue sur https://github.com/FrcJules/simple ou écrivez à rateur42@gmail.com.
 
 Le code source est public : vous pouvez vérifier ces engagements.
-
-## Si Simple devient votre application de messages (SMS)
-C'est un choix facultatif, fait dans l'application. Simple reçoit alors vos SMS : ils sont enregistrés dans la boîte de réception d'Android (comme avec toute application de messages) et copiés dans l'historique de Simple, **sur votre téléphone uniquement**, sans limite de durée tant que vous ne l'effacez pas (« Réglages famille »). Les messages existants sont copiés à l'activation. Les codes de sécurité sont masqués et jamais lus à voix haute. Aucun message n'est envoyé à Internet ni au développeur ; seuls les messages ordinaires peuvent être affichés sur votre écran maison, sur votre réseau Wi-Fi, de façon chiffrée.
-
-## Ce qui reste après une désinstallation ou un effacement
-« Effacer les messages » supprime l'historique de Simple. Les SMS enregistrés dans la boîte de réception d'Android (si Simple était votre application de messages) **restent** dans Android, comme avec toute application de messages, y compris après la désinstallation de Simple.
-
-## Répondre à WhatsApp et protection des réglages
-Si vous répondez à un message WhatsApp avec Simple, votre texte est remis à WhatsApp par sa notification ; Simple ne se connecte pas à WhatsApp et ne partage rien d'autre. Les réglages de la famille sont protégés par un code et les données d'appairage sont chiffrées avec le coffre de clés d'Android.

@@ -1,35 +1,36 @@
-# Déclarations et questionnaires
+# Déclarations et questionnaires (Play Console → Contenu de l'application)
 
 ## Fiche
-- **Catégorie** : Style de vie (ou Communication).
-- **Coordonnées** : une adresse e-mail publique obligatoire.
+- **Catégorie** : Communication.
+- **Coordonnées** : adresse e-mail publique obligatoire.
 - **Publicité** : l'application ne contient pas de publicité.
+- **Politique de confidentialité** : https://frcjules.github.io/simple/privacy-policy
 
 ## Public cible et contenu
 - **Public cible** : 18 ans et plus (l'application ne s'adresse pas aux enfants).
-- **Questionnaire de classification (IARC)** : aucune violence, contenu sexuel, jeu d'argent, ni interaction entre utilisateurs, ni partage de position → classification attendue « 3+ ».
+- **Questionnaire de classification (IARC)** : catégorie « Communication ». Les utilisateurs échangent des messages (SMS/MMS, avec des contacts qu'ils connaissent) : répondre **Oui** à « les utilisateurs peuvent communiquer entre eux » ; pas de violence, de contenu sexuel, de jeu d'argent, ni de partage de position.
 - **Application d'actualités / santé / finance / gouvernement** : non.
+- **Accès à l'application** : aucune connexion requise ; donner les instructions de revue ci-dessous.
 
-## Autorisations sensibles
-| Autorisation | Justification pour la fiche / la revue |
+## Déclaration « SMS et journal d'appels » (obligatoire)
+Play Console → *Contenu de l'application* → *Autorisations sensibles* → **SMS et journal d'appels**.
+- **Fonction principale** : *Gestionnaire de SMS par défaut* (Default SMS handler).
+- **Permissions déclarées** : `READ_SMS`, `SEND_SMS`, `RECEIVE_SMS`, `RECEIVE_MMS`, `RECEIVE_WAP_PUSH`. Aucune permission du journal d'appels (`READ_CALL_LOG` n'est pas demandée).
+- **Description à copier** :
+  > Simple est une application de messages et un écran d'accueil pour personnes âgées qui lisent peu. Quand l'utilisateur la choisit comme application SMS par défaut (question d'Android, à l'initiative de l'utilisateur ou de sa famille), elle reçoit, affiche en très grand, lit à voix haute et envoie les SMS et MMS. READ_SMS sert à afficher l'historique existant, SEND_SMS à envoyer la réponse dictée et confirmée, RECEIVE_SMS/RECEIVE_MMS/RECEIVE_WAP_PUSH à recevoir les messages et les photos de la famille. Les messages restent sur le téléphone : l'application n'a pas d'accès à Internet et n'envoie rien au développeur ni à un tiers.
+- **Vidéo de démonstration** (lien YouTube non répertorié ou Google Drive), 1 à 2 minutes, sur un vrai téléphone avec carte SIM :
+  1. Installer Simple, toucher « Messages » : Simple explique « Pour lire et écrire vos messages ici, le téléphone va vous poser une ou deux questions », toucher « Continuer » ; la question d'Android (application SMS par défaut) apparaît, accepter.
+  2. Recevoir un SMS d'un proche : il apparaît en grand dans « Messages » ; toucher « Écouter ».
+  3. Toucher « Répondre », dicter, vérifier, « Envoyer » ; montrer le message reçu sur l'autre téléphone.
+  4. Recevoir un MMS (photo) et l'ouvrir.
+
+## Autres autorisations sensibles
+| Autorisation | Justification |
 |---|---|
-| `READ_CONTACTS` | Afficher en photos les contacts marqués d'une étoile, pour les appeler. Lecture seule, aucune donnée envoyée |
-| `CALL_PHONE` | Lancer l'appel après la confirmation explicite de l'utilisateur (repli sur le composeur si refusée) |
-| Accès aux notifications (`BIND_NOTIFICATION_LISTENER_SERVICE`) | Fonction **facultative** : afficher sur l'écran maison de la famille les appels manqués, SMS et WhatsApp. Ne lit que Téléphone, Messages et WhatsApp, envoie uniquement au réseau local de l'utilisateur. Divulgation dans la fiche, la politique de confidentialité et l'écran « Réglages famille » |
-| Historique des messages (illimité, local), dictée et lecture vocale | Les messages vus dans les notifications sont gardés **localement** pour être affichés et lus à voix haute sur demande ; la dictée sert à répondre. Détails et limites : [ADR 0004](../adr/0004-messages-conserves-sur-le-telephone.md) |
-| `INTERNET` | Uniquement pour joindre l'écran maison sur le Wi-Fi du foyer (HTTPS épinglé) |
-
-**Jamais utilisé** : `READ_CALL_LOG` (journal d'appels). **SMS** : les permissions `READ_SMS`, `SEND_SMS`, `RECEIVE_SMS`, `RECEIVE_MMS`, `RECEIVE_WAP_PUSH` ne sont déclarées que dans les versions de **test** (manifeste `src/debug`) tant que les MMS ne sont pas gérés ; la version publiée n'en déclare aucune. Quand elles seront déclarées, voir la section « Application SMS par défaut » ci-dessous.
+| `READ_CONTACTS` | Afficher les proches en photos, les appeler et leur écrire, reconnaître l'expéditeur d'un message. Lecture seule |
+| `CALL_PHONE` | Lancer l'appel après la confirmation de l'utilisateur (repli sur le composeur si refusée) |
+| Accès aux notifications (`BIND_NOTIFICATION_LISTENER_SERVICE`) | **Facultatif** : afficher dans Simple les messages WhatsApp, et répondre à WhatsApp par l'action « Répondre » de sa notification. Ne lit que Messages et WhatsApp ; rien ne quitte le téléphone. Divulgation : fiche, politique de confidentialité, écran « Réglages famille » |
+| Application d'accueil (`HOME`) | Simple remplace l'écran d'accueil à la demande de l'utilisateur ; retour possible dans les réglages d'Android |
 
 ## Instructions pour l'équipe de revue Google
-> Simple est un écran d'accueil simplifié. Sans matériel supplémentaire : installer, ouvrir l'application « Réglages famille » (seconde icône de Simple), choisir un code famille, toucher « Faire de Simple l'écran d'accueil » et accepter la question d'Android, puis toucher « Appeler » (accepter les contacts), voir les contacts étoilés en photos, confirmer un appel. La fonction d'écran maison (accès aux notifications, « Réglages famille ») est facultative et nécessite un Raspberry Pi ; elle n'est pas nécessaire pour utiliser l'application. Aucun compte ni mot de passe n'est requis.
-
-## Application SMS par défaut (ADR 0005)
-Simple peut devenir l'application SMS par défaut (rôle `ROLE_SMS`). Google Play impose alors :
-- le **formulaire de déclaration des permissions « SMS et journal d'appels »** : usage déclaré = *application SMS par défaut* ; fonctions essentielles : recevoir, envoyer et afficher des SMS pour des seniors, avec dictée et lecture vocale ;
-- une **justification** pour `READ_SMS`, `SEND_SMS`, `RECEIVE_SMS`, `RECEIVE_MMS`, `RECEIVE_WAP_PUSH` (uniquement tant que l'application est celle par défaut ; arrêt de l'usage dès que le rôle est perdu) ;
-- une **vidéo de démonstration** de la demande du rôle et de l'envoi/réception d'un SMS ;
-- les **MMS** doivent fonctionner : un MMS non géré serait perdu. **Ne pas soumettre la version de production avant les MMS** (en release, le manifeste ne déclare ni le rôle ni les permissions SMS, et `SMS_ROLE_OFFERED` est `false`).
-**MMS** : `RECEIVE_MMS` et `RECEIVE_WAP_PUSH` servent à recevoir les photos de la famille ; le téléchargement et l'accusé de réception passent par les API du système (`SmsManager`). Joindre à la vidéo de démonstration la réception d'un MMS.
-**Photos** : Simple n'a aucune permission d'accès aux photos ; l'envoi d'une photo passe par l'appareil photo ou le sélecteur de photos du système.
-Revue plus longue que d'habitude, refus possible : prévoir du temps avant de promettre une date.
+> Simple est un écran d'accueil et une application de messages simplifiés pour personnes âgées. Aucun compte ni mot de passe. Au premier lancement, un guide propose de choisir un code famille (par exemple 2468), de faire de Simple l'écran d'accueil et d'autoriser les contacts. En touchant « Messages », Simple propose de devenir l'application de messages (« Continuer », puis accepter la question d'Android). Ensuite : « Appeler » affiche les contacts favoris en photos (confirmation avant l'appel) ; « Messages » affiche les SMS, MMS et, si l'accès aux notifications est accordé, WhatsApp ; chaque message peut être écouté et recevoir une réponse dictée, confirmée avant l'envoi. Les réglages de la famille s'ouvrent en touchant 7 fois l'heure de l'accueil puis en saisissant le code famille.

@@ -1,19 +1,21 @@
-Simple is an ultra-simplified home screen for older people, made to keep in touch with the family.
+Simple is a radically simplified phone for older people: a home screen and a messaging app designed for someone who reads little and prefers pictures.
 
-For the user (anyone who reads little and prefers pictures):
-• Big buttons: Call, Messages, Photo, My photos.
-• Family members are shown by their photo: you recognise the person, tap, confirm, call.
-• A clear confirmation before every call, with a button to cancel.
-• Very large text, high contrast, the time and the battery always visible.
+For the older person:
+• Four large buttons: Call, Messages, Photo, My photos.
+• Loved ones are shown by their photo: recognise the person, touch, confirm, call.
+• Messages (SMS, MMS and WhatsApp) in large print, with the sender's photo, read aloud on request.
+• Reply by speaking: dictate, check, send. Send a photo in two steps.
+• A clear confirmation before every call or message, with a button to cancel.
+• Very large text, high contrast, time and battery always visible. Works with Android's enlarged font.
 
 For the family:
-• Nothing to change: you keep using the phone, SMS and WhatsApp as usual.
-• You choose who is shown in the family settings, protected by a code only the family knows.
-• Optional: with a home display (Raspberry Pi), Simple can show “Marie called you” or the last message received in large letters on the living-room screen. This needs notification access (missed calls, SMS, WhatsApp), turned on in the family settings.
+• Nothing changes for you: keep calling, texting and using WhatsApp as usual.
+• You choose which loved ones are shown, and their photos, in the family settings, protected by a code only the family knows.
+• Security codes and bank alerts received by SMS are hidden and never read aloud.
 
 Privacy:
-• No ads, no trackers, no account.
-• Your contacts and messages never leave your home: information is sent only to your own home display, on your Wi-Fi network, encrypted.
+• No ads, no trackers, no account, no Internet access.
+• Your contacts, calls and messages never leave the phone.
 • Free and open source: the source code is public.
 
-Simple declares itself as a home app: you can go back to your previous home screen at any time in Android's settings.
+With your consent, Simple can become the phone's home screen and messaging app; you can go back to your previous apps at any time in Android settings.
