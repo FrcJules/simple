@@ -28,7 +28,7 @@ Choix **facultatif** de la famille ([ADR 0005](adr/0005-sms-par-defaut-et-histor
 - Les SMS sont enregistrés dans la boîte de réception **du système** (comme toute application de messages) et copiés dans l'historique privé de Simple, **sur le téléphone seulement**, sans limite de durée, effaçable depuis « Réglages famille ».
 - À l'activation, les SMS déjà présents sont copiés dans l'historique (marqués lus).
 - Les codes à usage unique et alertes bancaires sont conservés mais **masqués** dans l'application, jamais lus à voix haute ni envoyés à l'écran maison.
-- Seuls le nom de l'expéditeur et le texte (500 caractères au plus) des messages **ordinaires** sont envoyés à l'écran maison appairé, chiffrés, sur le réseau local.
+- Seuls le nom de l'expéditeur et le texte (500 caractères au plus) des messages **ordinaires** sont envoyés à l'écran maison appairé, chiffrés, sur le réseau local. Voir « Ce que le hub garde pour l'écran maison » ci-dessous.
 - Aucune donnée ne quitte le téléphone ni le foyer. Si le rôle est retiré, l'historique reste, mais Simple ne reçoit plus de SMS.
 - **MMS** : la réception est codée et testée mais **pas encore essayée avec un vrai opérateur** ; l'envoi d'une photo est limité à une photo, un destinataire, sans texte ni vidéo. Ne pas activer le rôle sur le téléphone utilisé au quotidien tant que ce n'est pas indiqué ici.
 
@@ -123,3 +123,16 @@ Pour comprendre pourquoi un message n'arrive pas, Simple garde sur le téléphon
 ## Doublons de SMS
 Un SMS envoyé par Simple en mode direct est aussi enregistré par le téléphone lui-même ; Simple reconnaît cette copie (même texte, même numéro, quelques minutes d'écart) et ne la rajoute pas. Une seule fois après la mise à jour, les doublons déjà présents de **vos propres envois** sont supprimés de l'historique de Simple, un pour un — jamais un message reçu, jamais une photo (MMS), jamais des SMS du téléphone.
 
+
+## Ce que le hub garde pour l'écran maison
+| Événement | Ce qui est gardé | Combien de temps |
+|---|---|---|
+| Appel manqué | prénom de l'appelant | 24 h |
+| Message (SMS, WhatsApp, MMS) | prénom de l'expéditeur, texte (500 caractères au plus) ou le mot « Photo » | **4 h** |
+| Nouvelle photo, anniversaire | prénom | 24 h |
+
+- **Où** : dans la mémoire du hub, sur le Pi, jamais dans un fichier ni une base ; 200 événements au plus. La règle de durée est commune au hub et à l'écran (`DISPLAY_RETENTION_MS`, `packages/contracts`) : passé ce délai, le hub l'oublie et l'écran retire la carte.
+- **Qui le voit** : l'écran du salon (donc toute personne qui passe devant), y compris après un rechargement de l'écran ou une coupure réseau, tant que le délai n'est pas écoulé. La lecture n'est possible que depuis le Pi lui-même, avec le jeton d'affichage.
+- **Effacer** : redémarrer le hub (`sudo systemctl restart simple-hub`) efface tout. « Effacer les messages » sur le téléphone et la révocation d'un téléphone (`npm run revoke`) **n'effacent pas** ce que le hub a déjà reçu : redémarrez le hub en plus.
+- **Fichier d'échange** : Raspberry Pi OS peut écrire une partie de la mémoire sur la carte SD (`dphys-swapfile`). Pour qu'aucun texte n'y passe, désactivez-le (`sudo dphys-swapfile swapoff && sudo systemctl disable dphys-swapfile`) ou utilisez zram.
+- **Dette connue** : le navigateur du kiosque passe le jeton d'affichage dans l'adresse du flux (`?token=`, limite d'`EventSource`) ; le kiosque doit rester verrouillé (pas de barre d'adresse ni d'historique accessible).

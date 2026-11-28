@@ -27,10 +27,7 @@ async function expectAccessible(page: Page): Promise<void> {
   expect(serious.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
 }
 
-/**
- * Opens the home screen and waits until it listens to the hub: the hub does not replay past events to a new stream,
- * so an event sent before that would never be shown.
- */
+/** Opens the home screen and waits until it listens to the hub, so the next event is received live. */
 async function openHome(page: Page): Promise<void> {
   await Promise.all([page.waitForResponse((r) => r.url().includes("/events/stream")), page.goto("/")]);
 }
@@ -40,9 +37,12 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("home shows the time and date with nothing else happening", async ({ page }, info) => {
+  // The hub is shared by both screen sizes and replays the last day: start this screen with no events at all.
+  await page.route(`${HUB}/events/stream*`, (route) => route.abort());
   await page.goto("/");
   await expect(page.getByText("09:30")).toBeVisible();
   await expect(page.getByText(/samedi/i)).toBeVisible();
+  await expect(page.getByText(/vous a appelé|Message de/)).toHaveCount(0);
   await shot(page, info, "01_idle");
   await expectAccessible(page);
 });
@@ -64,6 +64,13 @@ test("a long message stays readable and inside the screen", async ({ page, reque
   expect(overflow, "no horizontal scrolling on a kiosk screen").toBe(false);
   await shot(page, info, "03_long_message");
   await expectAccessible(page);
+});
+
+test("a call missed while the screen was off is shown when it starts", async ({ page, request }, info) => {
+  await send(request, { type: "missed_call", from: { name: "Paul" } });
+  await page.goto("/");
+  await expect(page.getByText("Paul vous a appelé")).toBeVisible();
+  await shot(page, info, "05_missed_while_off");
 });
 
 test("the screen keeps the clock when the hub cannot be reached", async ({ page }, info) => {

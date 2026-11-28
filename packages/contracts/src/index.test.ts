@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { birthday, simpleEvent, reminder, weather } from "./index";
+import { birthday, DISPLAY_RETENTION_MS, isStillShown, simpleEvent, reminder, weather, type SimpleEvent } from "./index";
 
 const base = { schemaVersion: 1, id: "e1", occurredAt: "2026-10-06T09:30:00+02:00" };
 
@@ -76,5 +76,25 @@ describe("weather", () => {
     for (const bad of [{ temperature: 500 }, { code: 120 }, { code: 1.5 }, { min: "cold" }]) {
       expect(weather.safeParse({ temperature: 18, code: 3, min: 11, max: 21, ...bad }).success, JSON.stringify(bad)).toBe(false);
     }
+  });
+});
+
+describe("display retention", () => {
+  const HOUR = 3_600_000;
+  const call: SimpleEvent = { ...base, schemaVersion: 1, type: "missed_call", from: { name: "Marie" } };
+  const message: SimpleEvent = { ...base, schemaVersion: 1, type: "new_message", channel: "sms", from: { name: "Marie" }, text: "Bonjour" };
+
+  it("keeps a missed call for a day", () => {
+    expect(isStillShown(call, 23 * HOUR)).toBe(true);
+    expect(isStillShown(call, 25 * HOUR)).toBe(false);
+  });
+
+  it("keeps the text of a message for a few hours only", () => {
+    expect(isStillShown(message, 3 * HOUR)).toBe(true);
+    expect(isStillShown(message, 5 * HOUR)).toBe(false);
+  });
+
+  it("covers every event type, never longer than a day", () => {
+    for (const ms of Object.values(DISPLAY_RETENTION_MS)) expect(ms).toBeLessThanOrEqual(24 * HOUR);
   });
 });
